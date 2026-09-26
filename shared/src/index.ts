@@ -2,4 +2,8 @@ export * from "./types/dieline";
 export * from "./types/project";
 export * from "./types/fitcheck";
 export * from "./parametric/tuck-top";
+export * from "./parametric/sleeve-drawer";
+export * from "./parametric/lid-base";
+export * from "./parametric/pillow";
 export * from "./fitcheck/validator";
+export * from "./exporter/pdf-export";

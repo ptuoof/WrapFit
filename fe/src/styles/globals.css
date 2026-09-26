@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-paper-ivory: #FDFBF7;
+  --color-paper-kraft: #E3CBB2;
+  --color-paper-cardboard: #C8A882;
+  --color-brand-forest: #1A362B;
+  --color-brand-gold: #D4AF37;
+}
+
+body {
+  background-color: var(--color-paper-ivory);
+  color: #1F2421;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Dieline Visual Line Styles */
+.dieline-cut {
+  stroke: #E53E3E;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.dieline-crease {
+  stroke: #3182CE;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.dieline-bleed {
+  stroke: #38A169;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.dieline-safe-margin {
+  stroke: #ECC94B;
+  stroke-width: 0.75;
+  stroke-dasharray: 3 3;
+}
