@@ -1,0 +1,65 @@
+// WrapFit Platform Database Schema (Prisma / PostgreSQL)
+// Owned by IT 3 (Backend & Data Infrastructure)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String              @id @default(uuid())
+  email            String              @unique
+  shopName         String?             @map("shop_name")
+  subscriptionTier String              @default("free") @map("subscription_tier") // free, pro, business
+  projects         PackagingProject[]
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model BoxTemplate {
+  id            String             @id // tuck-top, sleeve-drawer, lid-base, pillow
+  name          String
+  description   String?
+  formulaSchema Json               @map("formula_schema")
+  isActive      Boolean            @default(true) @map("is_active")
+  projects      PackagingProject[]
+
+  @@map("box_templates")
+}
+
+model PackagingProject {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  templateId    String       @map("template_id")
+  title         String
+  dimensions    Json         // { length, width, height, paperThickness }
+  materialSpec  Json         @map("material_spec") // { type, gsm, caliper }
+  canvasState   Json         @map("canvas_state")  // elements, text, logos
+  fitcheckState Json?        @map("fitcheck_state") // last audit report
+  thumbnailUrl  String?      @map("thumbnail_url")
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template      BoxTemplate  @relation(fields: [templateId], references: [id])
+  exportJobs    ExportJob[]
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("packaging_projects")
+}
+
+model ExportJob {
+  id            String           @id @default(uuid())
+  projectId     String           @map("project_id")
+  fileType      String           @map("file_type") // pdf, svg, dxf
+  storageUrl    String           @map("storage_url")
+  status        String           @default("completed") // pending, processing, completed, failed
+  project       PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@map("export_jobs")
+}
