@@ -1,6 +1,7 @@
 name: Deploy WrapFit Backend to VPS
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -10,7 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'ptuoof/WrapFit'
     steps:
+      - name: Check VPS Secrets Configured
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.VPS_HOST }}" ]; then
+            echo "::warning title=VPS Secrets Missing::VPS_HOST secret is not configured in GitHub repository settings. Skipping SSH deployment until VPS credentials are provided."
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Execute deployment commands via SSH
+        if: steps.check_secrets.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
