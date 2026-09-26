@@ -44,3 +44,12 @@ next-env.d.ts
 # Temporary scratch & OS files
 Thumbs.db
 desktop.ini
+
+# Course materials & local drafts
+*.docx
+*.xlsx
+*.pptx
+*.pdf
+resourse IDEA/
+Templates/
+"Research Tools, Sites [Recommended]/"
