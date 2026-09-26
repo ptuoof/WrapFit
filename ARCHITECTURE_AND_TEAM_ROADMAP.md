@@ -41,11 +41,12 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 │          IT 1           │          IT 2           │          IT 3           │
 │   Frontend & 3D Web     │  Core Math & In Ấn      │    Backend & Cloud      │
 ├─────────────────────────┼─────────────────────────┼─────────────────────────┤
-│ • 2D Canvas Editor      │ • Thuật toán dieline    │ • API & Prisma DB       │
-│ • Three.js 3D Fold      │ • FitCheck validation   │ • S3 Asset Storage      │
+│ • 2D Canvas Editor      │ • Thuật toán Dieline    │ • API & Prisma DB       │
+│ • Three.js 3D Fold      │ • FitCheck™ Validation  │ • S3 Asset Storage      │
 │ • GSAP Animation        │ • PDFKit CMYK Export    │ • AI Pattern API        │
 │ • Figma UI Component    │ • Dung sai giấy GSM     │ • Auth & User Profile   │
-│ 📁 src/components/      │ 📁 src/core/            │ 📁 prisma/ & src/lib/   │
+│                         │                         │                         │
+│ 📁 fe/                  │ 📁 shared/              │ 📁 be/                  │
 │ 🌿 feature/it1-ui-3d    │ 🌿 feature/it2-engine   │ 🌿 feature/it3-backend  │
 └─────────────────────────┴─────────────────────────┴─────────────────────────┘
 ```
@@ -53,10 +54,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ### 👤 IT 1: Frontend Lead & 2D/3D Packaging Studio
 - **Trọng tâm**: Trải nghiệm thị giác, tương tác kéo thả 2D và mô phỏng 3D thời gian thực.
 - **Thư mục làm việc độc quyền**:
-  - `src/components/editor/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
-  - `src/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
-  - `src/app/editor/[id]/`: Trang phòng thu thiết kế (Studio workspace).
-  - `src/app/page.tsx`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
+  - `fe/src/components/canvas/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
+  - `fe/src/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
+  - `fe/src/app/editor/[id]/`: Trang phòng thu thiết kế (Studio workspace).
+  - `fe/src/app/page.tsx`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
 - **Agent Skills hỗ trợ**: `packaging-threejs-fold`, `wrapfit-design-system`, `scroll-storytelling`.
 - **Nhánh Git**: `feature/it1-editor-3d`
 
@@ -65,13 +66,13 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ### 👤 IT 2: Core Engineering & Print Physics Lead
 - **Trọng tâm**: Toán học bao bì, thuật toán kiểm duyệt in ấn và động cơ xuất file vector.
 - **Thư mục làm việc độc quyền**:
-  - `src/core/parametric/`: Công thức tính tọa độ vector của 4 loại hộp:
+  - `shared/src/parametric/`: Công thức tính tọa độ vector của 4 loại hộp:
     1. *Tuck Top Box* (Hộp nắp gài đáy khóa).
     2. *Sleeve / Drawer Box* (Hộp kéo bao diêm).
     3. *Lid & Base Box* (Hộp âm dương).
     4. *Pillow Box* (Hộp gối).
-  - `src/core/fitcheck/`: Thuật toán kiểm tra vi phạm vật lý: Bleed $\ge 2\text{mm}$, Safe margin $\ge 3\text{mm}$, DPI $\ge 200$, flap collision.
-  - `src/core/exporter/`: Dịch vụ xuất file vector đa lớp (PDFKit CMYK, SVG nét cắt/nét cấn).
+  - `shared/src/fitcheck/`: Thuật toán kiểm tra vi phạm vật lý: Bleed $\ge 2\text{mm}$, Safe margin $\ge 3\text{mm}$, DPI $\ge 200$, flap collision.
+  - `shared/src/types/`: Các định nghĩa kiểu dữ liệu dùng chung cho cả fe và be.
 - **Agent Skills hỗ trợ**: `fitcheck-validator`.
 - **Nhánh Git**: `feature/it2-parametric-fitcheck`
 
@@ -80,11 +81,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ### 👤 IT 3: Backend, Data Infrastructure & Cloud BaaS Lead
 - **Trọng tâm**: CSDL, API lưu trữ, Cloud Storage, Authentication và tích hợp AI bên ngoài.
 - **Thư mục làm việc độc quyền**:
-  - `prisma/schema.prisma`: Thiết kế và quản trị CSDL PostgreSQL.
-  - `src/app/api/`: Các endpoint REST / Server Actions (`/api/projects`, `/api/export`, `/api/ai/pattern`).
-  - `src/lib/storage/`: Tích hợp S3/Cloud Storage lưu trữ ảnh và file PDF.
-  - `src/lib/ai/`: Kết nối AI Prompt Optimizer sinh Seamless Pattern hoa văn nền.
-  - `Dockerfile` & CI/CD: Đóng gói ứng dụng để deploy lên Vercel / Cloud Run.
+  - `be/prisma/schema.prisma`: Thiết kế và quản trị CSDL PostgreSQL.
+  - `be/src/controllers/`: Xử lý logic nghiệp vụ cho các API.
+  - `be/src/services/`: Tích hợp S3/Cloud Storage lưu trữ ảnh và file PDF.
+  - `be/src/index.ts`: Khởi chạy REST API server.
 - **Agent Skills hỗ trợ**: `insforge-backend-flow`.
 - **Nhánh Git**: `feature/it3-backend-auth-storage`
 

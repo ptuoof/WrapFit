@@ -1,0 +1,35 @@
+{
+  "name": "@wrapfit/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WrapFit Frontend — 2D Canvas Editor, 3D Folding Simulation & Landing Page",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.8",
+    "@wrapfit/shared": "*",
+    "clsx": "^2.1.1",
+    "fabric": "^5.3.0",
+    "gsap": "^3.12.5",
+    "lucide-react": "^0.446.0",
+    "next": "14.2.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.2",
+    "three": "^0.168.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/react": "^18.3.8",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.168.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.12",
+    "typescript": "^5.6.2"
+  }
+}

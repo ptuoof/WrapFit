@@ -3,7 +3,7 @@
  * Owned by IT 2 (Packaging Math)
  */
 
-import { BoxDimensions, DielineGeometry, DielineSegment, PanelFace } from "@/types/dieline";
+import { BoxDimensions, DielineGeometry, DielineSegment, PanelFace } from "../types/dieline";
 
 export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeometry {
   const { length: L, width: W, height: H, paperThickness: t } = dimensions;
@@ -49,7 +49,6 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
 
   // Calculate segments (Crease and Cut lines)
   const segments: DielineSegment[] = [
-    // Main vertical fold creases
     {
       id: "crease_v1",
       type: "crease",
@@ -68,7 +67,6 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
       start: { x: glueFlapWidth + L + W + L, y: H },
       end: { x: glueFlapWidth + L + W + L, y: H + H }
     },
-    // Main horizontal fold creases
     {
       id: "crease_h_top",
       type: "crease",

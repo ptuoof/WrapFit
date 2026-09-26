@@ -3,9 +3,9 @@
  * Owned by IT 2 (Production Physics)
  */
 
-import { CanvasElement } from "@/types/project";
-import { DielineGeometry } from "@/types/dieline";
-import { FitCheckReport, FitCheckViolation } from "@/types/fitcheck";
+import { CanvasElement } from "../types/project";
+import { DielineGeometry } from "../types/dieline";
+import { FitCheckReport, FitCheckViolation } from "../types/fitcheck";
 
 export function runFitCheck(elements: CanvasElement[], dieline: DielineGeometry): FitCheckReport {
   const violations: FitCheckViolation[] = [];

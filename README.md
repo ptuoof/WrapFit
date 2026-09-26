@@ -42,6 +42,20 @@
 
 ---
 
+## 📁 Cấu Trúc Mã Nguồn (Project Structure)
+
+Dự án được tổ chức rõ ràng theo 3 module độc lập giúp 3 IT làm việc song song:
+
+```text
+WrapFit/
+├── fe/                 # FRONTEND STUDIO (Next.js 14, Three.js, GSAP) — Phụ trách: IT 1
+├── be/                 # BACKEND SERVICES (Express, Prisma, PostgreSQL, S3) — Phụ trách: IT 3
+├── shared/             # PACKAGING PHYSICS & TYPES (Parametric Math, FitCheck) — Phụ trách: IT 2
+└── .agents/            # AI AGENT SKILLS & RUNBOOKS
+```
+
+---
+
 ## 🛠️ Công Nghệ Phát Triển (Tech Stack)
 
 | Lớp kiến trúc | Công nghệ sử dụng | Mục đích |
