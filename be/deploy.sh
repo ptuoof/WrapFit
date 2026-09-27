@@ -5,7 +5,6 @@ echo "=== [1/4] Pulling latest WrapFit code from Git ==="
 git pull origin main
 
 echo "=== [2/4] Shutting down current containers ==="
-cd be
 docker compose down
 
 echo "=== [3/4] Rebuilding and starting WrapFit containers ==="
@@ -17,4 +16,4 @@ docker image prune -f
 echo "=== WrapFit Container Status ==="
 docker compose ps
 
-echo "=== WrapFit Backend deployed successfully! ==="
+echo "=== WrapFit Full-Stack deployed successfully! ==="

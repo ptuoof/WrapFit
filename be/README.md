@@ -36,17 +36,44 @@
 ```text
 be/
 ├── prisma/
-│   └── schema.prisma           # CSDL PostgreSQL (Users, Projects, Templates, Jobs)
+│   ├── schema.prisma           # CSDL PostgreSQL (Users, Projects, Templates, Jobs)
+│   └── seed.ts                 # Script nạp dữ liệu mẫu (BoxTemplates & DemoUser)
 ├── src/
 │   ├── lib/
 │   │   └── prisma.ts           # Khởi tạo PrismaClient kết nối PostgreSQL
-│   ├── controllers/            # Xử lý logic nghiệp vụ API
-│   ├── services/               # StorageService (S3), AI Pattern generator
-│   └── index.ts                # Server API chính gọi Prisma để CRUD
+│   ├── schemas/
+│   │   └── project.schema.ts   # Zod validation schema cho Projects & Canvas elements
+│   ├── controllers/            # HTTP Request Handlers (Project, Asset, Template, AI, Export)
+│   ├── routes/                 # Express Routers modular theo domain
+│   ├── services/               # StorageService, ProjectService, ExportService (PDFKit), AI
+│   ├── middlewares/            # Multer upload & Global error handler
+│   ├── test-endpoints.ts       # Smoke test tự động kiểm tra toàn bộ API
+│   └── index.ts                # Server API chính
+├── uploads/                    # Thư mục lưu trữ assets & exports cục bộ
 ├── .env.example                # Mẫu cấu hình DATABASE_URL
 ├── package.json
 └── tsconfig.json
 ```
+
+---
+
+## 🚀 Danh Sách API Endpoints (Dành Cho IT 1 & IT 2 Tích Hợp)
+
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Kiểm tra tình trạng server và kết nối CSDL PostgreSQL |
+| `GET` | `/api/templates` | Lấy danh sách các mẫu cấu trúc hộp active |
+| `GET` | `/api/templates/:id` | Lấy chi tiết mẫu cấu trúc hộp (`tuck-top`, `sleeve-drawer`,...) |
+| `POST` | `/api/projects` | Tạo dự án bao bì mới (kèm validation Zod & FitCheck ban đầu) |
+| `GET` | `/api/projects` | Lấy danh sách dự án (hỗ trợ query `?userId=...&page=...&limit=...`) |
+| `GET` | `/api/projects/:id` | Xem chi tiết dự án (kèm thông tin template và lịch sử export) |
+| `PUT` | `/api/projects/:id` | Cập nhật dự án (kích thước, canvas elements, tự động audit FitCheck) |
+| `DELETE` | `/api/projects/:id` | Xóa dự án bao bì |
+| `POST` | `/api/projects/:id/audit` | Chạy kiểm toán FitCheck™ thủ công và cập nhật điểm số |
+| `POST` | `/api/assets/upload` | Upload logo/ảnh (hỗ trợ multipart `file` hoặc base64 `{ base64, fileName }`) |
+| `DELETE` | `/api/assets` | Xóa file asset (`{ url }`) |
+| `POST` | `/api/ai/pattern` | Gợi ý bảng màu và pattern SVG lặp vô tận theo chủ đề (`{ theme }`) |
+| `POST` | `/api/export` | Xuất file vector bế SVG hoặc PDF CMYK (PDFKit chuẩn 300 DPI) |
 
 ---
 

@@ -71,9 +71,28 @@ WrapFit/
 
 ## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy (Getting Started)
 
+### Cách 1: Khởi chạy toàn bộ hệ thống bằng Docker (Khuyên dùng) 🐳
+Chỉ với 1 lệnh duy nhất tại thư mục gốc, Docker sẽ tự động dựng và khởi chạy 3 dịch vụ: PostgreSQL 16, Backend API và Frontend Studio:
+
+```bash
+# Đứng tại thư mục gốc WrapFit
+docker compose up --build
+```
+
+- **Frontend Studio**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:5000/api](http://localhost:5000/api)
+- **API Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **PostgreSQL**: `localhost:5432` (user: `postgres`, password: `password`, db: `wrapfit`)
+
+*(Để dừng toàn bộ containers, nhấn `Ctrl + C` hoặc chạy `docker compose down`)*.
+
+---
+
+### Cách 2: Khởi chạy thủ công qua Node.js (Local Development)
+
 ### Yêu cầu tiên quyết:
 - **Node.js**: Phiên bản `>= 20.x`
-- **npm** hoặc **pnpm / yarn**
+- **npm** (v10+)
 
 ```bash
 # 1. Clone repository
@@ -83,14 +102,10 @@ cd WrapFit
 # 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 3. Cấu hình biến môi trường
-cp .env.example .env.local
-
-# 4. Khởi chạy môi trường phát triển
-npm run dev
+# 3. Biên dịch shared library & chạy đồng thời FE + BE
+npm run build:shared
+npm run dev:be & npm run dev:fe
 ```
-
-Mở trình duyệt tại [http://localhost:3000](http://localhost:3000) để trải nghiệm ứng dụng.
 
 ---
 

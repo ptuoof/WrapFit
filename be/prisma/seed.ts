@@ -3,8 +3,22 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding default WrapFit box templates...");
+  console.log("Seeding default WrapFit data...");
 
+  // 1. Seed demo user for testing & local development
+  await prisma.user.upsert({
+    where: { email: "demo@wrapfit.local" },
+    update: {},
+    create: {
+      id: "demo-user-id",
+      email: "demo@wrapfit.local",
+      shopName: "WrapFit Craft & Gift Studio",
+      subscriptionTier: "pro"
+    }
+  });
+  console.log("Demo user ensured: demo-user-id (demo@wrapfit.local)");
+
+  // 2. Seed default box templates
   const templates = [
     {
       id: "tuck-top",
