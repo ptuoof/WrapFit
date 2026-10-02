@@ -1,0 +1,167 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../../prisma/prisma.service';
+import type {
+  DesignTemplateSource,
+  IProjectRepository,
+  NewProject,
+  ProjectChanges,
+  ProjectListQuery,
+  TemplateRules,
+} from '../application/ports/project.repository.port';
+import type { LifecycleState } from '../domain/project-lifecycle';
+import type { ProjectDetail, ProjectSummary } from '../domain/project.types';
+import { detailSelect, json, nullableJson, summarySelect, toDetail, toSummary } from './project.select';
+
+@Injectable()
+export class PrismaProjectRepository implements IProjectRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findTemplateRules(templateId: string): Promise<TemplateRules | null> {
+    return this.prisma.boxTemplate.findUnique({
+      where: { id: templateId },
+      select: { id: true, isActive: true, formulaSchema: true },
+    });
+  }
+
+  async findDesignTemplate(designTemplateId: string): Promise<DesignTemplateSource | null> {
+    const row = await this.prisma.designTemplate.findUnique({
+      where: { id: designTemplateId },
+      select: { id: true, boxTemplateId: true, isActive: true, materialSpec: true, canvasState: true },
+    });
+    return row as unknown as DesignTemplateSource | null;
+  }
+
+  async countTemplateUse(designTemplateId: string): Promise<void> {
+    await this.prisma.designTemplate.update({
+      where: { id: designTemplateId },
+      data: { usesCount: { increment: 1 } },
+    });
+  }
+
+  async isCollectionOwnedBy(collectionId: string, userId: string): Promise<boolean> {
+    const count = await this.prisma.projectCollection.count({ where: { id: collectionId, userId } });
+    return count > 0;
+  }
+
+  async findOwnerId(projectId: string): Promise<string | null> {
+    const project = await this.prisma.packagingProject.findUnique({
+      where: { id: projectId },
+      select: { userId: true },
+    });
+    return project?.userId ?? null;
+  }
+
+  async findById(projectId: string): Promise<ProjectDetail | null> {
+    const row = await this.prisma.packagingProject.findUnique({
+      where: { id: projectId },
+      select: detailSelect,
+    });
+    return row && toDetail(row);
+  }
+
+  async list(query: ProjectListQuery): Promise<{ items: ProjectSummary[]; total: number }> {
+    const where: Prisma.PackagingProjectWhereInput = {
+      userId: query.userId,
+      status: query.status,
+      ...(query.collectionId !== undefined && { collectionId: query.collectionId }),
+      ...(query.search && {
+        OR: [
+          { title: { contains: query.search, mode: 'insensitive' } },
+          { tags: { has: query.search.toLowerCase() } },
+        ],
+      }),
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.packagingProject.findMany({
+        where,
+        select: summarySelect,
+        // `id` as tie-breaker keeps pages stable when timestamps are equal.
+        orderBy: [{ [query.sortBy]: query.order }, { id: 'asc' }],
+        skip: query.skip,
+        take: query.take,
+      }),
+      this.prisma.packagingProject.count({ where }),
+    ]);
+    return { items: rows.map(toSummary), total };
+  }
+
+  async create(project: NewProject): Promise<ProjectDetail> {
+    const row = await this.prisma.packagingProject.create({
+      data: {
+        userId: project.userId,
+        templateId: project.templateId,
+        collectionId: project.collectionId,
+        title: project.title,
+        dimensions: json(project.dimensions),
+        materialSpec: json(project.materialSpec),
+        canvasState: json(project.canvasState),
+        fitcheckState: nullableJson(project.fitcheckState),
+        forkedFromId: project.forkedFromId ?? null,
+        tags: project.tags,
+        occasion: project.occasion ?? null,
+        industry: project.industry ?? null,
+      },
+      select: detailSelect,
+    });
+    return toDetail(row);
+  }
+
+  async update(projectId: string, changes: ProjectChanges): Promise<ProjectDetail> {
+    const row = await this.prisma.packagingProject.update({
+      where: { id: projectId },
+      data: {
+        title: changes.title,
+        collectionId: changes.collectionId,
+        thumbnailUrl: changes.thumbnailUrl,
+        tags: changes.tags,
+        occasion: changes.occasion,
+        industry: changes.industry,
+        visibility: changes.visibility,
+        allowFork: changes.allowFork,
+        dimensions: changes.dimensions && json(changes.dimensions),
+        materialSpec: changes.materialSpec && json(changes.materialSpec),
+        canvasState: changes.canvasState && json(changes.canvasState),
+      },
+      select: detailSelect,
+    });
+    return toDetail(row);
+  }
+
+  async setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail> {
+    const row = await this.prisma.packagingProject.update({
+      where: { id: projectId },
+      data: { status: state.status, deletedAt: state.deletedAt },
+      select: detailSelect,
+    });
+    return toDetail(row);
+  }
+
+  async delete(projectId: string): Promise<void> {
+    await this.prisma.packagingProject.delete({ where: { id: projectId } });
+  }
+
+  async findTrashedBefore(cutoff: Date, limit: number): Promise<string[]> {
+    // Uses the (status, deleted_at) index.
+    const rows = await this.prisma.packagingProject.findMany({
+      where: { status: 'DELETED', deletedAt: { lt: cutoff } },
+      select: { id: true },
+      orderBy: { deletedAt: 'asc' },
+      take: limit,
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]> {
+    if (!projectIds.length) return [];
+    // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
+    // Prisma stores DateTime as UTC in `timestamp` columns: compare in UTC whatever the session time zone.
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      DELETE FROM packaging_projects
+      WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED'
+        AND deleted_at < (${cutoff.toISOString()}::timestamptz AT TIME ZONE 'UTC')
+      RETURNING id`;
+    return rows.map((row) => row.id);
+  }
+}
