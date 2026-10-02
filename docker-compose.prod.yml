@@ -1,0 +1,61 @@
+# Production overrides: HTTPS through Caddy on one domain, internal services not published.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, and the STORAGE_* variables of Cloudflare R2.
+# Requires Docker Compose >= 2.24 (`!reset`).
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: wrapfit-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env (e.g. wrapfit.vn)}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env (Let's Encrypt notices)}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - wrapfit-network
+
+  postgres:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
+  seaweedfs:
+    ports: !reset []
+
+  backend:
+    ports: !reset []
+    environment:
+      FRONTEND_URL: https://${APP_DOMAIN}
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      GOOGLE_CALLBACK_URL: https://${APP_DOMAIN}/api/auth/google/callback
+
+  frontend:
+    ports: !reset []
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}/api
+        NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN}
+    environment:
+      NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}/api
+
+volumes:
+  caddy_data:
+    name: wrapfit_caddy_data
+  caddy_config:
+    name: wrapfit_caddy_config

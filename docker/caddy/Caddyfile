@@ -1,0 +1,20 @@
+# HTTPS reverse proxy for production (docker-compose.prod.yml).
+# Caddy obtains and renews Let's Encrypt certificates automatically for APP_DOMAIN
+# (its DNS A record must point at the server, ports 80 and 443 open).
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# API, Swagger and Socket.IO (/api/socket.io) on the same origin as the frontend:
+	# no CORS, and the HttpOnly auth cookies are first-party.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
