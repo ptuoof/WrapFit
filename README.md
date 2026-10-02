@@ -49,7 +49,7 @@ Dự án được tổ chức rõ ràng theo 3 module độc lập giúp 3 IT l�
 ```text
 WrapFit/
 ├── fe/                 # FRONTEND STUDIO (Next.js 14, Three.js, GSAP) — Phụ trách: IT 1
-├── be/                 # BACKEND SERVICES (Express, Prisma, PostgreSQL, S3) — Phụ trách: IT 3
+├── be/                 # BACKEND API (NestJS 11, Prisma, PostgreSQL) — Phụ trách: IT 3 (xem be/README.md)
 ├── shared/             # PACKAGING PHYSICS & TYPES (Parametric Math, FitCheck) — Phụ trách: IT 2
 └── .agents/            # AI AGENT SKILLS & RUNBOOKS
 ```
@@ -64,7 +64,7 @@ WrapFit/
 | **2D Canvas** | Paper.js / Fabric.js / SVG.js | Trình biên tập kéo thả đồ họa vector 2D |
 | **3D Rendering** | Three.js / React Three Fiber | Render khối hộp và texture thời gian thực |
 | **Motion & UX** | GSAP (Timeline, ScrollTrigger, Flip) | Diễn hoạt gập nắp hộp & Landing Page |
-| **Backend & Data**| Node.js / FastAPI, PostgreSQL, Supabase/S3 | Quản lý dự án, tài khoản & Cloud Storage |
+| **Backend & Data**| NestJS 11, Prisma, PostgreSQL, S3 / Cloudflare R2 | Quản lý dự án, tài khoản & Cloud Storage (kiến trúc: `docs/07`, `docs/08`) |
 | **AI Integration** | Model Context Protocol (MCP), LLM APIs | Gợi ý Theme hoa văn & Hỗ trợ FitCheck |
 
 ---
@@ -76,12 +76,14 @@ Chỉ với 1 lệnh duy nhất tại thư mục gốc, Docker sẽ tự động
 
 ```bash
 # Đứng tại thư mục gốc WrapFit
+cp .env.example .env   # BẮT BUỘC điền JWT_ACCESS_SECRET và JWT_REFRESH_SECRET (>= 32 ký tự)
 docker compose up --build
 ```
 
 - **Frontend Studio**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:5000/api](http://localhost:5000/api)
-- **API Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Backend API**: [http://localhost:8080/api](http://localhost:8080/api)
+- **API Docs (Swagger)**: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+- **API Health Check**: [http://localhost:8080/api/health](http://localhost:8080/api/health)
 - **PostgreSQL**: `localhost:5432` (user: `postgres`, password: `password`, db: `wrapfit`)
 
 *(Để dừng toàn bộ containers, nhấn `Ctrl + C` hoặc chạy `docker compose down`)*.
@@ -102,10 +104,19 @@ cd WrapFit
 # 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 3. Biên dịch shared library & chạy đồng thời FE + BE
+# 3. Chạy PostgreSQL + lưu trữ file (SeaweedFS) và chuẩn bị database cho backend
+docker compose up -d postgres seaweedfs storage-init
+cp be/.env.example be/.env          # đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
+npm --workspace=be run db:generate
+npm --workspace=be run db:migrate
+npm --workspace=be run db:seed
+
+# 4. Biên dịch shared library & chạy đồng thời FE + BE
 npm run build:shared
 npm run dev:be & npm run dev:fe
 ```
+
+Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md).
 
 ---
 

@@ -1,11 +1,17 @@
 #!/bin/sh
 set -e
 
-echo "[WrapFit Docker] Applying database schema migrations..."
-npx prisma db push --schema=be/prisma/schema.prisma --skip-generate
+# Same image, two processes: `docker-entrypoint.sh worker` starts the BullMQ export worker (no migrations, no HTTP).
+if [ "$1" = "worker" ]; then
+  echo "[WrapFit Docker] Starting WrapFit export worker..."
+  exec node dist/worker.js
+fi
 
-echo "[WrapFit Docker] Seeding default templates and demo user..."
-npx tsx be/prisma/seed.ts || true
+echo "[WrapFit Docker] Applying database migrations..."
+npx prisma migrate deploy
 
-echo "[WrapFit Docker] Starting WrapFit Backend on port ${PORT:-5000}..."
-exec node be/dist/index.js
+echo "[WrapFit Docker] Seeding box templates (idempotent)..."
+npx prisma db seed
+
+echo "[WrapFit Docker] Starting WrapFit Backend (NestJS) on port ${PORT:-8080}..."
+exec node dist/main.js

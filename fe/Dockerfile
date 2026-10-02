@@ -21,7 +21,7 @@ RUN npm run build:shared
 COPY fe ./fe
 
 # In Next.js, NEXT_PUBLIC_* variables are inlined at build time
-ARG NEXT_PUBLIC_API_URL=http://localhost:5000/api
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ARG NEXT_PUBLIC_APP_NAME="WrapFit Studio"
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 

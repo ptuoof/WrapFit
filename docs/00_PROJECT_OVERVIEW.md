@@ -33,7 +33,7 @@ $$\text{GIFT (Khai báo món quà)} \longrightarrow \text{DESIGN (Thiết kế c
 ```mermaid
 graph TD
     User([Người dùng / Shop quà]) <-->|HTTPS / UI 2D & 3D| FE[Frontend Studio - Next.js 14 / Three.js / Port 3000]
-    FE <-->|REST API / JSON| BE[Backend Server - Express / Node.js / Port 5000]
+    FE <-->|REST API / JSON| BE[Backend API - NestJS 11 / Node.js / Port 8080]
     BE <-->|Prisma ORM| DB[(PostgreSQL Database / Docker Port 5432)]
     BE <-->|S3 API| Storage[(Cloud Storage S3 / R2)]
     FE -. Dùng chung công thức toán .-> Shared[Thư viện @wrapfit/shared]
