@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, getSchemaPath, SwaggerModule } from '@nestjs/swagger';
+import { ErrorResponseDto } from './common/dto/error-response.dto';
 import { AppConfigService } from './config/app-config.type';
 import { ACCESS_COOKIE } from './modules/auth/auth.constants';
 
@@ -21,7 +22,21 @@ export function setupSwagger(app: INestApplication): void {
       .addCookieAuth(ACCESS_COOKIE)
       .addBearerAuth()
       .build(),
+    { extraModels: [ErrorResponseDto] },
   );
+
+  // Every operation documents the common error body (status codes are listed in docs/03_API_DESIGN.md).
+  const errorResponse = {
+    description: 'Error (4xx / 5xx), normalized by AllExceptionsFilter',
+    content: { 'application/json': { schema: { $ref: getSchemaPath(ErrorResponseDto) } } },
+  };
+  for (const pathItem of Object.values(document.paths)) {
+    for (const operation of Object.values(pathItem)) {
+      if (operation && typeof operation === 'object' && 'responses' in operation) {
+        operation.responses.default ??= errorResponse;
+      }
+    }
+  }
 
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: { persistAuthorization: true },

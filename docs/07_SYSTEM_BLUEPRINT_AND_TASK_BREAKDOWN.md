@@ -495,6 +495,8 @@ flowchart TD
 > **Bổ sung ở IT3-09** (migration `it3_09_ai_generations`): bảng `AiGeneration` — đếm lượt gọi AI sinh hoa văn trong 24 giờ theo gói và lưu số token.  
 > **Bổ sung ở IT3-10** (migration `it3_10_qr_code_files`): giá trị `QR_CODE` cho enum `FilePurpose` — file QR do backend sinh được ghi vào `StoredFile` để xóa cùng dự án.  
 > **Bổ sung ở IT3-11** (migration `it3_11_export_files`): giá trị `EXPORT` cho `FilePurpose` — file in do worker xuất được ghi vào `StoredFile`.  
+> **Bổ sung sau review** (migration `snapshot_is_automatic`): cột `ProjectSnapshot.isAutomatic` — mốc tự động (bản xuất in, sao lưu trước khi khôi phục) không tính vào giới hạn 50 mốc thủ công.  
+> **Bổ sung sau review** (migration `project_fitcheck_score`): cột `PackagingProject.fitcheckScore` — điểm FitCheck phía server, hiển thị trên thẻ Dashboard (UC-03) và kiểm duyệt Thư viện cộng đồng ≥ 90 (UC-14).  
 > Trong NestJS, Prisma Client chỉ được dùng thông qua `PrismaService` (`be/src/prisma/prisma.service.ts`) — không tự khởi tạo `new PrismaClient()` ở nơi khác.
 
 ```prisma
@@ -696,6 +698,7 @@ model PackagingProject {
   materialSpec  Json              @map("material_spec") // { type, gsm, caliper, finish }
   canvasState   Json              @map("canvas_state") // { elements: [...] }
   fitcheckState Json?             @map("fitcheck_state") // { isValid, score, violations }
+  fitcheckScore Int?              @map("fitcheck_score") // = fitcheckState.score (UC-03, UC-14)
   thumbnailUrl  String?           @map("thumbnail_url")
   tags          String[]          @default([])
   occasion      Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
@@ -732,6 +735,7 @@ model ProjectSnapshot {
   canvasState Json     @map("canvas_state")
   dimensions  Json
   previewUrl  String?  @map("preview_url")
+  isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động: không tính vào giới hạn 50 mốc thủ công
   createdAt   DateTime @default(now()) @map("created_at")
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -884,7 +888,7 @@ model AiGeneration {
 
 - **Phân trang**: Query `?page=1&limit=20` (`limit` tối đa 100) qua `PaginationQueryDto`. Phản hồi:
   ```json
-  { "data": [ ... ], "meta": { "page": 1, "limit": 20, "total": 134, "totalPages": 7 } }
+  { "items": [ ... ], "meta": { "page": 1, "limit": 20, "total": 134, "totalPages": 7 } }
   ```
 - **Định dạng lỗi** (do `AllExceptionsFilter` chuẩn hóa):
   ```json

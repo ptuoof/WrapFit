@@ -4,6 +4,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Cap Node memory to prevent SWC/Webpack RAM spikes during build
+ENV NODE_OPTIONS="--max-old-space-size=1536"
+
 # Layer 1: Copy workspace descriptors for caching
 COPY package.json package-lock.json tsconfig.json ./
 COPY shared/package.json ./shared/
@@ -29,28 +32,31 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
+# Build standalone Next.js bundle
 RUN npm --workspace=fe run build
 
 # ===================================================
-# Stage 2: Production Runtime Stage
+# Stage 2: Ultra-light Production Runtime Stage (Standalone)
 # ===================================================
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Security: non-root user
 RUN addgroup -S wrapfit && adduser -S wrapfit -G wrapfit
 
-COPY package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/fe ./fe
+# Copy standalone output: traces only needed files (~80MB RAM at runtime vs 600MB+)
+COPY --from=builder /app/fe/.next/standalone ./
+COPY --from=builder /app/fe/.next/static ./fe/.next/static
+COPY --from=builder /app/fe/package.json ./fe/package.json
 
 USER wrapfit:wrapfit
 
 EXPOSE 3000
 
-# Run Next.js production server binding to all interfaces
-CMD ["npm", "--workspace=fe", "run", "start", "--", "-p", "3000", "-H", "0.0.0.0"]
+# Standalone Next.js server starts in < 1 second using minimal RAM
+CMD ["node", "fe/server.js"]

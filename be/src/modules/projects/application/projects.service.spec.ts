@@ -24,8 +24,23 @@ describe('ProjectsService', () => {
       status: 'ACTIVE',
       template: { id: 'tuck-top', name: 'Tuck top' },
       materialSpec: { type: 'kraft', gsm: 300, caliper: 0.4, finish: 'matte' },
+      dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
+      canvasState: { elements: [] },
       ...overrides,
     }) as ProjectDetail;
+  /** A text element `x` mm from the left edge of the front panel. */
+  const text = (x: number) => ({
+    id: 't',
+    type: 'text' as const,
+    panelId: 'front',
+    x,
+    y: 10,
+    width: 20,
+    height: 10,
+    rotation: 0,
+    content: 'Tết',
+  });
+  const report = { isValidForProduction: true, score: 100, violations: [], auditedAt: '2026-10-01T00:00:00.000Z' };
   const createDto = (overrides: Partial<CreateProjectDto> = {}) =>
     ({ templateId: 'tuck-top', title: 'Gift box', dimensions: { length: 120, width: 80, height: 60 }, ...overrides }) as CreateProjectDto;
 
@@ -44,8 +59,11 @@ describe('ProjectsService', () => {
       delete: jest.fn(),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
       deleteTrashed: jest.fn().mockResolvedValue(['p-1', 'p-3']),
+      findUnchecked: jest.fn().mockResolvedValue([]),
+      saveFitCheck: jest.fn(),
     };
     files = {
+      detachSharedFiles: jest.fn(),
       listProjectFiles: jest.fn().mockResolvedValue([
         { projectId: 'p-1', key: 'a.png' },
         { projectId: 'p-2', key: 'b.png' },
@@ -74,11 +92,25 @@ describe('ProjectsService', () => {
         dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
         materialSpec: { type: 'ivory', gsm: 300, caliper: 0.35, finish: 'matte' },
         canvasState: { elements: [] },
+        fitCheck: expect.objectContaining({ isValidForProduction: true, score: 100, violations: [] }),
         tags: [],
         occasion: null,
         industry: null,
       });
       expect(repo.countTemplateUse).not.toHaveBeenCalled();
+    });
+
+    it('runs FitCheck on the server (short panel ids included)', async () => {
+      await service.create(userId, createDto({ canvasState: { elements: [text(0.5)] } }));
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fitCheck: expect.objectContaining({
+            isValidForProduction: false,
+            score: 70,
+            violations: [expect.objectContaining({ code: 'CREASE_OVERLAP', severity: 'error' })],
+          }),
+        }),
+      );
     });
 
     describe('from a curated design template', () => {
@@ -160,6 +192,11 @@ describe('ProjectsService', () => {
     expect(result.meta).toEqual({ total: 45, page: 2, limit: 20, totalPages: 3 });
   });
 
+  it('list filters by box structure', async () => {
+    await service.list(userId, Object.assign(new QueryProjectsDto(), { templateId: 'pillow' }));
+    expect(repo.list).toHaveBeenCalledWith(expect.objectContaining({ templateId: 'pillow' }));
+  });
+
   describe('update', () => {
     it('refuses to edit a project in the trash', async () => {
       repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
@@ -177,6 +214,17 @@ describe('ProjectsService', () => {
       await expect(
         service.update('project-1', userId, { dimensions: { length: 700, width: 100, height: 50 } }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('recomputes FitCheck when the canvas or the dimensions change, not for other fields', async () => {
+      await service.update('project-1', userId, { canvasState: { elements: [text(1.5)] } });
+      expect(repo.update).toHaveBeenLastCalledWith(
+        'project-1',
+        expect.objectContaining({ fitCheck: expect.objectContaining({ score: 90, isValidForProduction: true }) }),
+      );
+
+      await service.update('project-1', userId, { title: 'Hộp mới' });
+      expect(repo.update.mock.lastCall![1]).not.toHaveProperty('fitCheck');
     });
 
     it('allows removing the project from its collection without an ownership lookup', async () => {
@@ -208,7 +256,7 @@ describe('ProjectsService', () => {
           collection: { id: 'c-1', title: 'Tết', colorTag: null },
           dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
           canvasState: { elements: [] },
-          fitcheckState: { score: 90 },
+          fitcheckState: report,
           tags: ['tet'],
           thumbnailUrl: 'https://cdn/x.png',
         }),
@@ -222,7 +270,7 @@ describe('ProjectsService', () => {
         dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
         materialSpec: { type: 'kraft', gsm: 300, caliper: 0.4, finish: 'matte' },
         canvasState: { elements: [] },
-        fitcheckState: { score: 90 },
+        fitCheck: report,
         tags: ['tet'],
         forkedFromId: null,
       });
@@ -251,6 +299,28 @@ describe('ProjectsService', () => {
     expect(repo.update).toHaveBeenCalledWith('project-1', { visibility: 'UNLISTED', allowFork: false });
   });
 
+  it('backfillFitChecks scores projects saved without a score, page by page', async () => {
+    const unchecked = (id: string, templateId = 'tuck-top') => ({
+      id,
+      templateId,
+      dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
+      canvasState: { elements: [text(0.5)] },
+    });
+    repo.findUnchecked
+      .mockResolvedValueOnce([unchecked('a'), unchecked('b', 'hexagon')])
+      .mockResolvedValueOnce([unchecked('c')])
+      .mockResolvedValueOnce([]);
+
+    await expect(service.backfillFitChecks()).resolves.toBe(2);
+
+    expect(repo.findUnchecked.mock.calls.map(([afterId]) => afterId)).toEqual([null, 'b', 'c']);
+    // "hexagon" has no dieline generator: skipped, and the cursor still moves on.
+    expect(repo.saveFitCheck.mock.calls.map(([id, fitCheck]) => [id, fitCheck.score])).toEqual([
+      ['a', 70],
+      ['c', 70],
+    ]);
+  });
+
   describe('purgeExpiredTrash', () => {
     it('deletes what entered the trash more than 30 days ago, then their files', async () => {
       const cutoff = new Date('2026-10-01T00:00:00.000Z');
@@ -258,6 +328,11 @@ describe('ProjectsService', () => {
 
       expect(repo.findTrashedBefore).toHaveBeenCalledWith(cutoff, expect.any(Number));
       expect(repo.deleteTrashed).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3'], cutoff);
+      // Files still shown by copies are detached before the file list is read.
+      expect(files.detachSharedFiles).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3']);
+      expect(files.detachSharedFiles.mock.invocationCallOrder[0]).toBeLessThan(
+        files.listProjectFiles.mock.invocationCallOrder[0],
+      );
       // p-2 was restored between the lookup and the deletion: its file must stay.
       expect(files.deleteObjects).toHaveBeenCalledWith(['a.png', 'c.png']);
     });
@@ -276,6 +351,7 @@ describe('ProjectsService', () => {
     files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
     await service.remove('project-1');
     expect(repo.delete).toHaveBeenCalledWith('project-1');
+    expect(files.detachSharedFiles).toHaveBeenCalledWith(['project-1']);
     expect(files.deleteObjects).toHaveBeenCalledWith(['thumb.webp']);
   });
 

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectVisibility } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum } from 'class-validator';
+import { IsOptionalNotNull } from '../../../../common/decorators/optional-not-null.decorator';
 
 /** Omitted fields stay unchanged. */
 export class ChangeVisibilityDto {
@@ -8,12 +9,12 @@ export class ChangeVisibilityDto {
     enum: ProjectVisibility,
     description: 'PRIVATE = only me, UNLISTED = anyone with the /p/<slug> link, PUBLIC = also in the community',
   })
-  @IsOptional()
+  @IsOptionalNotNull()
   @IsEnum(ProjectVisibility)
   visibility?: ProjectVisibility;
 
   @ApiPropertyOptional({ description: 'Let other users remix (fork) the design; default true' })
-  @IsOptional()
+  @IsOptionalNotNull()
   @IsBoolean()
   allowFork?: boolean;
 }

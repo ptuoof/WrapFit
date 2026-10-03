@@ -16,6 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { ACCESS_COOKIE } from '../auth/auth.constants';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
+import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UsersService } from './users.service';
 
@@ -35,6 +36,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Update the current user profile' })
   updateMe(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Patch('me/brand-kit')
+  @ApiOperation({ summary: 'Save my brand kit: logo, 3-5 colors, fonts and slogan (UC-02)' })
+  updateBrandKit(@CurrentUser('id') userId: string, @Body() dto: UpdateBrandKitDto) {
+    return this.usersService.updateBrandKit(userId, dto);
   }
 
   @Get()

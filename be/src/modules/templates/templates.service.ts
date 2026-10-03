@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { paginate, Paginated, toSkipTake } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MIN_COMMUNITY_FITCHECK_SCORE } from '../projects/domain/project-fitcheck';
 import { readDimensionLimits } from '../projects/domain/project.policy';
 import { QueryHubDto } from './dto/query-hub.dto';
 
@@ -33,6 +34,7 @@ const communityCardSelect = {
   tags: true,
   likesCount: true,
   viewsCount: true,
+  fitcheckScore: true,
   user: { select: { fullName: true, shopName: true, avatarUrl: true } },
   _count: { select: { forks: true } },
 } satisfies Prisma.PackagingProjectSelect;
@@ -116,11 +118,15 @@ export class TemplatesService {
     return paginate(rows.map(curatedCard), total, query);
   }
 
-  /** PUBLIC projects that are not archived or trashed, most liked first. */
+  /**
+   * PUBLIC projects that are not archived or trashed, most liked first. Only print-ready designs are listed
+   * (UC-14: server-side FitCheck score >= 90); others stay reachable by their public link.
+   */
   private async community(query: QueryHubDto): Promise<Paginated<CommunityCard>> {
     const where: Prisma.PackagingProjectWhereInput = {
       visibility: 'PUBLIC',
       status: 'ACTIVE',
+      fitcheckScore: { gte: MIN_COMMUNITY_FITCHECK_SCORE },
       templateId: query.structure,
       occasion: query.occasion,
       industry: query.industry,

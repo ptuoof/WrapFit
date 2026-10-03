@@ -1,13 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsOptionalNotNull } from '../../../common/decorators/optional-not-null.decorator';
 import { trim } from '../../../common/utils/transform.util';
 import { HEX_COLOR } from './create-collection.dto';
 
 /** Omitted fields stay unchanged; `null` clears `description`. */
 export class UpdateCollectionDto {
   @ApiPropertyOptional()
-  @IsOptional()
+  @IsOptionalNotNull()
   @Transform(trim)
   @IsString()
   @IsNotEmpty()

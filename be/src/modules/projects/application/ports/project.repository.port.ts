@@ -1,4 +1,4 @@
-import type { BoxDimensions, MaterialSpecification } from '@wrapfit/shared';
+import type { BoxDimensions, CanvasElement, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
 import type { LifecycleState } from '../../domain/project-lifecycle';
 import type {
   CanvasState,
@@ -29,8 +29,8 @@ export interface NewProject {
   tags: string[];
   occasion?: Occasion | null;
   industry?: Industry | null;
-  /** Copied by duplicate / fork; new projects start without a FitCheck result. */
-  fitcheckState?: unknown;
+  /** Server-side FitCheck of the new canvas (copied by duplicate / fork). Stored with its score. */
+  fitCheck: FitCheckReport | null;
   /** Set by a remix (fork) of a public project. */
   forkedFromId?: string | null;
 }
@@ -42,6 +42,8 @@ export interface ProjectChanges {
   dimensions?: BoxDimensions;
   materialSpec?: MaterialSpecification;
   canvasState?: CanvasState;
+  /** Set together with a new canvas or new dimensions. */
+  fitCheck?: FitCheckReport | null;
   thumbnailUrl?: string | null;
   tags?: string[];
   occasion?: Occasion | null;
@@ -56,6 +58,8 @@ export interface ProjectListQuery {
   /** `null` = only projects outside any collection. */
   collectionId?: string | null;
   search?: string;
+  /** Box structure (template id), e.g. `tuck-top`. */
+  templateId?: string;
   sortBy: 'updatedAt' | 'createdAt' | 'title';
   order: 'asc' | 'desc';
   skip: number;
@@ -69,6 +73,14 @@ export interface DesignTemplateSource {
   isActive: boolean;
   materialSpec: MaterialSpecification;
   canvasState: CanvasState;
+}
+
+/** A project whose FitCheck score is missing (saved before scores were stored). */
+export interface UncheckedProject {
+  id: string;
+  templateId: string;
+  dimensions: BoxDimensions;
+  canvasState: { elements?: CanvasElement[] };
 }
 
 export interface IProjectRepository {
@@ -92,4 +104,8 @@ export interface IProjectRepository {
    * been restored meanwhile) and returns the ids actually deleted.
    */
   deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]>;
+  /** Projects without a FitCheck score, by ascending id after `afterId` (at most `limit`). */
+  findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]>;
+  /** Stores a FitCheck result without touching `updatedAt` (the dashboard order). */
+  saveFitCheck(projectId: string, fitCheck: FitCheckReport): Promise<void>;
 }

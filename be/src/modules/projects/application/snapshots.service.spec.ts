@@ -9,6 +9,7 @@ describe('SnapshotsService', () => {
     id: 'project-1',
     status: 'ACTIVE',
     thumbnailUrl: 'https://cdn/now.png',
+    template: { id: 'tuck-top', name: 'Tuck top' },
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
     canvasState: { elements: [] },
   } as unknown as ProjectDetail;
@@ -27,7 +28,7 @@ describe('SnapshotsService', () => {
     projects = { findOne: jest.fn().mockResolvedValue(current) };
     repo = {
       list: jest.fn(),
-      count: jest.fn().mockResolvedValue(0),
+      countManual: jest.fn().mockResolvedValue(0),
       create: jest.fn(),
       findContent: jest.fn().mockResolvedValue(saved),
       delete: jest.fn().mockResolvedValue(true),
@@ -47,7 +48,7 @@ describe('SnapshotsService', () => {
   });
 
   it('caps manual snapshots per project', async () => {
-    repo.count.mockResolvedValueOnce(MAX_SNAPSHOTS_PER_PROJECT);
+    repo.countManual.mockResolvedValueOnce(MAX_SNAPSHOTS_PER_PROJECT);
     await expect(service.create('project-1', { name: 'one too many' })).rejects.toThrow(ConflictException);
     expect(repo.create).not.toHaveBeenCalled();
   });
@@ -58,15 +59,20 @@ describe('SnapshotsService', () => {
     await expect(service.restore('project-1', 'snap-1')).rejects.toThrow(ConflictException);
   });
 
-  it('backs up the current state before restoring', async () => {
+  it('backs up the current state before restoring, and re-runs FitCheck on the restored design', async () => {
     await service.restore('project-1', 'snap-1');
     expect(repo.findContent).toHaveBeenCalledWith('project-1', 'snap-1');
-    expect(repo.restore).toHaveBeenCalledWith('project-1', saved, {
-      name: 'Trước khi khôi phục: Mốc 1',
-      previewUrl: 'https://cdn/now.png',
-      canvasState: current.canvasState,
-      dimensions: current.dimensions,
-    });
+    expect(repo.restore).toHaveBeenCalledWith(
+      'project-1',
+      saved,
+      {
+        name: 'Trước khi khôi phục: Mốc 1',
+        previewUrl: 'https://cdn/now.png',
+        canvasState: current.canvasState,
+        dimensions: current.dimensions,
+      },
+      expect.objectContaining({ isValidForProduction: true, score: 100 }),
+    );
   });
 
   it('answers 404 for snapshots of other projects', async () => {

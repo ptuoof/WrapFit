@@ -13,6 +13,7 @@ import {
   findDimensionViolations,
   readDimensionLimits,
 } from '../domain/project.policy';
+import { fitCheckOf } from '../domain/project-fitcheck';
 import { changeStatus, duplicateTitle, purgeCutoff } from '../domain/project-lifecycle';
 import {
   DEFAULT_MATERIAL,
@@ -32,6 +33,8 @@ import { IProjectRepository, PROJECT_REPOSITORY, ProjectChanges } from './ports/
 
 /** Projects permanently deleted per trash purge run. */
 const PURGE_BATCH = 500;
+/** Projects checked per query by the FitCheck backfill. */
+const BACKFILL_BATCH = 200;
 
 @Injectable()
 export class ProjectsService {
@@ -60,6 +63,7 @@ export class ProjectsService {
     const materialSpec = dto.materialSpec ?? design?.materialSpec ?? DEFAULT_MATERIAL;
     const dimensions = this.completeDimensions(dto.dimensions, materialSpec);
     this.assertDimensionsFit(dimensions, template.formulaSchema);
+    const canvasState = dto.canvasState ?? design?.canvasState ?? EMPTY_CANVAS;
 
     const project = await this.projects.create({
       userId,
@@ -68,7 +72,8 @@ export class ProjectsService {
       title: dto.title,
       dimensions,
       materialSpec,
-      canvasState: dto.canvasState ?? design?.canvasState ?? EMPTY_CANVAS,
+      canvasState,
+      fitCheck: fitCheckOf(template.id, dimensions, canvasState.elements),
       tags: dto.tags ?? [],
       occasion: dto.occasion ?? null,
       industry: dto.industry ?? null,
@@ -81,6 +86,7 @@ export class ProjectsService {
     const { items, total } = await this.projects.list({
       userId,
       status: query.status,
+      templateId: query.templateId,
       collectionId: query.collectionId === NO_COLLECTION ? null : query.collectionId,
       search: query.q || undefined,
       sortBy: query.sortBy,
@@ -119,6 +125,14 @@ export class ProjectsService {
       const template = await this.projects.findTemplateRules(project.template.id);
       changes.dimensions = this.completeDimensions(dto.dimensions, dto.materialSpec ?? project.materialSpec);
       this.assertDimensionsFit(changes.dimensions, template?.formulaSchema);
+    }
+    // The FitCheck score on the dashboard and in the template hub always matches the saved design.
+    if (changes.canvasState || changes.dimensions) {
+      changes.fitCheck = fitCheckOf(
+        project.template.id,
+        changes.dimensions ?? project.dimensions,
+        (changes.canvasState ?? project.canvasState).elements,
+      );
     }
 
     return this.projects.update(projectId, changes);
@@ -180,7 +194,7 @@ export class ProjectsService {
       dimensions: source.dimensions,
       materialSpec: source.materialSpec,
       canvasState: source.canvasState,
-      fitcheckState: source.fitcheckState,
+      fitCheck: source.fitcheckState,
       tags: source.tags,
       occasion: source.occasion,
       industry: source.industry,
@@ -197,10 +211,32 @@ export class ProjectsService {
     const candidates = await this.projects.findTrashedBefore(cutoff, PURGE_BATCH);
     if (!candidates.length) return 0;
 
+    await this.files.detachSharedFiles(candidates);
     const files = await this.files.listProjectFiles(candidates);
     const deleted = new Set(await this.projects.deleteTrashed(candidates, cutoff));
     await this.files.deleteObjects(files.filter((file) => deleted.has(file.projectId)).map((file) => file.key));
     return deleted.size;
+  }
+
+  /**
+   * Called once at startup by FitCheckBackfillTask: computes the FitCheck of projects saved before scores were stored
+   * (they would otherwise stay out of the community hub). Returns how many projects were checked.
+   */
+  async backfillFitChecks(): Promise<number> {
+    let checked = 0;
+    let afterId: string | null = null;
+    for (;;) {
+      const batch = await this.projects.findUnchecked(afterId, BACKFILL_BATCH);
+      if (!batch.length) return checked;
+      for (const project of batch) {
+        const fitCheck = fitCheckOf(project.templateId, project.dimensions, project.canvasState.elements ?? []);
+        if (fitCheck) {
+          await this.projects.saveFitCheck(project.id, fitCheck);
+          checked++;
+        }
+      }
+      afterId = batch[batch.length - 1].id;
+    }
   }
 
   async remove(projectId: string): Promise<void> {
@@ -208,6 +244,7 @@ export class ProjectsService {
     if (!canDeletePermanently(project.status)) {
       throw new ConflictException('Move the project to the trash before deleting it permanently');
     }
+    await this.files.detachSharedFiles([projectId]);
     const files = await this.files.listProjectFiles([projectId]);
     await this.projects.delete(projectId);
     await this.files.deleteObjects(files.map((file) => file.key));

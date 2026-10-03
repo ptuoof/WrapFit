@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { FitCheckReport } from '@wrapfit/shared';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   DesignTemplateSource,
@@ -8,6 +9,7 @@ import type {
   ProjectChanges,
   ProjectListQuery,
   TemplateRules,
+  UncheckedProject,
 } from '../application/ports/project.repository.port';
 import type { LifecycleState } from '../domain/project-lifecycle';
 import type { ProjectDetail, ProjectSummary } from '../domain/project.types';
@@ -64,6 +66,7 @@ export class PrismaProjectRepository implements IProjectRepository {
     const where: Prisma.PackagingProjectWhereInput = {
       userId: query.userId,
       status: query.status,
+      templateId: query.templateId,
       ...(query.collectionId !== undefined && { collectionId: query.collectionId }),
       ...(query.search && {
         OR: [
@@ -97,7 +100,8 @@ export class PrismaProjectRepository implements IProjectRepository {
         dimensions: json(project.dimensions),
         materialSpec: json(project.materialSpec),
         canvasState: json(project.canvasState),
-        fitcheckState: nullableJson(project.fitcheckState),
+        fitcheckState: nullableJson(project.fitCheck),
+        fitcheckScore: project.fitCheck?.score ?? null,
         forkedFromId: project.forkedFromId ?? null,
         tags: project.tags,
         occasion: project.occasion ?? null,
@@ -123,6 +127,10 @@ export class PrismaProjectRepository implements IProjectRepository {
         dimensions: changes.dimensions && json(changes.dimensions),
         materialSpec: changes.materialSpec && json(changes.materialSpec),
         canvasState: changes.canvasState && json(changes.canvasState),
+        ...(changes.fitCheck !== undefined && {
+          fitcheckState: nullableJson(changes.fitCheck),
+          fitcheckScore: changes.fitCheck?.score ?? null,
+        }),
       },
       select: detailSelect,
     });
@@ -163,5 +171,23 @@ export class PrismaProjectRepository implements IProjectRepository {
         AND deleted_at < (${cutoff.toISOString()}::timestamptz AT TIME ZONE 'UTC')
       RETURNING id`;
     return rows.map((row) => row.id);
+  }
+
+  async findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]> {
+    const rows = await this.prisma.packagingProject.findMany({
+      where: { fitcheckScore: null, ...(afterId && { id: { gt: afterId } }) },
+      select: { id: true, templateId: true, dimensions: true, canvasState: true },
+      orderBy: { id: 'asc' },
+      take: limit,
+    });
+    return rows as unknown as UncheckedProject[];
+  }
+
+  async saveFitCheck(projectId: string, fitCheck: FitCheckReport): Promise<void> {
+    // Raw SQL: a Prisma `update` would bump `updated_at` and reorder the owner's dashboard.
+    await this.prisma.$executeRaw`
+      UPDATE packaging_projects
+      SET fitcheck_state = ${JSON.stringify(fitCheck)}::jsonb, fitcheck_score = ${fitCheck.score}
+      WHERE id = ${projectId}::uuid`;
   }
 }

@@ -1,4 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { fitCheckOf } from '../domain/project-fitcheck';
 import { canEdit } from '../domain/project.policy';
 import { MAX_TITLE_LENGTH, ProjectDetail, SnapshotSummary } from '../domain/project.types';
 import { CreateSnapshotDto } from '../presentation/dto/create-snapshot.dto';
@@ -23,9 +24,9 @@ export class SnapshotsService {
   /** Saves the current canvas and dimensions under a name. */
   async create(projectId: string, dto: CreateSnapshotDto): Promise<SnapshotSummary> {
     const project = await this.editableProject(projectId);
-    if ((await this.snapshots.count(projectId)) >= MAX_SNAPSHOTS_PER_PROJECT) {
+    if ((await this.snapshots.countManual(projectId)) >= MAX_SNAPSHOTS_PER_PROJECT) {
       throw new ConflictException(
-        `A project keeps at most ${MAX_SNAPSHOTS_PER_PROJECT} snapshots; delete old ones first`,
+        `A project keeps at most ${MAX_SNAPSHOTS_PER_PROJECT} manual snapshots; delete old ones first`,
       );
     }
     return this.snapshots.create(projectId, {
@@ -48,12 +49,17 @@ export class SnapshotsService {
     const snapshot = await this.snapshots.findContent(projectId, snapshotId);
     if (!snapshot) throw new NotFoundException('Snapshot not found');
 
-    return this.snapshots.restore(projectId, snapshot, {
-      name: `Trước khi khôi phục: ${snapshot.name}`.slice(0, MAX_TITLE_LENGTH),
-      previewUrl: project.thumbnailUrl,
-      canvasState: project.canvasState,
-      dimensions: project.dimensions,
-    });
+    return this.snapshots.restore(
+      projectId,
+      snapshot,
+      {
+        name: `Trước khi khôi phục: ${snapshot.name}`.slice(0, MAX_TITLE_LENGTH),
+        previewUrl: project.thumbnailUrl,
+        canvasState: project.canvasState,
+        dimensions: project.dimensions,
+      },
+      fitCheckOf(project.template.id, snapshot.dimensions, snapshot.canvasState.elements),
+    );
   }
 
   async remove(projectId: string, snapshotId: string): Promise<void> {

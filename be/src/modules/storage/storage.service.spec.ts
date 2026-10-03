@@ -84,4 +84,14 @@ describe('StorageService', () => {
       build().presignUpload('u-1', { purpose: 'IMAGE', contentType: 'image/png', size: 6 * 1024 * 1024 }),
     ).resolves.toMatchObject({ fileId: 'file-1' });
   });
+
+  it('recognizes the URLs of user uploads only (any scheme), for the print export', () => {
+    const service = build();
+    expect(service.uploadedKeyOf('https://cdn.wrapfit.vn/users/u-1/image/a.png')).toBe('users/u-1/image/a.png');
+    expect(service.uploadedKeyOf('http://cdn.wrapfit.vn/users/u-1/logo/b%20c.svg?v=2')).toBe('users/u-1/logo/b c.svg');
+    expect(service.uploadedKeyOf('https://cdn.wrapfit.vn/projects/p-1/exports/x.pdf')).toBeNull(); // not an upload
+    expect(service.uploadedKeyOf('https://evil.example/users/u-1/image/a.png')).toBeNull();
+    expect(service.uploadedKeyOf('https://cdn.wrapfit.vn.evil.example/users/a.png')).toBeNull();
+    expect(build({ STORAGE_BUCKET: '', STORAGE_PUBLIC_URL: '' }).uploadedKeyOf('https://cdn.wrapfit.vn/users/a.png')).toBeNull();
+  });
 });

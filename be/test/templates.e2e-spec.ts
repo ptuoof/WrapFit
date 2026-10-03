@@ -200,7 +200,13 @@ describe('Template hub (e2e)', () => {
       const unlisted = await create('Hộp link riêng');
       const archived = await create('Hộp đã lưu trữ');
       await create('Hộp riêng tư');
-      for (const p of [quiet, liked, archived]) await share(p.id, 'PUBLIC');
+      // Text 0.5 mm from the fold: FitCheck score 70, below the 90 needed for the hub (UC-14).
+      const notReady = await create('Hộp chưa đạt FitCheck', {
+        canvasState: {
+          elements: [{ id: 't', type: 'text', panelId: 'front', x: 0.5, y: 5, width: 30, height: 8, rotation: 0, content: 'Tết' }],
+        },
+      });
+      for (const p of [quiet, liked, archived, notReady]) await share(p.id, 'PUBLIC');
       await share(unlisted.id, 'UNLISTED');
       await as(ivy).patch(`/api/projects/${archived.id}/status`).send({ status: 'ARCHIVED' }).expect(200);
 
@@ -219,6 +225,7 @@ describe('Template hub (e2e)', () => {
         industry: 'CANDLES',
         likesCount: 1,
         usesCount: 1,
+        fitcheckScore: 100,
         author: { fullName: 'Ivy Candles', shopName: null, avatarUrl: null },
       });
       for (const field of ['id', 'userId', 'canvasState', 'visibility', 'status']) {

@@ -149,6 +149,28 @@ export class StorageService implements IProjectFiles {
     return `${this.publicUrl}/${file.key}`;
   }
 
+  /**
+   * Key of a file uploaded by a user (`users/...`) from its public URL, or null for any other URL. The scheme is
+   * ignored (clients may store the https form of the URL).
+   */
+  uploadedKeyOf(url: string): string | null {
+    if (!this.publicUrl) return null;
+    const strip = (value: string) => value.replace(/^https?:\/\//, '');
+    const base = `${strip(this.publicUrl)}/`;
+    const target = strip(url).split(/[?#]/)[0];
+    if (!target.startsWith(base)) return null;
+    const key = decodeURIComponent(target.slice(base.length));
+    return key.startsWith('users/') ? key : null;
+  }
+
+  /** Downloads a file from the bucket (print exports embed the user's images). */
+  async getObject(key: string): Promise<{ body: Buffer; contentType: string }> {
+    if (!this.client) throw new ServiceUnavailableException('File storage is not configured');
+    const result = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const bytes = await result.Body!.transformToByteArray();
+    return { body: Buffer.from(bytes), contentType: result.ContentType ?? 'application/octet-stream' };
+  }
+
   /** Short-lived download link that saves the file under `fileName` (print exports). */
   presignDownload(key: string, fileName: string, expiresIn: number): Promise<string> {
     if (!this.signer) throw new ServiceUnavailableException('File storage is not configured');
@@ -174,6 +196,39 @@ export class StorageService implements IProjectFiles {
       quotaBytes: STORAGE_QUOTA_BYTES[user.subscriptionTier],
       fileCount: files._count,
     };
+  }
+
+  async detachSharedFiles(projectIds: string[]): Promise<void> {
+    if (!projectIds.length) return;
+    // Only canvas assets are copied by duplicate / remix; QR codes, exports and thumbnails stay with their project.
+    await this.prisma.$executeRaw`
+      UPDATE stored_files f SET project_id = NULL
+      WHERE f.project_id = ANY(${projectIds}::uuid[]) AND f.purpose IN ('LOGO', 'IMAGE')
+        AND (
+          EXISTS (SELECT 1 FROM packaging_projects p
+                  WHERE p.id <> ALL(${projectIds}::uuid[]) AND strpos(p.canvas_state::text, f.key) > 0)
+          OR EXISTS (SELECT 1 FROM project_snapshots s
+                     WHERE s.project_id <> ALL(${projectIds}::uuid[]) AND strpos(s.canvas_state::text, f.key) > 0)
+        )`;
+  }
+
+  /**
+   * Keys of the objects to delete with a user: their uploads and the generated files of their projects, except the
+   * uploads that projects of other users still show (a remix copies the canvas with its image URLs). Read it before
+   * deleting the user: the file rows go away with them (ON DELETE CASCADE).
+   */
+  async listUserFiles(userId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ key: string }[]>`
+      SELECT f.key FROM stored_files f
+      LEFT JOIN packaging_projects owner ON owner.id = f.project_id
+      WHERE (f.user_id = ${userId}::uuid OR owner.user_id = ${userId}::uuid)
+        AND NOT (f.purpose IN ('LOGO', 'IMAGE') AND (
+          EXISTS (SELECT 1 FROM packaging_projects p
+                  WHERE p.user_id <> ${userId}::uuid AND strpos(p.canvas_state::text, f.key) > 0)
+          OR EXISTS (SELECT 1 FROM project_snapshots s JOIN packaging_projects sp ON sp.id = s.project_id
+                     WHERE sp.user_id <> ${userId}::uuid AND strpos(s.canvas_state::text, f.key) > 0)
+        ))`;
+    return rows.map((row) => row.key);
   }
 
   listProjectFiles(projectIds: string[]): Promise<ProjectFile[]> {

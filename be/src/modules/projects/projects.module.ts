@@ -7,6 +7,7 @@ import { ProjectsService } from './application/projects.service';
 import { SnapshotsService } from './application/snapshots.service';
 import { PrismaProjectRepository } from './infrastructure/prisma-project.repository';
 import { PrismaSnapshotRepository } from './infrastructure/prisma-snapshot.repository';
+import { FitCheckBackfillTask } from './presentation/fitcheck-backfill.task';
 import { ProjectOwnerGuard } from './presentation/project-owner.guard';
 import { ProjectsController } from './presentation/projects.controller';
 import { SnapshotsController } from './presentation/snapshots.controller';
@@ -20,6 +21,7 @@ import { TrashPurgeTask } from './presentation/trash-purge.task';
     SnapshotsService,
     ProjectOwnerGuard,
     TrashPurgeTask,
+    FitCheckBackfillTask,
     { provide: PROJECT_REPOSITORY, useClass: PrismaProjectRepository },
     { provide: SNAPSHOT_REPOSITORY, useClass: PrismaSnapshotRepository },
     // StorageModule is global; it implements the file port of this module.

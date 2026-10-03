@@ -6,6 +6,7 @@ import request, { Response } from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { setupSwagger } from '../src/swagger.setup';
 
 /**
  * Needs a running PostgreSQL with the migrations applied (see README: "Chạy test").
@@ -51,6 +52,7 @@ describe('API (e2e)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     setupApp(app);
+    setupSwagger(app);
     await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
     baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
@@ -59,6 +61,21 @@ describe('API (e2e)', () => {
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
     await app.close();
+  });
+
+  it('documents every operation in Swagger, with the common error body', async () => {
+    const doc = (await api().get('/api/docs-json').expect(200)).body;
+    expect(doc.components.schemas.ErrorResponseDto.required).toEqual(
+      expect.arrayContaining(['statusCode', 'error', 'message', 'path', 'timestamp']),
+    );
+    const operations = Object.values(doc.paths).flatMap((item) => Object.values(item as Record<string, unknown>));
+    expect(operations.length).toBeGreaterThan(40);
+    for (const operation of operations as { responses: Record<string, unknown> }[]) {
+      expect(operation.responses.default).toEqual(
+        expect.objectContaining({ content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponseDto' } } } }),
+      );
+    }
+    expect(doc.paths['/api/users/me/brand-kit'].patch).toBeDefined();
   });
 
   it('GET /api/health reports the database as up', async () => {
@@ -104,6 +121,10 @@ describe('API (e2e)', () => {
       const { access } = await login(alice);
       const me = await api().get('/api/users/me').set('Cookie', cookies({ wf_access: access })).expect(200);
       expect(me.body.email).toBe(alice.email);
+      const authMe = await api().get('/api/auth/me').set('Cookie', cookies({ wf_access: access })).expect(200);
+      expect(authMe.body).toEqual(me.body);
+      expect(authMe.body.passwordHash).toBeUndefined();
+      await api().get('/api/auth/me').expect(401);
     });
 
     it('still accepts the access token as a Bearer header for non-browser clients', async () => {
@@ -211,6 +232,39 @@ describe('API (e2e)', () => {
         .set('Cookie', cookies({ wf_access: aliceAccess }))
         .send({ role: 'ADMIN' })
         .expect(400);
+    });
+
+    it('saves the brand kit as a whole (UC-02)', async () => {
+      const save = (body: Record<string, unknown>) =>
+        api().patch('/api/users/me/brand-kit').set('Cookie', cookies({ wf_access: aliceAccess })).send(body);
+
+      const res = await save({
+        logoUrl: 'https://cdn.wrapfit.vn/users/alice/logo.svg',
+        colors: ['#2D5A27', '#D4AF37', '#FAEDCD'],
+        fonts: ['Playfair Display', 'DM Sans'],
+        slogan: '  Gói trọn yêu thương  ',
+      }).expect(200);
+      expect(res.body.brandKit).toEqual({
+        logoUrl: 'https://cdn.wrapfit.vn/users/alice/logo.svg',
+        colors: ['#2D5A27', '#D4AF37', '#FAEDCD'],
+        fonts: ['Playfair Display', 'DM Sans'],
+        slogan: 'Gói trọn yêu thương',
+      });
+
+      // Omitted optional fields are cleared: the request is the whole kit.
+      const replaced = await save({ colors: ['#111111', '#222222', '#333333', '#444444'] }).expect(200);
+      expect(replaced.body.brandKit).toEqual({
+        logoUrl: null,
+        colors: ['#111111', '#222222', '#333333', '#444444'],
+        fonts: [],
+        slogan: null,
+      });
+
+      await save({ colors: ['#111111', '#222222'] }).expect(400); // 3 to 5 colors
+      await save({ colors: ['#111111', '#222222', 'red'] }).expect(400);
+      await save({ colors: ['#111111', '#222222', '#333333'], logoUrl: 'http://insecure.example/logo.png' }).expect(400);
+      await save({ colors: ['#111111', '#222222', '#333333'], fonts: ['a', 'b', 'c', 'd'] }).expect(400);
+      await api().patch('/api/users/me/brand-kit').send({ colors: ['#111111', '#222222', '#333333'] }).expect(401);
     });
 
     const connect = (options: Parameters<typeof io>[1]) =>

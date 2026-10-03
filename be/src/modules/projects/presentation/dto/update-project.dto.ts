@@ -13,6 +13,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { IsOptionalNotNull } from '../../../../common/decorators/optional-not-null.decorator';
 import { trim } from '../../../../common/utils/transform.util';
 import { normalizeTags } from './create-project.dto';
 import { MAX_TITLE_LENGTH } from '../../domain/project.types';
@@ -25,7 +26,7 @@ import { BoxDimensionsDto, CanvasStateDto, MaterialSpecDto } from './project-spe
  */
 export class UpdateProjectDto {
   @ApiPropertyOptional()
-  @IsOptional()
+  @IsOptionalNotNull()
   @Transform(trim)
   @IsString()
   @IsNotEmpty()
@@ -33,19 +34,19 @@ export class UpdateProjectDto {
   title?: string;
 
   @ApiPropertyOptional({ type: BoxDimensionsDto, description: 'Replaces the whole object' })
-  @IsOptional()
+  @IsOptionalNotNull()
   @ValidateNested()
   @Type(() => BoxDimensionsDto)
   dimensions?: BoxDimensionsDto;
 
   @ApiPropertyOptional({ type: MaterialSpecDto })
-  @IsOptional()
+  @IsOptionalNotNull()
   @ValidateNested()
   @Type(() => MaterialSpecDto)
   materialSpec?: MaterialSpecDto;
 
   @ApiPropertyOptional({ type: CanvasStateDto, description: 'Replaces the whole canvas' })
-  @IsOptional()
+  @IsOptionalNotNull()
   @ValidateNested()
   @Type(() => CanvasStateDto)
   canvasState?: CanvasStateDto;
@@ -62,7 +63,7 @@ export class UpdateProjectDto {
   thumbnailUrl?: string | null;
 
   @ApiPropertyOptional({ type: [String] })
-  @IsOptional()
+  @IsOptionalNotNull()
   @Transform(normalizeTags)
   @IsArray()
   @ArrayMaxSize(10)

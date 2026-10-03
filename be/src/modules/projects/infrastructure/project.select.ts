@@ -10,6 +10,8 @@ export const summarySelect = {
   template: { select: { id: true, name: true } },
   collection: { select: { id: true, title: true, colorTag: true } },
   dimensions: true,
+  materialSpec: true,
+  fitcheckScore: true,
   thumbnailUrl: true,
   tags: true,
   occasion: true,
@@ -25,7 +27,6 @@ export const detailSelect = {
   ...summarySelect,
   allowFork: true,
   forkedFromId: true,
-  materialSpec: true,
   canvasState: true,
   fitcheckState: true,
 } satisfies Prisma.PackagingProjectSelect;

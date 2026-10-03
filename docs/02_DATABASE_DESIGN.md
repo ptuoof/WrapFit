@@ -94,6 +94,7 @@ erDiagram
         jsonb material_spec "{ type, gsm, caliper, finish }"
         jsonb canvas_state "{ elements: [...] }"
         jsonb fitcheck_state "{ isValid, score, violations }"
+        int fitcheck_score "FitCheck phía server, Thư viện cộng đồng >= 90"
         string_array tags
         enum occasion "bộ lọc Thư viện cộng đồng"
         enum industry
@@ -108,6 +109,7 @@ erDiagram
         string name
         jsonb canvas_state
         jsonb dimensions
+        boolean is_automatic "xuất in / sao lưu khôi phục"
     }
 
     ProjectLike {

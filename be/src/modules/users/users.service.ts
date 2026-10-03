@@ -3,13 +3,18 @@ import { Prisma, Role, User } from '@prisma/client';
 import { paginate, Paginated, PaginationQueryDto, toSkipTake } from '../../common/dto/pagination.dto';
 import { GoogleProfile } from '../../common/interfaces/auth.interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
+import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SafeUser, userSelect } from './user.select';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   /** Internal use only (auth): returns the full row including the password hash. */
   findByEmail(email: string): Promise<User | null> {
@@ -88,6 +93,15 @@ export class UsersService {
     });
   }
 
+  /** Replaces the whole brand kit; an empty slogan is stored as null. */
+  updateBrandKit(id: string, dto: UpdateBrandKitDto): Promise<SafeUser> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { brandKit: { logoUrl: dto.logoUrl, colors: dto.colors, fonts: dto.fonts, slogan: dto.slogan || null } },
+      select: userSelect,
+    });
+  }
+
   async adminUpdate(id: string, dto: AdminUpdateUserDto, actorId: string): Promise<SafeUser> {
     if (id === actorId && (dto.role !== undefined || dto.isActive === false)) {
       throw new BadRequestException('You cannot change your own role or deactivate yourself');
@@ -112,6 +126,8 @@ export class UsersService {
 
   async remove(id: string, actorId: string): Promise<void> {
     if (id === actorId) throw new BadRequestException('You cannot delete yourself');
+    const keys = await this.storage.listUserFiles(id);
     await this.prisma.user.delete({ where: { id } });
+    await this.storage.deleteObjects(keys);
   }
 }

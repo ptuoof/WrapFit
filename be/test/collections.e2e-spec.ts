@@ -115,6 +115,7 @@ describe('Collections API (e2e)', () => {
     expect(res.body).toMatchObject({ title: 'Mới', colorTag: '#2D5A27', description: null });
 
     await as(erin).patch(`/api/collections/${id}`).send({ title: '' }).expect(400);
+    await as(erin).patch(`/api/collections/${id}`).send({ title: null }).expect(400);
   });
 
   it('deletes the collection but keeps its projects', async () => {

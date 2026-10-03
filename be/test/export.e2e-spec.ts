@@ -1,5 +1,6 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import QRCode from 'qrcode';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
@@ -124,6 +125,39 @@ describe('Print export (e2e)', () => {
     expect(history.map((j: { fileType: string }) => j.fileType)).toEqual(['DXF', 'SVG', 'PDF_CMYK']);
   });
 
+  it('embeds the uploaded images of the design in the PDF and the SVG', async () => {
+    const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 120 });
+    const ticket = (
+      await as(pia).post('/api/storage/presigned-upload').send({ purpose: 'IMAGE', contentType: 'image/png', size: png.length }).expect(200)
+    ).body;
+    const uploaded = await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: new Uint8Array(png) });
+    expect(uploaded.status).toBe(200);
+    const withImage = (
+      await as(pia)
+        .post('/api/projects')
+        .send({
+          templateId: 'tuck-top',
+          title: 'Hộp có logo',
+          dimensions: { length: 120, width: 80, height: 60 },
+          canvasState: {
+            elements: [
+              { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0, content: ticket.fileUrl, dpi: 300 },
+            ],
+          },
+        })
+        .expect(201)
+    ).body.id;
+
+    const exportOf = async (fileType: string) => {
+      const res = await as(pia).post(`/api/projects/${withImage}/exports`).send({ fileType }).expect(202);
+      const job = await waitFor(res.body.jobId);
+      expect(job.status).toBe('COMPLETED');
+      return Buffer.from(await (await fetch(job.downloadUrl)).arrayBuffer());
+    };
+    expect((await exportOf('PDF_CMYK')).toString('latin1')).toContain('/Subtype /Image');
+    expect((await exportOf('SVG')).toString()).toContain(`href="data:image/png;base64,${png.toString('base64')}"`);
+  });
+
   it('blocks the export when the server-side FitCheck finds errors', async () => {
     await as(pia)
       .patch(`/api/projects/${projectId}`)
@@ -143,6 +177,60 @@ describe('Print export (e2e)', () => {
     // The server result is saved on the project for the editor.
     const project = (await as(pia).get(`/api/projects/${projectId}`).expect(200)).body;
     expect(project.fitcheckState).toMatchObject({ isValidForProduction: false });
+  });
+
+  it('checks every element once across the pieces of a two-piece box, with short panel ids too', async () => {
+    const element = (id: string, type: string, panelId: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      type,
+      panelId,
+      x: 0.5,
+      y: 0.5,
+      width: 20,
+      height: 10,
+      rotation: 0,
+      content: type === 'text' ? 'Chúc mừng' : 'https://cdn.wrapfit.vn/a.png',
+      ...extra,
+    });
+    const lidBase = (
+      await as(pia)
+        .post('/api/projects')
+        .send({
+          templateId: 'lid-base',
+          title: 'Hộp âm dương',
+          dimensions: { length: 120, width: 80, height: 60 },
+          canvasState: {
+            elements: [
+              element('on-base', 'text', 'base_front'),
+              element('on-lid', 'text', 'lid_top'),
+              element('blurry', 'image', 'lid_top', { x: 10, y: 10, dpi: 120 }),
+            ],
+          },
+        })
+        .expect(201)
+    ).body.id;
+    const res = await as(pia).post(`/api/projects/${lidBase}/exports`).send({ fileType: 'SVG' }).expect(422);
+    // 2 errors (-30 each) + 1 warning (-10), each reported once.
+    expect(res.body.fitCheck.score).toBe(30);
+    expect(res.body.fitCheck.violations.map((v: { id: string }) => v.id).sort()).toEqual([
+      'dpi_blurry',
+      'margin_on-base',
+      'margin_on-lid',
+    ]);
+
+    // "front" means "panel_front", as in the print layout: the margin rule applies.
+    const tuckTop = (
+      await as(pia)
+        .post('/api/projects')
+        .send({
+          templateId: 'tuck-top',
+          title: 'Hộp id ngắn',
+          dimensions: { length: 120, width: 80, height: 60 },
+          canvasState: { elements: [element('short', 'text', 'front')] },
+        })
+        .expect(201)
+    ).body.id;
+    await as(pia).post(`/api/projects/${tuckTop}/exports`).send({ fileType: 'SVG' }).expect(422);
   });
 
   it('validates the request and hides exports from other users', async () => {

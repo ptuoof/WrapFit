@@ -36,6 +36,17 @@ export interface CanvasElement {
   dpi?: number; // for raster images
 }
 
+/**
+ * Brand identity of a handmade shop (UC-02), stored in `users.brand_kit`.
+ * Shown in the editor toolbox to apply the logo, colors and fonts to a box in one click.
+ */
+export interface BrandKit {
+  logoUrl: string | null; // uploaded logo (storage purpose LOGO)
+  colors: string[]; // 3 to 5 hex colors #RRGGBB: primary, accent, background, then extras
+  fonts: string[]; // font family names, headings first
+  slogan: string | null;
+}
+
 export interface PackagingProject {
   id: string;
   userId: string;

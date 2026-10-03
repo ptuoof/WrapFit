@@ -195,6 +195,7 @@ model PackagingProject {
   materialSpec  Json              @map("material_spec") // { type, gsm, caliper, finish }
   canvasState   Json              @map("canvas_state") // { elements: [...] }
   fitcheckState Json?             @map("fitcheck_state") // { isValid, score, violations }
+  fitcheckScore Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
   thumbnailUrl  String?           @map("thumbnail_url")
   tags          String[]          @default([])
   occasion      Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
@@ -231,6 +232,7 @@ model ProjectSnapshot {
   canvasState Json     @map("canvas_state")
   dimensions  Json
   previewUrl  String?  @map("preview_url")
+  isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
   createdAt   DateTime @default(now()) @map("created_at")
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -1,6 +1,8 @@
+import type { CanvasElement } from '@wrapfit/shared';
 import { fileNameFor } from '../export.service';
 import { buildPrintLayout, PIECE_GAP_MM, SHEET_MARGIN_MM, UnsupportedStructureError } from './print-layout';
-import { hexToCmyk, renderDxf, renderPdf, renderSvg } from './print-renderers';
+import QRCode from 'qrcode';
+import { Artwork, canEmbedInPdf, hexToCmyk, renderDxf, renderPdf, renderSvg } from './print-renderers';
 
 const dimensions = { length: 120, width: 80, height: 60, paperThickness: 0.4 };
 const greeting = {
@@ -15,7 +17,7 @@ const greeting = {
   content: 'Chúc mừng năm mới <Tết> & an khang',
   style: { fontSize: 14, color: '#C0392B' },
 };
-const layoutOf = (structure: string, elements = [greeting]) =>
+const layoutOf = (structure: string, elements: CanvasElement[] = [greeting]) =>
   buildPrintLayout({ title: 'Hộp nến Tết', structure, dimensions, elements });
 
 describe('print layout', () => {
@@ -49,6 +51,21 @@ describe('print layout', () => {
     expect(layoutOf('tuck-top', [{ ...greeting, panelId: 'nowhere' }]).texts).toEqual([]);
   });
 
+  it('places logos, images and patterns given by URL; skips barcodes and inline content', () => {
+    const logo = { ...greeting, id: 'l', type: 'logo' as const, content: 'https://cdn/users/u/logo.png', height: 15 };
+    const layout = layoutOf('lid-base', [
+      { ...logo, panelId: 'lid_top', rotation: 15 },
+      { ...logo, id: 'b', type: 'barcode' as const },
+      { ...logo, id: 'p', type: 'pattern' as const, content: '<svg/>' },
+    ]);
+    const lid = layout.pieces[1];
+    const top = lid.geometry.panels.find((p) => p.id === 'lid_top')!;
+    expect(layout.images).toEqual([
+      { url: logo.content, x: lid.x + top.bounds.x + 10, y: lid.y + top.bounds.y + 12, width: 60, height: 15, rotation: 15 },
+    ]);
+    expect(layout.texts).toEqual([]);
+  });
+
   it('rejects unknown structures', () => {
     expect(() => layoutOf('hexagon')).toThrow(UnsupportedStructureError);
   });
@@ -77,6 +94,32 @@ describe('print renderers', () => {
     const [width, height] = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(text)!.slice(1).map(Number);
     expect(width).toBeCloseTo((layout.width * 72) / 25.4, 1);
     expect(height).toBeCloseTo((layout.height * 72) / 25.4, 1);
+  });
+
+  it('embeds the artwork: every image format in the SVG, PNG / JPEG in the PDF', async () => {
+    const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 64 });
+    const elements = [
+      { ...greeting, id: 'png', type: 'image' as const, content: 'https://cdn/users/u/a.png' },
+      { ...greeting, id: 'svg', type: 'logo' as const, content: 'https://cdn/users/u/b.svg' },
+    ];
+    const layout = layoutOf('tuck-top', elements);
+    const artwork: Artwork = new Map([
+      ['https://cdn/users/u/a.png', { body: png, contentType: 'image/png' }],
+      ['https://cdn/users/u/b.svg', { body: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), contentType: 'image/svg+xml' }],
+    ]);
+
+    const svg = renderSvg(layout, artwork);
+    expect(svg.match(/<image /g)).toHaveLength(2);
+    expect(svg).toContain('href="data:image/svg+xml;base64,');
+
+    expect(canEmbedInPdf(png)).toBe(true);
+    expect(canEmbedInPdf(artwork.get('https://cdn/users/u/b.svg')!.body)).toBe(false);
+    const pdfWith = async (files: Artwork) => (await renderPdf(layout, files)).toString('latin1');
+    expect(await pdfWith(artwork)).toContain('/Subtype /Image');
+    // The SVG logo cannot go into the PDF, and without artwork nothing is drawn.
+    artwork.delete('https://cdn/users/u/a.png');
+    expect(await pdfWith(artwork)).not.toContain('/Subtype /Image');
+    expect(await pdfWith(new Map())).not.toContain('/Subtype /Image');
   });
 
   it('writes a DXF in mm with CUT and CREASE layers', () => {

@@ -1,5 +1,5 @@
 // Domain layer: plain TypeScript only (no @nestjs/*, no @prisma/client) — see docs 08, section 1.1.
-import type { BoxDimensions, CanvasElement, MaterialSpecification } from '@wrapfit/shared';
+import type { BoxDimensions, CanvasElement, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
 
 /** Same values as the Prisma enums, declared here so the domain does not depend on Prisma. */
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
@@ -22,6 +22,10 @@ export interface ProjectSummary {
   template: { id: string; name: string };
   collection: { id: string; title: string; colorTag: string | null } | null;
   dimensions: BoxDimensions;
+  /** Paper type and GSM shown on the dashboard card (UC-03). */
+  materialSpec: MaterialSpecification;
+  /** Print readiness 0-100 from the last server-side FitCheck; null until the design is checked. */
+  fitcheckScore: number | null;
   thumbnailUrl: string | null;
   tags: string[];
   /** Template hub filters (UC-12), set when the project is shared with the community. */
@@ -38,9 +42,9 @@ export interface ProjectSummary {
 export interface ProjectDetail extends ProjectSummary {
   allowFork: boolean;
   forkedFromId: string | null;
-  materialSpec: MaterialSpecification;
   canvasState: CanvasState;
-  fitcheckState: unknown;
+  /** Report of the last server-side FitCheck (recomputed whenever the canvas or the dimensions change). */
+  fitcheckState: FitCheckReport | null;
 }
 
 export const MAX_TITLE_LENGTH = 120;

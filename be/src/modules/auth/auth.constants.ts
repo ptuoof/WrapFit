@@ -17,6 +17,7 @@ export const DEFAULT_LOGIN_REDIRECT = '/dashboard';
 export function safeRedirectPath(value: unknown): string {
   if (typeof value !== 'string' || value.length > 512) return DEFAULT_LOGIN_REDIRECT;
   if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return DEFAULT_LOGIN_REDIRECT;
+  // eslint-disable-next-line no-control-regex -- rejecting control characters is the point of this check
   if (/[\u0000-\u001f\u007f]/.test(value)) return DEFAULT_LOGIN_REDIRECT;
   return value;
 }

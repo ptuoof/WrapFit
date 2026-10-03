@@ -305,11 +305,11 @@ npm --workspace=be run test:e2e
 
 | Định dạng | Dùng cho | Nội dung |
 | --- | --- | --- |
-| `PDF_CMYK` | Xưởng in | Kích thước thật (1 mm = 2,8346 pt), đường cắt 0/100/100/0, đường gấp 100/0/0/0 nét đứt, chữ trên canvas (font Be Vietnam Pro nhúng sẵn) |
-| `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork`, đơn vị mm |
+| `PDF_CMYK` | Xưởng in | Kích thước thật (1 mm = 2,8346 pt), đường cắt 0/100/100/0, đường gấp 100/0/0/0 nét đứt, ảnh / logo PNG, JPEG (dưới nét dao) và chữ trên canvas (font Be Vietnam Pro nhúng sẵn) |
+| `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork` (ảnh nhúng data URI + chữ), đơn vị mm |
 | `DXF` | Máy bế CNC | R12, mm, lớp `CUT` (đỏ) và `CREASE` (xanh, nét đứt) |
 
-**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF (chỉ chữ, chưa có ảnh / logo / hoa văn); DXF vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/modules/export/rendering/`.
+**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/modules/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
 

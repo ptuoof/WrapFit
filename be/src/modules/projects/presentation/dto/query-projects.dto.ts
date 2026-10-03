@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsIn, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { PaginationQueryDto } from '../../../../common/dto/pagination.dto';
 import { trim } from '../../../../common/utils/transform.util';
 
@@ -13,6 +13,11 @@ export class QueryProjectsDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(ProjectStatus)
   status: ProjectStatus = ProjectStatus.ACTIVE;
+
+  @ApiPropertyOptional({ example: 'tuck-top', description: 'Box structure: tuck-top, sleeve-drawer, lid-base, pillow' })
+  @IsOptional()
+  @Matches(/^[a-z0-9-]{1,64}$/)
+  templateId?: string;
 
   @ApiPropertyOptional({ description: `A collection id, or "${NO_COLLECTION}" for projects outside any collection` })
   @IsOptional()

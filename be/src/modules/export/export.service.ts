@@ -8,7 +8,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ExportFileType, Prisma } from '@prisma/client';
-import { type BoxDimensions, type CanvasElement, runFitCheck } from '@wrapfit/shared';
+import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -20,7 +20,7 @@ import {
   FILE_FORMATS,
   RENDER_JOB,
 } from './export.constants';
-import { dielinePieces } from './rendering/print-layout';
+import { checkProject } from '../projects/domain/project-fitcheck';
 
 const jobSelect = {
   id: true,
@@ -77,18 +77,14 @@ export class ExportService {
     }
 
     // FitCheck again on the server: the client's result is never trusted for production files.
-    const elements = (project.canvasState as { elements?: CanvasElement[] }).elements ?? [];
-    const pieces = dielinePieces(project.templateId, project.dimensions as unknown as BoxDimensions);
-    const reports = pieces.map((piece) => runFitCheck(elements, piece.geometry));
-    const fitCheck = {
-      isValidForProduction: reports.every((r) => r.isValidForProduction),
-      score: Math.min(...reports.map((r) => r.score)),
-      violations: reports.flatMap((r) => r.violations),
-      auditedAt: new Date().toISOString(),
-    };
+    const fitCheck = checkProject(
+      project.templateId,
+      project.dimensions as unknown as BoxDimensions,
+      (project.canvasState as { elements?: CanvasElement[] }).elements ?? [],
+    );
     await this.prisma.packagingProject.update({
       where: { id: projectId },
-      data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject },
+      data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
     });
     if (!fitCheck.isValidForProduction) {
       throw new UnprocessableEntityException({

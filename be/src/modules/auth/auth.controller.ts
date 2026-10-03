@@ -8,6 +8,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { GoogleProfile, SessionMeta } from '../../common/interfaces/auth.interfaces';
 import { AppConfigService } from '../../config/app-config.type';
 import { SafeUser } from '../users/user.select';
+import { UsersService } from '../users/users.service';
 import { AuthCookieService } from './auth-cookie.service';
 import { ACCESS_COOKIE, DEFAULT_LOGIN_REDIRECT, REFRESH_COOKIE } from './auth.constants';
 import { AuthResult, AuthService } from './auth.service';
@@ -35,6 +36,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly cookies: AuthCookieService,
+    private readonly usersService: UsersService,
     config: ConfigService,
   ) {
     const env = config as unknown as AppConfigService;
@@ -90,6 +92,13 @@ export class AuthController {
     const refreshToken = req.cookies?.[REFRESH_COOKIE];
     if (refreshToken) await this.authService.logout(refreshToken);
     this.cookies.clearAuthCookies(res);
+  }
+
+  @ApiCookieAuth(ACCESS_COOKIE)
+  @Get('me')
+  @ApiOperation({ summary: 'Current user (same as GET /api/users/me); 401 means: call /api/auth/refresh' })
+  me(@CurrentUser('id') userId: string): Promise<SafeUser> {
+    return this.usersService.findOne(userId);
   }
 
   @ApiCookieAuth(ACCESS_COOKIE)

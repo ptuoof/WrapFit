@@ -171,6 +171,27 @@ describe('Storage (e2e)', () => {
       expect(await prisma.storedFile.count({ where: { projectId } })).toBe(0);
     });
 
+    it('are kept while a copy (duplicate or remix) still shows them in its canvas', async () => {
+      const source = await newProject(kim);
+      const ticket = (
+        await presign(kim, { purpose: 'IMAGE', contentType: 'image/png', size: 300, projectId: source }).expect(200)
+      ).body;
+      expect((await upload(ticket, png(300))).status).toBe(200);
+      const image = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0 };
+      await as(kim)
+        .patch(`/api/projects/${source}`)
+        .send({ canvasState: { elements: [{ ...image, content: ticket.fileUrl }] } })
+        .expect(200);
+      await as(kim).post(`/api/projects/${source}/duplicate`).expect(201);
+
+      await as(kim).patch(`/api/projects/${source}/status`).send({ status: 'DELETED' }).expect(200);
+      await as(kim).delete(`/api/projects/${source}`).expect(204);
+
+      expect((await fetch(ticket.fileUrl)).status).toBe(200);
+      // Still counted in the uploader's usage, no longer attached to the deleted project.
+      expect(await prisma.storedFile.findUnique({ where: { key: ticket.key } })).toMatchObject({ projectId: null });
+    });
+
     it('are deleted by the trash purge, but kept for projects restored in time', async () => {
       const expired = await newProject(kim);
       const restored = await newProject(kim);
@@ -190,5 +211,31 @@ describe('Storage (e2e)', () => {
       expect((await fetch(expiredFile)).status).toBe(404);
       expect((await fetch(restoredFile)).status).toBe(200);
     });
+  });
+
+  it('deletes the files of a user removed by an admin, except uploads other users still show', async () => {
+    const mia = await register('mia');
+    const admin = await register('ned');
+    await prisma.user.update({ where: { email: `ned-${run}@e2e.test` }, data: { role: 'ADMIN' } });
+    const miaId = (await as(mia).get('/api/users/me').expect(200)).body.id;
+
+    const uploadAs = async (purpose: string, projectId?: string) => {
+      const ticket = (await presign(mia, { purpose, contentType: 'image/png', size: 300, projectId }).expect(200)).body;
+      expect((await upload(ticket, png(300))).status).toBe(200);
+      return ticket.fileUrl as string;
+    };
+    const avatar = await uploadAs('AVATAR');
+    const inProject = await uploadAs('IMAGE', await newProject(mia));
+    const shared = await uploadAs('IMAGE');
+    // Kim's design shows one of Mia's images.
+    const kimProject = await newProject(kim);
+    const image = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0 };
+    await as(kim).patch(`/api/projects/${kimProject}`).send({ canvasState: { elements: [{ ...image, content: shared }] } }).expect(200);
+
+    await as(admin).delete(`/api/users/${miaId}`).expect(204);
+
+    expect((await fetch(avatar)).status).toBe(404);
+    expect((await fetch(inProject)).status).toBe(404);
+    expect((await fetch(shared)).status).toBe(200);
   });
 });

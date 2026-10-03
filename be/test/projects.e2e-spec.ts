@@ -1,9 +1,12 @@
 import { INestApplication } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { MAX_SNAPSHOTS_PER_PROJECT } from '../src/modules/projects/application/snapshots.service';
+import { FitCheckBackfillTask } from '../src/modules/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../src/modules/projects/presentation/trash-purge.task';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -167,6 +170,12 @@ describe('Projects API (e2e)', () => {
         'Hộp nến thơm',
       ]);
       expect(res.body.items[0].canvasState).toBeUndefined();
+      // Dashboard card (UC-03): paper and print readiness, computed by the server-side FitCheck.
+      expect(res.body.items[1]).toMatchObject({
+        materialSpec: { type: 'kraft', gsm: 350 },
+        fitcheckScore: expect.any(Number),
+      });
+      expect(res.body.items[0].fitcheckScore).toBe(100); // empty canvas
     });
 
     it('filters by status, collection and search text', async () => {
@@ -178,6 +187,8 @@ describe('Projects API (e2e)', () => {
       expect(await titles('collectionId=none&sortBy=title&order=asc')).toEqual(['Hộp bánh trung thu', 'Hộp gối trang sức']);
       expect(await titles(`q=${encodeURIComponent('TRUNG THU')}`)).toEqual(['Hộp bánh trung thu']);
       expect(await titles('q=Tet')).toEqual(['Hộp nến thơm']); // exact tag
+      expect(await titles('templateId=pillow')).toEqual(['Hộp gối trang sức']);
+      expect(await titles('templateId=hexagon')).toEqual([]);
     });
 
     it('paginates and validates the query', async () => {
@@ -188,6 +199,7 @@ describe('Projects API (e2e)', () => {
       await as(carol).get('/api/projects?status=GONE').expect(400);
       await as(carol).get('/api/projects?collectionId=abc').expect(400);
       await as(carol).get('/api/projects?sortBy=userId').expect(400);
+      await as(carol).get('/api/projects?templateId=Tuck%20Top').expect(400);
     });
   });
 
@@ -243,6 +255,15 @@ describe('Projects API (e2e)', () => {
         .expect(400);
       await as(carol).patch(`/api/projects/${projectId}`).send({ templateId: 'pillow' }).expect(400);
       await as(carol).patch(`/api/projects/${projectId}`).send({ thumbnailUrl: 'http://insecure.example/a.png' }).expect(400);
+    });
+
+    it('rejects null for fields that cannot be cleared (400, not 500)', async () => {
+      for (const field of ['title', 'dimensions', 'materialSpec', 'canvasState', 'tags']) {
+        await as(carol).patch(`/api/projects/${projectId}`).send({ [field]: null }).expect(400);
+      }
+      for (const field of ['visibility', 'allowFork']) {
+        await as(carol).patch(`/api/projects/${projectId}/visibility`).send({ [field]: null }).expect(400);
+      }
     });
 
     it('deletes permanently only from the trash, and a trashed project is read-only', async () => {
@@ -432,6 +453,28 @@ describe('Projects API (e2e)', () => {
       await as(carol).delete(url('/not-a-uuid')).expect(400);
     });
 
+    it('limits manual versions to 50; automatic ones (restore backups, exports) do not count', async () => {
+      // The restore test above left two automatic backups.
+      expect(await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: true } })).toBe(2);
+
+      const fill = (count: number, isAutomatic: boolean) =>
+        prisma.projectSnapshot.createMany({
+          data: Array.from({ length: count }, (_, i) => ({
+            projectId,
+            name: `fill ${i}`,
+            canvasState: { elements: [] },
+            dimensions: {},
+            isAutomatic,
+          })),
+        });
+      await fill(60, true);
+      const manual = await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: false } });
+      await fill(MAX_SNAPSHOTS_PER_PROJECT - manual - 1, false);
+
+      await as(carol).post(url()).send({ name: 'last manual' }).expect(201);
+      await as(carol).post(url()).send({ name: 'one too many' }).expect(409);
+    });
+
     it('hides the history from other users and freezes it in the trash', async () => {
       await as(dave).get(url()).expect(404);
       await as(dave).post(url()).send({ name: 'x' }).expect(404);
@@ -440,6 +483,18 @@ describe('Projects API (e2e)', () => {
       await as(carol).post(url()).send({ name: 'x' }).expect(409);
       await as(carol).get(url()).expect(200);
     });
+  });
+
+  it('scores projects saved before FitCheck scores existed, without reordering the dashboard', async () => {
+    const { id } = (await as(carol).post('/api/projects').send(newProject({ title: 'Hộp cũ chưa chấm' })).expect(201)).body;
+    await prisma.packagingProject.update({ where: { id }, data: { fitcheckScore: null, fitcheckState: Prisma.DbNull } });
+    const before = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+
+    await app.get(FitCheckBackfillTask).onApplicationBootstrap();
+
+    const after = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+    expect(after).toMatchObject({ fitcheckScore: 100, fitcheckState: expect.objectContaining({ score: 100 }) });
+    expect(after.updatedAt).toEqual(before.updatedAt);
   });
 
   describe('trash purge (cron)', () => {

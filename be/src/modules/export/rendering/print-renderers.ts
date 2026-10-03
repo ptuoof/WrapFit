@@ -13,6 +13,16 @@ const FONT = require.resolve('@expo-google-fonts/be-vietnam-pro/400Regular/BeVie
 
 const n = (value: number) => Number(value.toFixed(3)).toString();
 
+/** Files of the layout images, by URL (the export worker loads them from storage). Missing URLs are not drawn. */
+export type Artwork = Map<string, { body: Buffer; contentType: string }>;
+
+/** PDFKit embeds PNG and JPEG only (WebP, SVG and PDF logos are left out of the PDF; the SVG export keeps them). */
+export function canEmbedInPdf(body: Buffer): boolean {
+  const isPng = body.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  const isJpeg = body[0] === 0xff && body[1] === 0xd8;
+  return isPng || isJpeg;
+}
+
 /** Naive RGB -> CMYK (0-100) for artwork colors; the print shop does the final color management. */
 export function hexToCmyk(hex: string): [number, number, number, number] {
   const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
@@ -29,7 +39,7 @@ const specLine = (layout: PrintLayout) =>
   `WrapFit — ${layout.title} — ${layout.structure} ${layout.dimensions.length} x ${layout.dimensions.width} x ${layout.dimensions.height} mm, giấy ${layout.dimensions.paperThickness} mm`;
 
 /** Layered SVG (layers: info, crease, cut, artwork) for cutting plotters such as Cricut or laser cutters. */
-export function renderSvg(layout: PrintLayout): string {
+export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): string {
   const lines = { cut: [] as string[], crease: [] as string[] };
   for (const piece of layout.pieces) {
     for (const seg of piece.geometry.segments) {
@@ -41,6 +51,16 @@ export function renderSvg(layout: PrintLayout): string {
       );
     }
   }
+  // Images are embedded as data URIs so the file works offline in Cricut Design Space / Illustrator.
+  const images = layout.images.flatMap((image) => {
+    const file = artwork.get(image.url);
+    if (!file?.contentType.startsWith('image/')) return [];
+    return [
+      `<image x="${n(image.x)}" y="${n(image.y)}" width="${n(image.width)}" height="${n(image.height)}" preserveAspectRatio="none"` +
+        (image.rotation ? ` transform="rotate(${n(image.rotation)} ${n(image.x)} ${n(image.y)})"` : '') +
+        ` href="data:${escapeXml(file.contentType)};base64,${file.body.toString('base64')}"/>`,
+    ];
+  });
   const texts = layout.texts.map(
     (t) =>
       `<text x="${n(t.x)}" y="${n(t.y + t.fontSizeMm)}" font-size="${n(t.fontSizeMm)}" fill="${escapeXml(t.color)}"` +
@@ -53,13 +73,13 @@ export function renderSvg(layout: PrintLayout): string {
     `<g id="info" font-family="sans-serif" font-size="4" fill="#64748B"><text x="${n(layout.pieces[0].x)}" y="${n(layout.pieces[0].y - 8)}">${escapeXml(specLine(layout))}</text></g>`,
     `<g id="crease" fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}">${lines.crease.join('')}</g>`,
     `<g id="cut" fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}">${lines.cut.join('')}</g>`,
-    `<g id="artwork" font-family="Be Vietnam Pro, sans-serif">${texts.join('')}</g>`,
+    `<g id="artwork" font-family="Be Vietnam Pro, sans-serif">${images.join('')}${texts.join('')}</g>`,
     '</svg>',
   ].join('\n');
 }
 
 /** Vector PDF at true size (1 mm = 2.8346 pt) with CMYK colors and an embedded Vietnamese font. */
-export function renderPdf(layout: PrintLayout): Promise<Buffer> {
+export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: [layout.width * PT_PER_MM, layout.height * PT_PER_MM],
@@ -76,6 +96,16 @@ export function renderPdf(layout: PrintLayout): Promise<Buffer> {
 
     doc.font('body').fontSize(4).fillColor([...CMYK.info]);
     doc.text(specLine(layout), layout.pieces[0].x, layout.pieces[0].y - 10, { lineBreak: false });
+
+    // Artwork under the dielines, so the cut and crease lines stay visible to the print shop.
+    for (const image of layout.images) {
+      const file = artwork.get(image.url);
+      if (!file || !canEmbedInPdf(file.body)) continue;
+      doc.save();
+      if (image.rotation) doc.rotate(image.rotation, { origin: [image.x, image.y] });
+      doc.image(file.body, image.x, image.y, { width: image.width, height: image.height });
+      doc.restore();
+    }
 
     for (const type of ['crease', 'cut'] as const) {
       doc.save().lineWidth(LINE_MM).strokeColor([...CMYK[type]]);

@@ -1,14 +1,9 @@
 // Pure layout for print files: which dieline pieces a box has and where each one sits on the sheet (mm).
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
-import {
-  type BoxDimensions,
-  type CanvasElement,
-  type DielineGeometry,
-  generateLidBaseDieline,
-  generatePillowBoxDieline,
-  generateSleeveDrawerDieline,
-  generateTuckTopDieline,
-} from '@wrapfit/shared';
+import type { BoxDimensions, CanvasElement, DielineGeometry } from '@wrapfit/shared';
+import { dielinePieces, matchesPanel } from '../../projects/domain/project-fitcheck';
+
+export { dielinePieces, matchesPanel, UnsupportedStructureError } from '../../projects/domain/project-fitcheck';
 
 /** Margin around the artwork and gap between pieces, in mm. */
 export const SHEET_MARGIN_MM = 20;
@@ -32,39 +27,16 @@ export interface PrintLayout {
   pieces: PlacedPiece[];
   /** Text elements placed on the sheet (mm, top-left of the element box). */
   texts: { content: string; x: number; y: number; width: number; fontSizeMm: number; color: string; rotation: number }[];
+  /** Logos, images and patterns (by URL) placed on the sheet, drawn under the texts (mm, top-left of the box). */
+  images: { url: string; x: number; y: number; width: number; height: number; rotation: number }[];
 }
 
-export class UnsupportedStructureError extends Error {}
-
-/** Every box is printed as one or more flat pieces (two-piece boxes: base + lid, sleeve + drawer). */
-export function dielinePieces(structure: string, dimensions: BoxDimensions): { name: string; geometry: DielineGeometry }[] {
-  switch (structure) {
-    case 'tuck-top':
-      return [{ name: 'Thân hộp', geometry: generateTuckTopDieline(dimensions) }];
-    case 'pillow':
-      return [{ name: 'Thân hộp', geometry: generatePillowBoxDieline(dimensions) }];
-    case 'lid-base': {
-      const { base, lid } = generateLidBaseDieline(dimensions);
-      return [
-        { name: 'Đáy (hộp dương)', geometry: base },
-        { name: 'Nắp (hộp âm)', geometry: lid },
-      ];
-    }
-    case 'sleeve-drawer': {
-      const { sleeve, drawer } = generateSleeveDrawerDieline(dimensions);
-      return [
-        { name: 'Vỏ bao', geometry: sleeve },
-        { name: 'Khay kéo', geometry: drawer },
-      ];
-    }
-    default:
-      throw new UnsupportedStructureError(`No dieline generator for box structure "${structure}"`);
-  }
-}
+/** Element types drawn from an uploaded file; `content` is the file URL. */
+const IMAGE_TYPES = new Set<CanvasElement['type']>(['logo', 'image', 'pattern']);
 
 const PT_PER_MM = 72 / 25.4;
 
-/** Lays the pieces out left to right and places the text elements on their panels. */
+/** Lays the pieces out left to right and places the text and image elements on their panels. */
 export function buildPrintLayout(input: {
   title: string;
   structure: string;
@@ -80,25 +52,32 @@ export function buildPrintLayout(input: {
     tallest = Math.max(tallest, piece.geometry.totalBoundingBox.height);
   }
 
-  // Canvas elements reference a panel id: "front" or the full "panel_front" both work. The first piece that has
-  // the panel wins (two-piece boxes may repeat panel names).
   const texts: PrintLayout['texts'] = [];
+  const images: PrintLayout['images'] = [];
   for (const element of input.elements) {
-    if (element.type !== 'text' || !element.content.trim()) continue;
-    for (const piece of pieces) {
-      const panel = piece.geometry.panels.find((p) => p.id === element.panelId || p.id === `panel_${element.panelId}`);
-      if (!panel) continue;
+    const isText = element.type === 'text';
+    if (isText ? !element.content.trim() : !IMAGE_TYPES.has(element.type) || !/^https?:\/\//.test(element.content)) {
+      continue; // barcodes are not rendered yet
+    }
+    // The first piece that has the panel wins (see matchesPanel for the accepted ids).
+    const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
+    const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
+    if (!piece || !panel) continue;
+    const x = piece.x + panel.bounds.x + element.x;
+    const y = piece.y + panel.bounds.y + element.y;
+    if (isText) {
       texts.push({
         content: element.content,
-        x: piece.x + panel.bounds.x + element.x,
-        y: piece.y + panel.bounds.y + element.y,
+        x,
+        y,
         width: element.width,
         // Font sizes are points in the editor.
         fontSizeMm: (element.style?.fontSize ?? 12) / PT_PER_MM,
         color: element.style?.color ?? '#000000',
         rotation: element.rotation,
       });
-      break;
+    } else {
+      images.push({ url: element.content, x, y, width: element.width, height: element.height, rotation: element.rotation });
     }
   }
 
@@ -110,5 +89,6 @@ export function buildPrintLayout(input: {
     height: tallest + 2 * SHEET_MARGIN_MM,
     pieces,
     texts,
+    images,
   };
 }
