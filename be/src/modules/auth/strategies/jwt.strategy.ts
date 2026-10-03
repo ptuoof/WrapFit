@@ -1,0 +1,39 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PassportStrategy } from '@nestjs/passport';
+import type { Request } from 'express';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { AppConfigService } from '../../../config/app-config.type';
+import { AuthUser, JwtPayload } from '../../../common/interfaces/auth.interfaces';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { ACCESS_COOKIE } from '../auth.constants';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(
+    config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
+    super({
+      // Browsers send the HttpOnly cookie; the Bearer header stays available for non-browser clients and tools.
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => req?.cookies?.[ACCESS_COOKIE] ?? null,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: (config as unknown as AppConfigService).get('JWT_ACCESS_SECRET', {
+        infer: true,
+      }),
+    });
+  }
+
+  /** Re-checks the user on every request so deactivation and role changes apply immediately. */
+  async validate(payload: JwtPayload): Promise<AuthUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, isActive: true },
+    });
+    if (!user || !user.isActive) throw new UnauthorizedException();
+    return { id: user.id, email: user.email, role: user.role };
+  }
+}

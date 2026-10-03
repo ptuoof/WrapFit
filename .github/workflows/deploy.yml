@@ -1,15 +1,21 @@
-name: Deploy WrapFit Backend to VPS
+name: Deploy WrapFit to VPS
 
+# Runs only after CI passed on main (or by hand). The VPS rebuilds the images and serves HTTPS through Caddy
+# (docker-compose.prod.yml); see be/README.md, section "Triển khai production".
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: [WrapFit CI]
+    types: [completed]
     branches: [main]
 
 jobs:
   deploy:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
-    if: github.repository == 'ptuoof/WrapFit'
+    if: >-
+      github.repository == 'ptuoof/WrapFit' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Check VPS Secrets Configured
         id: check_secrets

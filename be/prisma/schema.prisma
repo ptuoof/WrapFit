@@ -1,5 +1,5 @@
-// WrapFit Platform Database Schema (Prisma / PostgreSQL)
-// Owned by IT 3 (Backend & Data Infrastructure)
+// WrapFit — Schema v2.1 (xem tài liệu 07, Mục 4.1).
+// Chỉ truy cập qua PrismaService (src/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,56 +10,332 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  MAKER // Khách hàng cá nhân tự làm hộp quà
+  PRO_ARTISAN // Chủ shop handmade bán quà chuyên nghiệp
+  PRINT_SHOP // Đối tác xưởng in nhận đơn bế
+  ADMIN // Quản trị viên hệ thống
+}
+
+enum SubscriptionTier {
+  FREE
+  STARTER
+  PRO_BUSINESS
+}
+
+enum ProjectStatus {
+  ACTIVE // Đang thiết kế / sử dụng
+  ARCHIVED // Đã lưu trữ vào kho cũ
+  DELETED // Đang nằm trong thùng rác (xóa vĩnh viễn sau 30 ngày)
+}
+
+enum ProjectVisibility {
+  PRIVATE // Chỉ chủ sở hữu xem được
+  UNLISTED // Ai có link bí mật đều xem được
+  PUBLIC // Hiển thị công khai trên Thư viện Cộng đồng
+}
+
+// Bộ lọc Thư viện mẫu (UC-12). FE hiển thị nhãn tiếng Việt.
+enum Occasion {
+  TET // Tết Nguyên Đán
+  CHRISTMAS // Giáng Sinh
+  WEDDING // Cưới / Đính hôn
+  VALENTINE // Lễ Tình Nhân
+  BIRTHDAY // Sinh nhật
+  MINIMAL // Tối giản thường ngày
+}
+
+enum Industry {
+  COSMETICS // Mỹ phẩm & Skincare
+  CANDLES // Nến thơm & Tinh dầu
+  BAKERY // Bánh ngọt & Bếp thủ công
+  JEWELRY // Trang sức & Phụ kiện
+  TEA_AGRI // Trà hoa & Nông sản cao cấp
+}
+
+// Mục đích của file người dùng tải lên (IT3-08): quyết định định dạng và dung lượng tối đa được phép.
+enum FilePurpose {
+  LOGO // Logo / ảnh vector cho canvas (PNG, JPEG, WebP, SVG, PDF; tối đa 15 MB)
+  IMAGE // Ảnh đặt lên mặt hộp (PNG, JPEG, WebP; tối đa 15 MB)
+  THUMBNAIL // Ảnh xem trước dự án / mốc phiên bản (PNG, JPEG, WebP; tối đa 2 MB)
+  AVATAR // Ảnh đại diện (PNG, JPEG, WebP; tối đa 2 MB)
+  QR_CODE // Mã QR mở hộp do backend sinh (PNG + SVG), người dùng không upload được
+  EXPORT // File in (PDF / SVG / DXF) do worker xuất (IT3-11)
+}
+
+enum ExportStatus {
+  PENDING // Đã vào hàng đợi BullMQ
+  PROCESSING // Worker đang xử lý
+  COMPLETED // Đã tải lên S3/R2
+  FAILED // Lỗi, xem errorLog
+}
+
+enum ExportFileType {
+  PDF_CMYK // PDF tách lớp CMYK 300 DPI
+  SVG // SVG cho máy cắt Cricut / Laser
+  DXF // DXF cho máy bế CNC
+}
+
 model User {
-  id               String              @id @default(uuid())
-  email            String              @unique
-  shopName         String?             @map("shop_name")
-  subscriptionTier String              @default("free") @map("subscription_tier") // free, pro, business
-  projects         PackagingProject[]
-  createdAt        DateTime            @default(now()) @map("created_at")
-  updatedAt        DateTime            @updatedAt @map("updated_at")
+  id               String           @id @default(uuid()) @db.Uuid
+  email            String           @unique
+  passwordHash     String?          @map("password_hash") // null nếu chỉ đăng nhập bằng Google
+  googleId         String?          @unique @map("google_id")
+  fullName         String?          @map("full_name")
+  avatarUrl        String?          @map("avatar_url")
+  shopName         String?          @map("shop_name")
+  role             Role             @default(MAKER)
+  subscriptionTier SubscriptionTier @default(FREE) @map("subscription_tier")
+  brandKit         Json?            @map("brand_kit") // { logoUrl, colors, fonts, slogan }
+  referralCode     String?          @unique @map("referral_code")
+  referredById     String?          @map("referred_by_id") @db.Uuid
+  isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals     User[]              @relation("UserReferrals")
+  refreshTokens RefreshToken[]
+  projects      PackagingProject[]
+  collections   ProjectCollection[]
+  mockups       SocialMockup[]
+  projectLikes  ProjectLike[]
+  storedFiles   StoredFile[]
+  aiGenerations AiGeneration[]
 
   @@map("users")
 }
 
+// Mỗi refresh token là một dòng; `id` chính là `jti` trong JWT -> hỗ trợ nhiều thiết bị, xoay vòng và thu hồi.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model ProjectCollection {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  title       String
+  description String?
+  colorTag    String?  @default("#D4A373") @map("color_tag")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects PackagingProject[]
+
+  @@index([userId])
+  @@map("project_collections")
+}
+
 model BoxTemplate {
-  id            String             @id // tuck-top, sleeve-drawer, lid-base, pillow
+  id            String  @id // tuck-top, sleeve-drawer, lid-base, pillow
   name          String
+  category      String  @default("retail") // retail, luxury, food, accessories
   description   String?
-  formulaSchema Json               @map("formula_schema")
-  isActive      Boolean            @default(true) @map("is_active")
-  projects      PackagingProject[]
+  formulaSchema Json    @map("formula_schema")
+  preview3dUrl  String? @map("preview_3d_url")
+  isCurated     Boolean @default(true) @map("is_curated")
+  isActive      Boolean @default(true) @map("is_active")
+
+  projects        PackagingProject[]
+  designTemplates DesignTemplate[]
 
   @@map("box_templates")
 }
 
-model PackagingProject {
-  id            String       @id @default(uuid())
-  userId        String       @map("user_id")
-  templateId    String       @map("template_id")
+// Mẫu thiết kế "WrapFit Curated" trong Thư viện mẫu (UC-12, UC-13): cấu trúc hộp + kích thước + đồ họa dựng sẵn.
+// Mẫu cộng đồng không nằm ở đây: đó là các PackagingProject PUBLIC.
+model DesignTemplate {
+  id            String    @id @default(uuid()) @db.Uuid
+  boxTemplateId String    @map("box_template_id")
   title         String
-  dimensions    Json         // { length, width, height, paperThickness }
-  materialSpec  Json         @map("material_spec") // { type, gsm, caliper }
-  canvasState   Json         @map("canvas_state")  // elements, text, logos
-  fitcheckState Json?        @map("fitcheck_state") // last audit report
-  thumbnailUrl  String?      @map("thumbnail_url")
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template      BoxTemplate  @relation(fields: [templateId], references: [id])
-  exportJobs    ExportJob[]
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  description   String?
+  occasion      Occasion?
+  industry      Industry?
+  dimensions    Json // { length, width, height, paperThickness }
+  materialSpec  Json      @map("material_spec") // { type, gsm, caliper, finish }
+  canvasState   Json      @map("canvas_state") // { elements: [...] }
+  thumbnailUrl  String?   @map("thumbnail_url")
+  tags          String[]  @default([])
+  usesCount     Int       @default(0) @map("uses_count") // Số lần "Dùng mẫu này"
+  sortOrder     Int       @default(0) @map("sort_order") // Nhỏ hơn = hiển thị trước
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  boxTemplate BoxTemplate @relation(fields: [boxTemplateId], references: [id])
+
+  @@index([isActive, sortOrder])
+  @@map("design_templates")
+}
+
+model PackagingProject {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @map("user_id") @db.Uuid
+  templateId    String            @map("template_id")
+  collectionId  String?           @map("collection_id") @db.Uuid
+  title         String
+  slug          String            @unique @default(nanoid(10)) // Link công khai /p/[slug]
+  status        ProjectStatus     @default(ACTIVE)
+  visibility    ProjectVisibility @default(PRIVATE)
+  allowFork     Boolean           @default(true) @map("allow_fork")
+  forkedFromId  String?           @map("forked_from_id") @db.Uuid
+  dimensions    Json // { length, width, height, paperThickness }
+  materialSpec  Json              @map("material_spec") // { type, gsm, caliper, finish }
+  canvasState   Json              @map("canvas_state") // { elements: [...] }
+  fitcheckState Json?             @map("fitcheck_state") // { isValid, score, violations }
+  fitcheckScore Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
+  thumbnailUrl  String?           @map("thumbnail_url")
+  tags          String[]          @default([])
+  occasion      Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
+  industry      Industry?
+  viewsCount    Int               @default(0) @map("views_count")
+  likesCount    Int               @default(0) @map("likes_count")
+  deletedAt     DateTime?         @map("deleted_at") // Thời điểm vào thùng rác
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template       BoxTemplate         @relation(fields: [templateId], references: [id])
+  collection     ProjectCollection?  @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  forkedFrom     PackagingProject?   @relation("ProjectForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
+  forks          PackagingProject[]  @relation("ProjectForks")
+  exportJobs     ExportJob[]
+  unboxingConfig UnboxingExperience?
+  socialMockups  SocialMockup[]
+  snapshots      ProjectSnapshot[]
+  likes          ProjectLike[]
+  files          StoredFile[]
+
+  @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
+  @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
+  @@index([status, deletedAt]) // Cron dọn thùng rác
+  @@index([collectionId])
   @@map("packaging_projects")
 }
 
-model ExportJob {
-  id            String           @id @default(uuid())
-  projectId     String           @map("project_id")
-  fileType      String           @map("file_type") // pdf, svg, dxf
-  storageUrl    String           @map("storage_url")
-  status        String           @default("completed") // pending, processing, completed, failed
-  project       PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt     DateTime         @default(now()) @map("created_at")
+model ProjectSnapshot {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  name        String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
+  canvasState Json     @map("canvas_state")
+  dimensions  Json
+  previewUrl  String?  @map("preview_url")
+  isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
+  createdAt   DateTime @default(now()) @map("created_at")
 
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_snapshots")
+}
+
+model ProjectLike {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+  @@map("project_likes")
+}
+
+model UnboxingExperience {
+  id             String   @id @default(uuid()) @db.Uuid
+  projectId      String   @unique @map("project_id") @db.Uuid
+  slug           String   @unique @default(nanoid(12))
+  recipientName  String   @map("recipient_name")
+  giftNote       String   @map("gift_note") @db.Text
+  audioTrackUrl  String?  @map("audio_track_url")
+  particleEffect String   @default("confetti") @map("particle_effect")
+  qrCodeUrl      String?  @map("qr_code_url")
+  viewsCount     Int      @default(0) @map("views_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("unboxing_experiences")
+}
+
+model SocialMockup {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  projectId  String   @map("project_id") @db.Uuid
+  presetName String   @map("preset_name")
+  renderUrl  String   @map("render_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("social_mockups")
+}
+
+model ExportJob {
+  id          String         @id @default(uuid()) @db.Uuid
+  projectId   String         @map("project_id") @db.Uuid
+  fileType    ExportFileType @map("file_type")
+  status      ExportStatus   @default(PENDING)
+  storageKey  String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
+  errorLog    String?        @map("error_log")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  completedAt DateTime?      @map("completed_at")
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
   @@map("export_jobs")
+}
+
+// File trên S3 / R2 (IT3-08). Ghi lại lúc cấp pre-signed URL: chữ ký khóa đúng dung lượng và định dạng,
+// nên `size` dùng được để tính hạn mức theo gói. File gắn với dự án bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn.
+model StoredFile {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  projectId   String?     @map("project_id") @db.Uuid
+  key         String      @unique // users/<userId>/<purpose>/<uuid>.<ext>
+  purpose     FilePurpose
+  contentType String      @map("content_type")
+  size        Int // byte
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("stored_files")
+}
+
+// Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.
+// Lần sinh bằng thuật toán dự phòng (không gọi AI) không được ghi.
+model AiGeneration {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  theme        String
+  model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_generations")
 }

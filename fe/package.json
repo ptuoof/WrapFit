@@ -10,9 +10,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.9",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.8",
+    "@types/animejs": "^4.0.0",
     "@wrapfit/shared": "*",
+    "animejs": "^4.5.0",
     "clsx": "^2.1.1",
     "fabric": "^5.3.0",
     "gsap": "^3.12.5",
@@ -28,6 +31,7 @@
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.168.0",
+    "autoprefixer": "^10.6.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.12",
     "typescript": "^5.6.2"

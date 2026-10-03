@@ -1,0 +1,28 @@
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ACCESS_COOKIE } from '../auth/auth.constants';
+import { AiPatternService } from './ai-pattern.service';
+import { GeneratePatternDto } from './dto/generate-pattern.dto';
+
+@ApiTags('ai')
+@ApiCookieAuth(ACCESS_COOKIE)
+@Controller('ai')
+export class AiController {
+  constructor(private readonly patterns: AiPatternService) {}
+
+  @Post('pattern')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Generate a palette and a seamless SVG pattern tile from a theme' })
+  generate(@CurrentUser('id') userId: string, @Body() dto: GeneratePatternDto) {
+    return this.patterns.generate(userId, dto);
+  }
+
+  @Get('usage')
+  @ApiOperation({ summary: 'My AI generations in the last 24 hours and the limit of my plan' })
+  usage(@CurrentUser('id') userId: string) {
+    return this.patterns.quota(userId);
+  }
+}

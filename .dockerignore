@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+*/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+.next
+*/.next
+out
+*/out
+
+# TypeScript & compiled outputs
+dist
+*/dist
+*.tsbuildinfo
+next-env.d.ts
+
+# Version Control
+.git
+.gitignore
+
+# Uploads and temporary assets
+uploads
+*/uploads
+
+# Environment files
+.env
+.env*.local
+!.env.example
+
+# IDE & OS scratch files
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

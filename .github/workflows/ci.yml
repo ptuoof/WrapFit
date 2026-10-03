@@ -8,17 +8,17 @@ on:
 
 jobs:
   validate:
-    name: Validate Structure & Build
+    name: Validate Structure, Build & Unit Tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Check Project Structure
@@ -39,5 +39,79 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace=be run db:generate
 
-      - name: Build Backend Service
+      - name: Lint Backend
+        run: npm --workspace=be run lint
+
+      - name: Build Backend Service (type check)
         run: npm --workspace=be run build
+
+      - name: Backend Unit Tests
+        run: npm --workspace=be test
+
+  e2e:
+    name: Backend E2E Tests
+    runs-on: ubuntu-latest
+    needs: validate
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: wrapfit
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wrapfit"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/wrapfit?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-0123456789-abcdefghijklmnop
+      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789-abcdefghijklmnop
+      REDIS_URL: redis://localhost:6379
+      CORS_ORIGINS: http://localhost:3000
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # Service containers cannot take a command, so the S3-compatible storage is started by hand.
+      - name: Start object storage (SeaweedFS)
+        run: |
+          docker run -d --name wrapfit-storage -p 8333:8333 \
+            -v "$PWD/docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro" \
+            chrislusf/seaweedfs:4.48 server -dir=/data -s3 -s3.port=8333 \
+            -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=64
+          for i in $(seq 1 30); do
+            docker exec wrapfit-storage wget -q -O /dev/null http://127.0.0.1:9333/cluster/status && break
+            sleep 2
+          done
+          echo 's3.bucket.create -name wrapfit' | docker exec -i wrapfit-storage weed shell -master=127.0.0.1:9333
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Shared Math Engine
+        run: npm --workspace=shared run build
+
+      - name: Prepare database
+        run: |
+          npm --workspace=be run db:generate
+          npm --workspace=be run db:deploy
+          npm --workspace=be run db:seed
+
+      - name: Backend E2E Tests
+        run: npm --workspace=be run test:e2e

@@ -17,6 +17,7 @@ dist/
 # Misc
 .DS_Store
 *.pem
+uploads/
 
 # Debug logs
 npm-debug.log*
@@ -51,5 +52,17 @@ desktop.ini
 *.pptx
 *.pdf
 resourse IDEA/
-Templates/
+/Templates/
 "Research Tools, Sites [Recommended]/"
+
+# Scratch & Temporary Scripts
+temp_docx/
+tmp/
+*.txt
+DESIGN_MD.b64
+test_pages.ps1
+check_word_stats.ps1
+generate_docx_report.js
+generate_tight_docx_report.js
+index.html
+
