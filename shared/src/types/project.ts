@@ -47,15 +47,51 @@ export interface BrandKit {
   slogan: string | null;
 }
 
-export interface PackagingProject {
+export type ProjectStatus = "ACTIVE" | "ARCHIVED" | "DELETED";
+export type ProjectVisibility = "PRIVATE" | "UNLISTED" | "PUBLIC";
+
+export interface ProjectCollection {
   id: string;
   userId: string;
   title: string;
+  description?: string;
+  colorTag?: string;
+  projectsCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoxTemplateItem {
+  id: string;
+  name: string;
+  category: "retail" | "luxury" | "food" | "accessories";
+  description?: string;
+  structureType: BoxStructureType;
+  dimensions: BoxDimensions;
+  isCurated: boolean;
+  preview3dUrl?: string;
+  tags?: string[];
+  usageCount?: number;
+}
+
+export interface PackagingProject {
+  id: string;
+  userId: string;
+  collectionId?: string | null;
+  title: string;
+  slug?: string;
+  status?: ProjectStatus;
+  visibility?: ProjectVisibility;
+  allowFork?: boolean;
+  forkedFromId?: string | null;
   structureType: BoxStructureType;
   dimensions: BoxDimensions;
   material: MaterialSpecification;
   elements: CanvasElement[];
   thumbnailUrl?: string;
+  tags?: string[];
+  viewsCount?: number;
+  likesCount?: number;
   createdAt: string;
   updatedAt: string;
 }
