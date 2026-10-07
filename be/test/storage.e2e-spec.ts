@@ -179,14 +179,21 @@ describe('Storage (e2e)', () => {
         .patch(`/api/projects/${source}`)
         .send({ canvasState: { elements: [{ ...image, content: ticket.fileUrl }] } })
         .expect(200);
-      await as(kim).post(`/api/projects/${source}/duplicate`).expect(201);
+      const copy = (await as(kim).post(`/api/projects/${source}/duplicate`).expect(201)).body.id;
+      const remove = async (projectId: string) => {
+        await as(kim).patch(`/api/projects/${projectId}/status`).send({ status: 'DELETED' }).expect(200);
+        await as(kim).delete(`/api/projects/${projectId}`).expect(204);
+      };
 
-      await as(kim).patch(`/api/projects/${source}/status`).send({ status: 'DELETED' }).expect(200);
-      await as(kim).delete(`/api/projects/${source}`).expect(204);
-
+      await remove(source);
       expect((await fetch(ticket.fileUrl)).status).toBe(200);
-      // Still counted in the uploader's usage, no longer attached to the deleted project.
-      expect(await prisma.storedFile.findUnique({ where: { key: ticket.key } })).toMatchObject({ projectId: null });
+      // Still counted in the uploader's usage, now attached to the copy that shows it.
+      expect(await prisma.storedFile.findUnique({ where: { key: ticket.key } })).toMatchObject({ projectId: copy });
+
+      // Deleting the last project that shows it deletes the file (no orphan left in the bucket).
+      await remove(copy);
+      expect((await fetch(ticket.fileUrl)).status).toBe(404);
+      expect(await prisma.storedFile.findUnique({ where: { key: ticket.key } })).toBeNull();
     });
 
     it('are deleted by the trash purge, but kept for projects restored in time', async () => {
@@ -243,6 +250,15 @@ describe('Storage (e2e)', () => {
     expect((await fetch(avatar)).status).toBe(404);
     expect((await fetch(inProject)).status).toBe(404);
     expect((await fetch(shared)).status).toBe(200);
+    // The shared image now belongs to Kim and her remix (quota included), and goes with the remix.
+    const kimId = (await as(kim).get('/api/users/me').expect(200)).body.id;
+    expect(await prisma.storedFile.findFirst({ where: { key: { endsWith: shared.split('/').pop()! } } })).toMatchObject({
+      userId: kimId,
+      projectId: remix.id,
+    });
+    await as(kim).patch(`/api/projects/${remix.id}/status`).send({ status: 'DELETED' }).expect(200);
+    await as(kim).delete(`/api/projects/${remix.id}`).expect(204);
+    expect((await fetch(shared)).status).toBe(404);
   });
 
   it('tracks the uploads each project shows, through its canvas and its snapshots', async () => {

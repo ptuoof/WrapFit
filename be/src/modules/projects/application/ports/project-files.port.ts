@@ -11,9 +11,9 @@ export interface ProjectFile {
 /** Files of projects in object storage (implemented by StorageService). */
 export interface IProjectFiles {
   /**
-   * Detaches from these projects the uploaded files that other projects still show (project_file_refs): a duplicate
-   * or a remix copies the canvas with its images, so those files must outlive the deleted source. Call before
-   * listProjectFiles.
+   * Moves the uploaded files of these projects that other projects still show (project_file_refs) to the oldest of
+   * those projects: a duplicate or a remix copies the canvas with its images, so those files must outlive the deleted
+   * source. Call before listProjectFiles.
    */
   detachSharedFiles(projectIds: string[]): Promise<void>;
   /** Read before deleting the projects: the file rows disappear with them (ON DELETE CASCADE). */

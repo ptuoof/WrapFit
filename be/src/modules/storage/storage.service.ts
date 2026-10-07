@@ -266,25 +266,32 @@ export class StorageService implements IProjectFiles {
 
   async detachSharedFiles(projectIds: string[]): Promise<void> {
     if (!projectIds.length) return;
-    // Indexed lookup in project_file_refs. A remix that starts showing a file after this statement makes the deletion
-    // of the projects fail on the foreign key instead of deleting a file it shows (the next run retries).
+    // The file moves to the oldest other project that shows it (a copy or a remix): it is then deleted with the last
+    // project that shows it, instead of staying in the bucket with no project at all. Its owner and quota stay.
+    // A remix that starts showing a file after this statement makes the deletion of the projects fail on the foreign
+    // key instead of deleting a file it shows (the next run retries).
     await this.prisma.$executeRaw`
-      UPDATE stored_files f SET project_id = NULL
-      WHERE f.project_id = ANY(${projectIds}::uuid[])
-        AND EXISTS (SELECT 1 FROM project_file_refs r
-                    WHERE r.stored_file_id = f.id AND r.project_id <> ALL(${projectIds}::uuid[]))`;
+      UPDATE stored_files f SET project_id = heir.project_id
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE r.project_id <> ALL(${projectIds}::uuid[])
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id AND f.project_id = ANY(${projectIds}::uuid[])`;
   }
 
   /**
    * Prepares the deletion of a user and returns the keys of the objects to delete afterwards: their uploads and the
    * generated files of their projects. Uploads that projects of other users still show (remixes) are handed over to
-   * the owner of the oldest of those projects, file and quota included, so they survive the deletion.
+   * the oldest of those projects and its owner, file and quota included: they survive the deletion and go with the
+   * last project that shows them.
    */
   async releaseUserFiles(userId: string): Promise<string[]> {
     await this.prisma.$executeRaw`
-      UPDATE stored_files f SET user_id = heir.user_id, project_id = NULL
+      UPDATE stored_files f SET user_id = heir.user_id, project_id = heir.project_id
       FROM (
-        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, p.user_id
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id, p.user_id
         FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
         WHERE p.user_id <> ${userId}::uuid
         ORDER BY r.stored_file_id, p.created_at, p.id

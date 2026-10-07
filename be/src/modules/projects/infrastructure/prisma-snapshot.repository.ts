@@ -29,11 +29,18 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     return this.prisma.projectSnapshot.count({ where: { projectId, isAutomatic: false } });
   }
 
-  /** A snapshot copies the current canvas: it shows no file the project does not show already (no ref change). */
+  /**
+   * The snapshot copies the canvas the service read a moment before: a save in between may have dropped some of its
+   * files from the project, so the refs are recomputed with it.
+   */
   async create(projectId: string, snapshot: NewSnapshot): Promise<SnapshotSummary> {
-    const row = await this.prisma.projectSnapshot.create({
-      data: this.toData(projectId, snapshot),
-      select: snapshotSummarySelect,
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.projectSnapshot.create({
+        data: this.toData(projectId, snapshot),
+        select: snapshotSummarySelect,
+      });
+      await syncProjectFileRefs(tx, projectId);
+      return created;
     });
     return toSnapshotSummary(row);
   }

@@ -9,15 +9,16 @@ import { syncProjectFileRefs } from './project-file-refs';
 export const MAX_AUTOMATIC_SNAPSHOTS = 20;
 
 /**
- * Deletes the automatic snapshots of a project beyond the newest MAX_AUTOMATIC_SNAPSHOTS, in the transaction that
- * just added one, then releases the uploads only they showed.
+ * Call in the transaction that just added an automatic snapshot: deletes the automatic snapshots of the project beyond
+ * the newest MAX_AUTOMATIC_SNAPSHOTS, then recomputes the project's file refs. Always: the new snapshot copies a
+ * canvas read earlier (the export reads it when rendering starts), which may show files the saved canvas dropped since.
  */
 export async function pruneAutomaticSnapshots(tx: Prisma.TransactionClient, projectId: string): Promise<void> {
-  const removed = await tx.$executeRaw`
+  await tx.$executeRaw`
     DELETE FROM project_snapshots WHERE id IN (
       SELECT id FROM project_snapshots
       WHERE project_id = ${projectId}::uuid AND is_automatic
       ORDER BY created_at DESC, id DESC
       OFFSET ${MAX_AUTOMATIC_SNAPSHOTS})`;
-  if (removed) await syncProjectFileRefs(tx, projectId);
+  await syncProjectFileRefs(tx, projectId);
 }
