@@ -30,6 +30,18 @@ function layout(greeting: string, body: string, action: string, link: string, fo
 </html>`;
 }
 
+/** Message of `npm run mail:test`: checks delivery and spam placement with the real settings. */
+export function testEmail(target: string, sentAt: Date, frontendUrl: string): EmailContent {
+  const greeting = 'Chào bạn,';
+  const body = `Đây là email thử của WrapFit, gửi qua ${target} lúc ${sentAt.toISOString()}. Nếu email này nằm trong hộp thư đến (không phải Spam), cấu hình gửi mail đã đúng.`;
+  const footer = 'Email này chỉ dùng để kiểm tra cấu hình, không cần trả lời.';
+  return {
+    subject: 'WrapFit: email thử cấu hình',
+    text: `${greeting}\n\n${body}\n\n${footer}\n`,
+    html: layout(greeting, body, 'Mở WrapFit', frontendUrl, footer),
+  };
+}
+
 /** Content of the email that carries a one-time link. `name` is the account's full name, if any. */
 export function authEmail(purpose: AuthTokenPurpose, link: string, name: string | null): EmailContent {
   const greeting = name ? `Chào ${name},` : 'Chào bạn,';

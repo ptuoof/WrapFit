@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { hashAuthToken, rawAuthToken } from '../auth/auth-token.crypto';
 import { AuthEmailJobData } from './mail.constants';
 import { MailProcessor } from './mail.processor';
-import { isPermanentSmtpFailure, maskEmail, SmtpMailer } from './smtp-mailer';
+import { isPermanentSmtpFailure, maskEmail, SmtpMailer, SmtpStartupCheck } from './smtp-mailer';
 
 describe('MailProcessor', () => {
   const secret = 'b'.repeat(32);
@@ -98,5 +98,30 @@ describe('SMTP helpers', () => {
   it('masks addresses', () => {
     expect(maskEmail('an.nguyen@gmail.com')).toBe('a***@g***.com');
     expect(maskEmail('x@localhost')).toBe('x***@l***');
+  });
+});
+
+describe('SmtpStartupCheck', () => {
+  const check = (result: Awaited<ReturnType<SmtpMailer['verify']>>) => {
+    const mailer = { target: 'smtp.resend.com:465 (TLS, user resend)', verify: jest.fn().mockResolvedValue(result) };
+    const startup = new SmtpStartupCheck(mailer as unknown as SmtpMailer);
+    const log = jest.spyOn(startup['logger'], 'log').mockImplementation(() => undefined);
+    const error = jest.spyOn(startup['logger'], 'error').mockImplementation(() => undefined);
+    return { startup, log, error };
+  };
+
+  it('logs the relay as ready when the connection and the login work', async () => {
+    const { startup, log, error } = check({ ok: true });
+    await expect(startup.run()).resolves.toBe(true);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('mail.smtp_ready target=smtp.resend.com:465'));
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('logs an error with the target (never the password) and does not stop the worker', async () => {
+    const { startup, error } = check({ ok: false, error: 'Invalid login [535]' });
+    await expect(startup.run()).resolves.toBe(false);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('mail.smtp_unreachable target=smtp.resend.com:465 (TLS, user resend): Invalid login [535]'),
+    );
   });
 });

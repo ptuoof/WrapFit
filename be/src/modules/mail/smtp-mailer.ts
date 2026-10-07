@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
 import { AppConfigService } from '../../config/app-config.type';
@@ -9,15 +9,21 @@ import type { EmailContent } from './mail.templates';
 export class SmtpMailer implements OnModuleDestroy {
   private readonly transport: Transporter;
   private readonly from: string;
+  /** `host:port (TLS, user)` for logs: never the password. */
+  readonly target: string;
 
   constructor(config: ConfigService) {
     const env = config as unknown as AppConfigService;
     const user = env.get('SMTP_USER', { infer: true });
+    const host = env.get('SMTP_HOST', { infer: true });
+    const port = env.get('SMTP_PORT', { infer: true });
+    const secure = env.get('SMTP_SECURE', { infer: true }) === 'true';
     this.from = env.get('MAIL_FROM', { infer: true });
+    this.target = `${host}:${port} (${secure ? 'TLS' : 'STARTTLS if offered'}, ${user ? `user ${user}` : 'no auth'})`;
     this.transport = createTransport({
-      host: env.get('SMTP_HOST', { infer: true }),
-      port: env.get('SMTP_PORT', { infer: true }),
-      secure: env.get('SMTP_SECURE', { infer: true }) === 'true', // implicit TLS (465); 587 upgrades with STARTTLS
+      host,
+      port,
+      secure, // implicit TLS (465); 587 upgrades with STARTTLS
       auth: user ? { user, pass: env.get('SMTP_PASS', { infer: true }) } : undefined,
       connectionTimeout: 10_000,
       greetingTimeout: 10_000,
@@ -29,8 +35,51 @@ export class SmtpMailer implements OnModuleDestroy {
     await this.transport.sendMail({ from: this.from, to, ...content });
   }
 
+  /**
+   * Connects and authenticates without sending anything: catches a wrong host, port, TLS mode or API key before a
+   * user waits for an email. Never throws.
+   */
+  async verify(): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      await this.transport.verify();
+      return { ok: true };
+    } catch (error) {
+      const code = (error as { responseCode?: number; code?: string }) ?? {};
+      const detail = code.responseCode ?? code.code;
+      return { ok: false, error: `${error instanceof Error ? error.message : String(error)}${detail ? ` [${detail}]` : ''}` };
+    }
+  }
+
   onModuleDestroy(): void {
     this.transport.close();
+  }
+}
+
+/**
+ * Worker start: checks the SMTP settings once, in the background (the export queue starts without waiting). A failure
+ * is logged as an error with the target, so a misconfigured relay shows up in the logs right after a deploy.
+ */
+@Injectable()
+export class SmtpStartupCheck implements OnApplicationBootstrap {
+  private readonly logger = new Logger('SmtpStartupCheck');
+
+  constructor(private readonly mailer: SmtpMailer) {}
+
+  onApplicationBootstrap(): void {
+    void this.run();
+  }
+
+  async run(): Promise<boolean> {
+    const result = await this.mailer.verify();
+    if (result.ok) {
+      this.logger.log(`mail.smtp_ready target=${this.mailer.target}`);
+    } else {
+      this.logger.error(
+        `mail.smtp_unreachable target=${this.mailer.target}: ${result.error}. Verify and reset emails will be retried, ` +
+          'then fail: check SMTP_* in .env (npm --workspace=be run mail:test -- you@example.com)',
+      );
+    }
+    return result.ok;
   }
 }
 

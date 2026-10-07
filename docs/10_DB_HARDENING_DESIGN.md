@@ -33,6 +33,9 @@
    - Cấu hình: `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`, `SMTP_USER=resend`,
      `SMTP_PASS=<API key chỉ có quyền gửi>`, `MAIL_FROM=WrapFit <no-reply@mail.wrapfit.vn>`.
    - Điều kiện: nhóm sở hữu domain `wrapfit.vn` (cần xác nhận trước khi cấu hình DNS).
+   - Kiểm tra cấu hình: worker log `mail.smtp_ready` / `mail.smtp_unreachable` lúc khởi động; gửi thư thử bằng
+     `npm --workspace=be run mail:test -- you@example.com` (dev) hoặc
+     `docker compose exec worker node dist/mail-test.js you@example.com` (production), rồi xem thư có vào Spam không.
 > Nền: xây tiếp trên các thay đổi chưa commit của migration `20261007090000_reliability_fixes`
 > (`refresh_tokens.replaced_by_id`, `packaging_projects.version`, `stored_files.confirmed_at`, `orphaned_objects`,
 > `StorageMaintenanceTask`, `AppLogger`, `runWithRequestId`).
