@@ -5,7 +5,8 @@ export const SNAPSHOT_REPOSITORY = Symbol('SNAPSHOT_REPOSITORY');
 
 export interface NewSnapshot {
   name: string;
-  previewUrl: string | null;
+  /** Storage key of the uploaded preview image. */
+  previewKey: string | null;
   canvasState: CanvasState;
   dimensions: BoxDimensions;
 }

@@ -23,7 +23,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { IProjectFiles, ProjectFile } from '../projects/application/ports/project-files.port';
+import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects/application/ports/project-files.port';
+import { assetUrl, configureAssetBase, uploadKeyOf } from './asset-keys';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import {
   CONFIRM_UPLOADS_AFTER_MS,
@@ -46,6 +47,14 @@ export interface PresignedUpload {
 }
 
 const DELETE_BATCH = 1000; // S3 DeleteObjects limit
+
+const fileUrlNotAllowed = () =>
+  new BadRequestException({
+    code: 'FILE_URL_NOT_ALLOWED',
+    message: 'Only files uploaded to WrapFit can be used here (POST /api/storage/presigned-upload)',
+  });
+const fileNotOwned = () =>
+  new BadRequestException({ code: 'FILE_NOT_OWNED', message: 'This file is not one of your uploads' });
 /** Rows handled per maintenance run (StorageMaintenanceTask); the rest wait for the next run. */
 const MAINTENANCE_BATCH = 200;
 /** A bucket object that still cannot be deleted after this many retries is left for an operator (logged). */
@@ -75,6 +84,8 @@ export class StorageService implements IProjectFiles {
     const env = config as unknown as AppConfigService;
     this.bucket = env.get('STORAGE_BUCKET', { infer: true });
     this.publicUrl = env.get('STORAGE_PUBLIC_URL', { infer: true }).replace(/\/+$/, '');
+    // Keys are turned into URLs only while storage is enabled (no bucket = no file can exist).
+    configureAssetBase(this.bucket ? this.publicUrl : '');
     if (!this.bucket) return;
 
     const endpoint = env.get('STORAGE_ENDPOINT', { infer: true }) || undefined;
@@ -136,7 +147,7 @@ export class StorageService implements IProjectFiles {
       uploadUrl,
       method: 'PUT',
       headers: { 'Content-Type': dto.contentType },
-      fileUrl: `${this.publicUrl}/${key}`,
+      fileUrl: assetUrl(key)!,
       expiresIn: UPLOAD_URL_TTL_SECONDS,
     };
   }
@@ -171,7 +182,7 @@ export class StorageService implements IProjectFiles {
       create: { key: file.key, ...record },
       update: record,
     });
-    return `${this.publicUrl}/${file.key}`;
+    return assetUrl(file.key);
   }
 
   /**
@@ -179,13 +190,34 @@ export class StorageService implements IProjectFiles {
    * ignored (clients may store the https form of the URL).
    */
   uploadedKeyOf(url: string): string | null {
-    if (!this.publicUrl) return null;
-    const strip = (value: string) => value.replace(/^https?:\/\//, '');
-    const base = `${strip(this.publicUrl)}/`;
-    const target = strip(url).split(/[?#]/)[0];
-    if (!target.startsWith(base)) return null;
-    const key = decodeURIComponent(target.slice(base.length));
-    return key.startsWith('users/') ? key : null;
+    return uploadKeyOf(url);
+  }
+
+  /**
+   * Key of the upload behind `url`, to store as a thumbnail, preview, avatar or logo: the URL must be an upload of
+   * WrapFit made by `userId` for one of `purposes` (no hot-linking of other sites or of other users' files).
+   */
+  async resolveUpload(url: string, userId: string, purposes: UploadPurpose[]): Promise<string> {
+    const key = uploadKeyOf(url);
+    if (!key) throw fileUrlNotAllowed();
+    const file = await this.prisma.storedFile.findUnique({ where: { key }, select: { userId: true, purpose: true } });
+    if (file?.userId !== userId || !purposes.includes(file.purpose as UploadPurpose)) throw fileNotOwned();
+    return key;
+  }
+
+  /**
+   * A saved canvas may show the caller's own logos and images, and the uploads it already showed (a remix keeps the
+   * images of the original author). Anything else is refused: pointing at another user's file would keep it alive
+   * after its owner deleted it.
+   */
+  async assertCanvasUploads(keys: string[], userId: string, alreadyShown: string[]): Promise<void> {
+    const shown = new Set(alreadyShown);
+    const added = keys.filter((key) => !shown.has(key));
+    if (!added.length) return;
+    const owned = await this.prisma.storedFile.count({
+      where: { key: { in: added }, userId, purpose: { in: ['LOGO', 'IMAGE'] } },
+    });
+    if (owned !== added.length) throw fileNotOwned();
   }
 
   /** Downloads a file from the bucket (print exports embed the user's images). */

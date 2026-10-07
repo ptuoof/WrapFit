@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { ACCESS_COOKIE } from '../../auth/auth.constants';
 import { SnapshotsService } from '../application/snapshots.service';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
@@ -20,8 +21,8 @@ export class SnapshotsController {
 
   @Post()
   @ApiOperation({ summary: 'Save the current canvas and dimensions as a named version' })
-  create(@Param('id') projectId: string, @Body() dto: CreateSnapshotDto) {
-    return this.snapshotsService.create(projectId, dto);
+  create(@Param('id') projectId: string, @CurrentUser('id') userId: string, @Body() dto: CreateSnapshotDto) {
+    return this.snapshotsService.create(projectId, userId, dto);
   }
 
   @Post(':snapshotId/restore')

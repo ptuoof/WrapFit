@@ -69,9 +69,12 @@ export class UpdateProjectDto {
   @IsUUID()
   collectionId?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'https URL of an uploaded preview image' })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'URL of a preview image you uploaded (purpose THUMBNAIL or IMAGE); 400 FILE_URL_NOT_ALLOWED / FILE_NOT_OWNED otherwise',
+  })
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true, require_tld: false })
   @MaxLength(2048)
   thumbnailUrl?: string | null;
 

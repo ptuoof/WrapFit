@@ -74,6 +74,8 @@ describe('ProjectsService', () => {
         { projectId: 'p-3', key: 'c.png' },
       ]),
       deleteObjects: jest.fn(),
+      resolveUpload: jest.fn(),
+      assertCanvasUploads: jest.fn(),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [

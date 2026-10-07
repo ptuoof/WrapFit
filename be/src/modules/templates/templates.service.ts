@@ -4,6 +4,8 @@ import { paginate, Paginated, toSkipTake } from '../../common/dto/pagination.dto
 import { PrismaService } from '../../prisma/prisma.service';
 import { MIN_COMMUNITY_FITCHECK_SCORE } from '../projects/domain/project-fitcheck';
 import { readDimensionLimits } from '../projects/domain/project.policy';
+import { assetUrl, toClientCanvas } from '../storage/asset-keys';
+import { authorSelect, presentAuthor } from '../users/user.select';
 import { QueryHubDto } from './dto/query-hub.dto';
 
 const structureSelect = { select: { id: true, name: true } } as const;
@@ -30,12 +32,12 @@ const communityCardSelect = {
   industry: true,
   dimensions: true,
   materialSpec: true,
-  thumbnailUrl: true,
+  thumbnailKey: true,
   tags: true,
   likesCount: true,
   viewsCount: true,
   fitcheckScore: true,
-  user: { select: { fullName: true, shopName: true, avatarUrl: true } },
+  user: { select: authorSelect },
   _count: { select: { forks: true } },
 } satisfies Prisma.PackagingProjectSelect;
 
@@ -44,10 +46,11 @@ type CommunityRow = Prisma.PackagingProjectGetPayload<{ select: typeof community
 
 /** A card of the hub grid. Curated cards are opened by `id`, community cards by `slug` (public page). */
 const curatedCard = ({ boxTemplate, ...row }: CuratedRow) => ({ ...row, structure: boxTemplate });
-const communityCard = ({ template, user, _count, ...row }: CommunityRow) => ({
+const communityCard = ({ template, user, _count, thumbnailKey, ...row }: CommunityRow) => ({
   ...row,
+  thumbnailUrl: assetUrl(thumbnailKey),
   structure: template,
-  author: user,
+  author: presentAuthor(user),
   usesCount: _count.forks, // remixes
 });
 
@@ -87,9 +90,10 @@ export class TemplatesService {
       },
     });
     if (!row) throw new NotFoundException('Template not found');
-    const { boxTemplate, ...template } = row;
+    const { boxTemplate, canvasState, ...template } = row;
     return {
       ...template,
+      canvasState: toClientCanvas(canvasState as never),
       structure: { id: boxTemplate.id, name: boxTemplate.name },
       // For the "use my gift's size" modal: the new size must stay inside these limits.
       dimensionLimits: readDimensionLimits(boxTemplate.formulaSchema),

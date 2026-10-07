@@ -7,6 +7,7 @@ import { Job } from 'bullmq';
 import { runWithRequestId } from '../../common/context/request-context';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
+import { toClientCanvas } from '../storage/asset-keys';
 import { StorageService } from '../storage/storage.service';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
@@ -84,7 +85,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     });
     const { project } = job;
     const dimensions = project.dimensions as unknown as BoxDimensions;
-    const canvasState = project.canvasState as { elements?: CanvasElement[] };
+    // Stored keys of uploads -> URLs: the layout and the artwork loader work on URLs.
+    const canvasState = toClientCanvas(project.canvasState as { elements?: CanvasElement[] });
     const layout = buildPrintLayout({
       title: project.title,
       structure: project.templateId,

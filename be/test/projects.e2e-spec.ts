@@ -9,7 +9,7 @@ import { MAX_SNAPSHOTS_PER_PROJECT } from '../src/modules/projects/application/s
 import { FitCheckBackfillTask } from '../src/modules/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../src/modules/projects/presentation/trash-purge.task';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { signUp } from './helpers/accounts';
+import { signUp, uploadPng } from './helpers/accounts';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -253,13 +253,14 @@ describe('Projects API (e2e)', () => {
     });
 
     it('updates fields and re-validates dimensions against the template', async () => {
+      const thumbnailUrl = await uploadPng(app, carol.cookie, 'THUMBNAIL', projectId);
       const res = await as(carol)
         .patch(`/api/projects/${projectId}`)
         .send({
           title: 'Hộp đã sửa',
           dimensions: { length: 150, width: 90, height: 70, paperThickness: 0.5 },
           collectionId: carolCollection,
-          thumbnailUrl: 'https://cdn.wrapfit.vn/thumbs/1.png',
+          thumbnailUrl,
           tags: ['Moi'],
         })
         .expect(200);
@@ -267,9 +268,13 @@ describe('Projects API (e2e)', () => {
         title: 'Hộp đã sửa',
         dimensions: { length: 150, width: 90, height: 70, paperThickness: 0.5 },
         collection: { id: carolCollection },
-        thumbnailUrl: 'https://cdn.wrapfit.vn/thumbs/1.png',
+        thumbnailUrl,
         tags: ['moi'],
       });
+      // The database keeps the object key, not the URL.
+      const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId } });
+      expect(thumbnailUrl.endsWith(`/${stored.thumbnailKey}`)).toBe(true);
+      expect(stored.thumbnailKey).toMatch(/^users\//);
 
       const cleared = await as(carol)
         .patch(`/api/projects/${projectId}`)
@@ -282,7 +287,20 @@ describe('Projects API (e2e)', () => {
         .send({ dimensions: { length: 700, width: 90, height: 70 } })
         .expect(400);
       await as(carol).patch(`/api/projects/${projectId}`).send({ templateId: 'pillow' }).expect(400);
-      await as(carol).patch(`/api/projects/${projectId}`).send({ thumbnailUrl: 'http://insecure.example/a.png' }).expect(400);
+      // Only the caller's own uploads: no image of another site, no file of another user.
+      const external = await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send({ thumbnailUrl: 'https://insecure.example/a.png' })
+        .expect(400);
+      expect(external.body.code).toBe('FILE_URL_NOT_ALLOWED');
+      const othersFile = await uploadPng(app, dave.cookie, 'THUMBNAIL');
+      const foreign = await as(carol).patch(`/api/projects/${projectId}`).send({ thumbnailUrl: othersFile }).expect(400);
+      expect(foreign.body.code).toBe('FILE_NOT_OWNED');
+      const otherCanvas = await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send({ canvasState: { elements: [{ id: 'i', type: 'image', panelId: 'front', x: 0, y: 0, width: 10, height: 10, rotation: 0, content: othersFile }] } })
+        .expect(400);
+      expect(otherCanvas.body.code).toBe('FILE_NOT_OWNED');
     });
 
     it('refuses a save based on an older version instead of overwriting the newer one (409)', async () => {
@@ -391,10 +409,9 @@ describe('Projects API (e2e)', () => {
           )
           .expect(201)
       ).body;
-      await as(carol)
-        .patch(`/api/projects/${source.id}`)
-        .send({ thumbnailUrl: 'https://cdn.wrapfit.vn/thumbs/goc.png' })
-        .expect(200);
+      // Uploaded first: supertest starts the request's server when the request is created.
+      const thumbnailUrl = await uploadPng(app, carol.cookie, 'THUMBNAIL', source.id);
+      await as(carol).patch(`/api/projects/${source.id}`).send({ thumbnailUrl }).expect(200);
     });
 
     it('creates an independent copy with a new id and slug', async () => {

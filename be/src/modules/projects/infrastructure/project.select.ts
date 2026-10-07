@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { assetUrl, toClientCanvas } from '../../storage/asset-keys';
 import type { ProjectDetail, ProjectSummary, SnapshotSummary } from '../domain/project.types';
 
 export const summarySelect = {
@@ -12,7 +13,7 @@ export const summarySelect = {
   dimensions: true,
   materialSpec: true,
   fitcheckScore: true,
-  thumbnailUrl: true,
+  thumbnailKey: true,
   tags: true,
   occasion: true,
   industry: true,
@@ -36,7 +37,7 @@ export const detailSelect = {
 export const snapshotSummarySelect = {
   id: true,
   name: true,
-  previewUrl: true,
+  previewKey: true,
   dimensions: true,
   createdAt: true,
 } satisfies Prisma.ProjectSnapshotSelect;
@@ -46,9 +47,15 @@ type DetailRow = Prisma.PackagingProjectGetPayload<{ select: typeof detailSelect
 type SnapshotRow = Prisma.ProjectSnapshotGetPayload<{ select: typeof snapshotSummarySelect }>;
 
 // JSON columns are only written through validated DTOs, so their shape is trusted when read back.
-export const toSummary = (row: SummaryRow) => row as unknown as ProjectSummary;
-export const toDetail = (row: DetailRow) => row as unknown as ProjectDetail;
-export const toSnapshotSummary = (row: SnapshotRow) => row as unknown as SnapshotSummary;
+// Stored keys of uploads are returned as URLs (thumbnail, preview, canvas images).
+export const toSummary = ({ thumbnailKey, ...row }: SummaryRow) =>
+  ({ ...row, thumbnailUrl: assetUrl(thumbnailKey) }) as unknown as ProjectSummary;
+export const toDetail = (row: DetailRow) => {
+  const summary = toSummary(row) as unknown as DetailRow;
+  return { ...summary, canvasState: toClientCanvas(row.canvasState as never) } as unknown as ProjectDetail;
+};
+export const toSnapshotSummary = ({ previewKey, ...row }: SnapshotRow) =>
+  ({ ...row, previewUrl: assetUrl(previewKey) }) as unknown as SnapshotSummary;
 
 /** DTO class instances -> plain JSON for Prisma. */
 export const json = (value: object) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonObject;

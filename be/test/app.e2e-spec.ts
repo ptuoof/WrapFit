@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { setupSwagger } from '../src/swagger.setup';
+import { uploadPng } from './helpers/accounts';
 
 /**
  * Needs a running PostgreSQL with the migrations applied (see README: "Chạy test").
@@ -275,14 +276,15 @@ describe('API (e2e)', () => {
       const save = (body: Record<string, unknown>) =>
         api().patch('/api/users/me/brand-kit').set('Cookie', cookies({ wf_access: aliceAccess })).send(body);
 
+      const logoUrl = await uploadPng(app, cookies({ wf_access: aliceAccess }), 'LOGO');
       const res = await save({
-        logoUrl: 'https://cdn.wrapfit.vn/users/alice/logo.svg',
+        logoUrl,
         colors: ['#2D5A27', '#D4AF37', '#FAEDCD'],
         fonts: ['Playfair Display', 'DM Sans'],
         slogan: '  Gói trọn yêu thương  ',
       }).expect(200);
       expect(res.body.brandKit).toEqual({
-        logoUrl: 'https://cdn.wrapfit.vn/users/alice/logo.svg',
+        logoUrl,
         colors: ['#2D5A27', '#D4AF37', '#FAEDCD'],
         fonts: ['Playfair Display', 'DM Sans'],
         slogan: 'Gói trọn yêu thương',
@@ -299,7 +301,8 @@ describe('API (e2e)', () => {
 
       await save({ colors: ['#111111', '#222222'] }).expect(400); // 3 to 5 colors
       await save({ colors: ['#111111', '#222222', 'red'] }).expect(400);
-      await save({ colors: ['#111111', '#222222', '#333333'], logoUrl: 'http://insecure.example/logo.png' }).expect(400);
+      // The logo must be an upload of the user, not an image of another site.
+      await save({ colors: ['#111111', '#222222', '#333333'], logoUrl: 'https://insecure.example/logo.png' }).expect(400);
       await save({ colors: ['#111111', '#222222', '#333333'], fonts: ['a', 'b', 'c', 'd'] }).expect(400);
       await api().patch('/api/users/me/brand-kit').send({ colors: ['#111111', '#222222', '#333333'] }).expect(401);
     });

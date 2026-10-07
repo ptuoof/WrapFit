@@ -12,9 +12,9 @@ export class CreateSnapshotDto {
   @MaxLength(MAX_TITLE_LENGTH)
   name: string;
 
-  @ApiPropertyOptional({ description: 'https URL of an uploaded preview image of this version' })
+  @ApiPropertyOptional({ description: 'URL of a preview image of this version you uploaded (purpose THUMBNAIL or IMAGE)' })
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true, require_tld: false })
   @MaxLength(2048)
   previewUrl?: string;
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { FitCheckReport } from '@wrapfit/shared';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { toStoredCanvas } from '../../storage/asset-keys';
 import type {
   DesignTemplateSource,
   IProjectRepository,
@@ -100,7 +101,7 @@ export class PrismaProjectRepository implements IProjectRepository {
         title: project.title,
         dimensions: json(project.dimensions),
         materialSpec: json(project.materialSpec),
-        canvasState: json(project.canvasState),
+        canvasState: json(toStoredCanvas(project.canvasState)),
         fitcheckState: nullableJson(project.fitCheck),
         fitcheckScore: project.fitCheck?.score ?? null,
         forkedFromId: project.forkedFromId ?? null,
@@ -193,7 +194,7 @@ export class PrismaProjectRepository implements IProjectRepository {
     return {
       title: changes.title,
       collectionId: changes.collectionId,
-      thumbnailUrl: changes.thumbnailUrl,
+      thumbnailKey: changes.thumbnailKey,
       tags: changes.tags,
       occasion: changes.occasion,
       industry: changes.industry,
@@ -201,7 +202,7 @@ export class PrismaProjectRepository implements IProjectRepository {
       allowFork: changes.allowFork,
       dimensions: changes.dimensions && json(changes.dimensions),
       materialSpec: changes.materialSpec && json(changes.materialSpec),
-      canvasState: changes.canvasState && json(changes.canvasState),
+      canvasState: changes.canvasState && json(toStoredCanvas(changes.canvasState)),
       ...(changes.fitCheck !== undefined && {
         fitcheckState: nullableJson(changes.fitCheck),
         fitcheckScore: changes.fitCheck?.score ?? null,

@@ -48,7 +48,8 @@ export interface ProjectChanges {
   canvasState?: CanvasState;
   /** Set together with a new canvas or new dimensions. */
   fitCheck?: FitCheckReport | null;
-  thumbnailUrl?: string | null;
+  /** Storage key of the uploaded preview image. */
+  thumbnailKey?: string | null;
   tags?: string[];
   occasion?: Occasion | null;
   industry?: Industry | null;

@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { BoxDimensions, MaterialSpecification } from '@wrapfit/shared';
+import { storedCanvasKeys, toStoredCanvas } from '../../storage/asset-keys';
 import { paginate, Paginated, toSkipTake } from '../../../common/dto/pagination.dto';
 import {
   canDeletePermanently,
@@ -35,6 +36,12 @@ import { IProjectRepository, PROJECT_REPOSITORY, ProjectChanges } from './ports/
 const PURGE_BATCH = 500;
 /** Projects checked per query by the FitCheck backfill. */
 const BACKFILL_BATCH = 200;
+/** Uploads a project thumbnail may use. */
+const THUMBNAIL_PURPOSES = ['THUMBNAIL' as const, 'IMAGE' as const];
+
+/** Upload keys shown by a canvas (client form with URLs, or stored form with keys). */
+const canvasKeys = (canvas: { elements?: { type: string; content: string }[] } | undefined) =>
+  canvas ? storedCanvasKeys(toStoredCanvas(canvas)) : [];
 
 @Injectable()
 export class ProjectsService {
@@ -64,6 +71,8 @@ export class ProjectsService {
     const dimensions = this.completeDimensions(dto.dimensions, materialSpec);
     this.assertDimensionsFit(dimensions, template.formulaSchema);
     const canvasState = dto.canvasState ?? design?.canvasState ?? EMPTY_CANVAS;
+    // A client that resized a curated design sends it back with the design's own images.
+    if (dto.canvasState) await this.files.assertCanvasUploads(canvasKeys(dto.canvasState), userId, canvasKeys(design?.canvasState));
 
     const project = await this.projects.create({
       userId,
@@ -115,18 +124,24 @@ export class ProjectsService {
     }
     if (dto.version !== undefined && dto.version !== project.version) throw versionConflict(project.version);
     if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, userId);
+    if (dto.canvasState) {
+      await this.files.assertCanvasUploads(canvasKeys(dto.canvasState), userId, canvasKeys(project.canvasState));
+    }
 
     const changes: ProjectChanges = {
       title: dto.title,
       collectionId: dto.collectionId,
       materialSpec: dto.materialSpec,
       canvasState: dto.canvasState,
-      thumbnailUrl: dto.thumbnailUrl,
       tags: dto.tags,
       occasion: dto.occasion,
       industry: dto.industry,
     };
 
+    if (dto.thumbnailUrl !== undefined) {
+      changes.thumbnailKey =
+        dto.thumbnailUrl === null ? null : await this.files.resolveUpload(dto.thumbnailUrl, userId, THUMBNAIL_PURPOSES);
+    }
     if (dto.dimensions) {
       const template = await this.projects.findTemplateRules(project.template.id);
       changes.dimensions = this.completeDimensions(dto.dimensions, dto.materialSpec ?? project.materialSpec);

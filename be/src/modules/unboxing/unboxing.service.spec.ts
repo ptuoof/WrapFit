@@ -1,6 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { PrismaService } from '../../prisma/prisma.service';
+import { configureAssetBase } from '../storage/asset-keys';
 import type { StorageService } from '../storage/storage.service';
 import { QR_PNG_WIDTH, qrPng, qrSvg } from './qr-code';
 import { UnboxingService } from './unboxing.service';
@@ -21,13 +22,16 @@ describe('QR code', () => {
 });
 
 describe('UnboxingService', () => {
+  beforeAll(() => configureAssetBase('https://cdn.wrapfit.vn'));
+  afterAll(() => configureAssetBase(''));
+
   const row = {
+    projectId: 'p-1',
     slug: 'AbCdEfGhIjKl',
     recipientName: 'Mẹ',
     giftNote: 'Chúc mẹ',
     audioTrackUrl: null,
     particleEffect: 'confetti',
-    qrCodeUrl: null,
     viewsCount: 0,
     createdAt: new Date(),
   };

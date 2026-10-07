@@ -8,7 +8,7 @@ import { AppConfigService } from '../../config/app-config.type';
 import { GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../../common/interfaces/auth.interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
-import { SafeUser, toSafeUser, userSelect } from '../users/user.select';
+import { presentUser, SafeUser, toSafeUser, userSelect } from '../users/user.select';
 import { UsersService } from '../users/users.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
@@ -73,7 +73,7 @@ export class AuthService {
           select: userSelect,
         });
         tokenId = await this.authTokens.issue(tx, created.id, 'VERIFY_EMAIL');
-        return created;
+        return presentUser(created);
       });
     } catch (error) {
       // Two registrations of the same address at the same moment: the second one loses on the unique email.
@@ -194,7 +194,7 @@ export class AuthService {
       select: { ...userSelect },
     });
     if (!user || !user.isActive || !user.emailVerifiedAt) throw new UnauthorizedException('Invalid refresh token');
-    return { user, ...(await this.issueTokens(user, meta, refreshId)) };
+    return { user: presentUser(user), ...(await this.issueTokens(user, meta, refreshId)) };
   }
 
   private async issueTokens(

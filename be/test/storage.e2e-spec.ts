@@ -224,10 +224,19 @@ describe('Storage (e2e)', () => {
     const avatar = await uploadAs('AVATAR');
     const inProject = await uploadAs('IMAGE', await newProject(mia));
     const shared = await uploadAs('IMAGE');
-    // Kim's design shows one of Mia's images.
-    const kimProject = await newProject(kim);
+    // Kim remixed a public design of Mia that shows one of her images.
+    const miaDesign = await newProject(mia);
     const image = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0 };
-    await as(kim).patch(`/api/projects/${kimProject}`).send({ canvasState: { elements: [{ ...image, content: shared }] } }).expect(200);
+    await as(mia).patch(`/api/projects/${miaDesign}`).send({ canvasState: { elements: [{ ...image, content: shared }] } }).expect(200);
+    const { slug } = (await as(mia).patch(`/api/projects/${miaDesign}/visibility`).send({ visibility: 'PUBLIC' }).expect(200)).body;
+    const remix = (await as(kim).post(`/api/public/projects/${slug}/fork`).expect(201)).body;
+    expect(remix.canvasState.elements[0].content).toBe(shared);
+    // Kim may keep saving the remix with Mia's image, but cannot add other files of Mia.
+    await as(kim).patch(`/api/projects/${remix.id}`).send({ canvasState: { elements: [{ ...image, content: shared }] } }).expect(200);
+    await as(kim)
+      .patch(`/api/projects/${remix.id}`)
+      .send({ canvasState: { elements: [{ ...image, content: shared }, { ...image, id: 'img-2', content: inProject }] } })
+      .expect(400);
 
     await as(admin).delete(`/api/users/${miaId}`).expect(204);
 

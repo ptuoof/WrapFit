@@ -91,11 +91,12 @@ model User {
   // Thời điểm chứng minh sở hữu email (link xác minh, đặt lại mật khẩu hoặc Google). null = chưa đăng nhập được.
   emailVerifiedAt  DateTime?        @map("email_verified_at") @db.Timestamptz(3)
   fullName         String?          @map("full_name")
-  avatarUrl        String?          @map("avatar_url")
+  avatarUrl        String?          @map("avatar_url") // Ảnh từ nguồn ngoài (Google); ảnh tải lên WrapFit nằm ở avatarKey
+  avatarKey        String?          @map("avatar_key") // Key trên bucket; API trả avatarUrl = URL của key, ưu tiên hơn avatarUrl
   shopName         String?          @map("shop_name")
   role             Role             @default(MAKER)
   subscriptionTier SubscriptionTier @default(FREE) @map("subscription_tier")
-  brandKit         Json?            @map("brand_kit") // { logoUrl, colors, fonts, slogan }
+  brandKit         Json?            @map("brand_kit") // { logoKey, colors, fonts, slogan } (API trả logoUrl)
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
@@ -229,10 +230,10 @@ model PackagingProject {
   forkedFromId   String?           @map("forked_from_id") @db.Uuid
   dimensions     Json // { length, width, height, paperThickness }
   materialSpec   Json              @map("material_spec") // { type, gsm, caliper, finish }
-  canvasState    Json              @map("canvas_state") // { elements: [...] }
+  canvasState    Json              @map("canvas_state") // { elements: [...] }; ảnh tải lên lưu bằng key (users/...), API trả URL
   fitcheckState  Json?             @map("fitcheck_state") // { isValid, score, violations }
   fitcheckScore  Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
-  thumbnailUrl   String?           @map("thumbnail_url")
+  thumbnailKey   String?           @map("thumbnail_key") // Key trên bucket; API trả thumbnailUrl
   tags           String[]          @default([])
   occasion       Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
   industry       Industry?
@@ -272,7 +273,7 @@ model ProjectSnapshot {
   name        String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
   canvasState Json     @map("canvas_state")
   dimensions  Json
-  previewUrl  String?  @map("preview_url")
+  previewKey  String?  @map("preview_key") // Key trên bucket; API trả previewUrl
   isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -304,7 +305,6 @@ model UnboxingExperience {
   giftNote       String   @map("gift_note") @db.Text
   audioTrackUrl  String?  @map("audio_track_url")
   particleEffect String   @default("confetti") @map("particle_effect")
-  qrCodeUrl      String?  @map("qr_code_url")
   viewsCount     Int      @default(0) @map("views_count")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -318,7 +318,7 @@ model SocialMockup {
   userId     String   @map("user_id") @db.Uuid
   projectId  String   @map("project_id") @db.Uuid
   presetName String   @map("preset_name")
-  renderUrl  String   @map("render_url")
+  renderKey  String   @map("render_key") // Key trên bucket của ảnh render
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)

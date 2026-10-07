@@ -16,9 +16,9 @@ import { trim } from '../../../common/utils/transform.util';
 
 /** Saves the whole brand kit (UC-02): omitted optional fields are cleared. */
 export class UpdateBrandKitDto implements BrandKit {
-  @ApiPropertyOptional({ nullable: true, description: 'https URL of the logo uploaded with purpose LOGO' })
+  @ApiPropertyOptional({ nullable: true, description: 'URL of a logo you uploaded (purpose LOGO or IMAGE)' })
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true, require_tld: false })
   @MaxLength(2048)
   logoUrl: string | null = null;
 

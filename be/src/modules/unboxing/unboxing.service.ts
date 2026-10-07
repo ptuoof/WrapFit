@@ -3,17 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assetUrl, toClientCanvas } from '../storage/asset-keys';
 import { StorageService } from '../storage/storage.service';
+import { authorSelect, presentAuthor } from '../users/user.select';
 import { SaveUnboxingDto } from './dto/save-unboxing.dto';
 import { qrPng, qrSvg } from './qr-code';
 
 const configSelect = {
+  projectId: true,
   slug: true,
   recipientName: true,
   giftNote: true,
   audioTrackUrl: true,
   particleEffect: true,
-  qrCodeUrl: true,
   viewsCount: true,
   createdAt: true,
 } satisfies Prisma.UnboxingExperienceSelect;
@@ -73,11 +75,7 @@ export class UnboxingService {
     });
 
     // Regenerated on every save so the code always points at the current FRONTEND_URL.
-    const qrCodeUrl = await this.storeQrCode(projectId, userId, row.slug);
-    if (qrCodeUrl !== row.qrCodeUrl) {
-      await this.prisma.unboxingExperience.update({ where: { projectId }, data: { qrCodeUrl } });
-      row.qrCodeUrl = qrCodeUrl;
-    }
+    await this.storeQrCode(projectId, userId, row.slug);
     return { created: !existed, experience: this.view(row) };
   }
 
@@ -118,8 +116,8 @@ export class UnboxingService {
             dimensions: true,
             materialSpec: true,
             canvasState: true,
-            thumbnailUrl: true,
-            user: { select: { fullName: true, shopName: true, avatarUrl: true } },
+            thumbnailKey: true,
+            user: { select: authorSelect },
           },
         },
       },
@@ -131,15 +129,15 @@ export class UnboxingService {
       data: { viewsCount: { increment: 1 } },
       select: { viewsCount: true },
     });
-    const { status: _status, user, ...box } = row.project;
+    const { status: _status, user, thumbnailKey, canvasState, ...box } = row.project;
     return {
       recipientName: row.recipientName,
       giftNote: row.giftNote,
       audioTrackUrl: row.audioTrackUrl,
       particleEffect: row.particleEffect,
       viewsCount,
-      sender: user,
-      box,
+      sender: presentAuthor(user),
+      box: { ...box, canvasState: toClientCanvas(canvasState as never), thumbnailUrl: assetUrl(thumbnailKey) },
     };
   }
 
@@ -148,13 +146,13 @@ export class UnboxingService {
     return { png: `${base}.png`, svg: `${base}.svg` };
   }
 
-  /** Uploads PNG + SVG; returns the PNG URL, or null while object storage is not configured. */
-  private async storeQrCode(projectId: string, userId: string, slug: string): Promise<string | null> {
-    if (!this.storage.enabled) return null;
+  /** Uploads PNG + SVG (nothing while object storage is not configured). */
+  private async storeQrCode(projectId: string, userId: string, slug: string): Promise<void> {
+    if (!this.storage.enabled) return;
     const url = this.unboxUrl(slug);
     const keys = this.qrKeys(projectId, slug);
     const common = { userId, projectId, purpose: 'QR_CODE' as const };
-    const [png] = await Promise.all([
+    await Promise.all([
       this.storage.putGeneratedFile({ ...common, key: keys.png, contentType: 'image/png', body: await qrPng(url) }),
       this.storage.putGeneratedFile({
         ...common,
@@ -163,15 +161,18 @@ export class UnboxingService {
         body: Buffer.from(await qrSvg(url)),
       }),
     ]);
-    return png;
   }
 
-  private view(row: ConfigRow) {
+  /** The QR files have fixed keys: their URLs are computed (null while object storage is not configured). */
+  private view({ projectId, ...row }: ConfigRow) {
+    const keys = this.qrKeys(projectId, row.slug);
+    const urlOf = (key: string) => (this.storage.enabled ? assetUrl(key) : null);
     return {
       ...row,
+      qrCodeUrl: urlOf(keys.png),
       unboxUrl: this.unboxUrl(row.slug),
-      // Same key with .svg: the vector file for the print export.
-      qrCodeSvgUrl: row.qrCodeUrl ? row.qrCodeUrl.replace(/\.png$/, '.svg') : null,
+      // The vector file for the print export.
+      qrCodeSvgUrl: urlOf(keys.svg),
     };
   }
 }

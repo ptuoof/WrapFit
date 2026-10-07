@@ -26,3 +26,28 @@ export async function signUp(
   const setCookie = login.headers['set-cookie'] as unknown as string[];
   return { id, cookie: accessCookie(setCookie), setCookie };
 }
+
+/**
+ * Uploads a small PNG like the browser does (pre-signed PUT to the local SeaweedFS) and returns its public URL, the
+ * value a client puts in `thumbnailUrl`, `avatarUrl`, `logoUrl` or a canvas element.
+ */
+export async function uploadPng(
+  app: INestApplication,
+  cookie: string,
+  purpose: 'LOGO' | 'IMAGE' | 'THUMBNAIL' | 'AVATAR',
+  projectId?: string,
+): Promise<string> {
+  const size = 64;
+  const ticket = (
+    await request(app.getHttpServer())
+      .post('/api/storage/presigned-upload')
+      .set('Cookie', cookie)
+      .send({ purpose, contentType: 'image/png', size, projectId })
+      .expect(200)
+  ).body as { uploadUrl: string; headers: Record<string, string>; fileUrl: string };
+  // Cast: the DOM `BodyInit` typing does not accept Node's typed arrays, although fetch does.
+  const body = new Uint8Array(size).fill(7) as unknown as RequestInit['body'];
+  const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body });
+  if (!put.ok) throw new Error(`Upload failed: ${put.status}`);
+  return ticket.fileUrl;
+}

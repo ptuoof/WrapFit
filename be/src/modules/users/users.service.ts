@@ -7,7 +7,7 @@ import { StorageService } from '../storage/storage.service';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { SafeUser, userSelect } from './user.select';
+import { presentUser, SafeUser, userSelect } from './user.select';
 
 @Injectable()
 export class UsersService {
@@ -23,13 +23,13 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
-  create(data: {
+  async create(data: {
     email: string;
     passwordHash: string;
     fullName?: string;
     role?: Role;
   }): Promise<SafeUser> {
-    return this.prisma.user.create({
+    const row = await this.prisma.user.create({
       data: {
         email: data.email,
         passwordHash: data.passwordHash,
@@ -38,6 +38,7 @@ export class UsersService {
       },
       select: userSelect,
     });
+    return presentUser(row);
   }
 
   /** Internal use only (auth). */
@@ -100,30 +101,41 @@ export class UsersService {
       }),
       this.prisma.user.count(),
     ]);
-    return paginate(items, total, query);
+    return paginate(items.map(presentUser), total, query);
   }
 
   async findOne(id: string): Promise<SafeUser> {
     const user = await this.prisma.user.findUnique({ where: { id }, select: userSelect });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return presentUser(user);
   }
 
-  updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
-    return this.prisma.user.update({
+  /** `avatarUrl` must be an image the user uploaded; `null` removes the avatar (the Google photo too). */
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
+    const avatar =
+      dto.avatarUrl === undefined
+        ? {}
+        : {
+            avatarKey: dto.avatarUrl === null ? null : await this.storage.resolveUpload(dto.avatarUrl, id, ['AVATAR', 'IMAGE']),
+            avatarUrl: null,
+          };
+    const row = await this.prisma.user.update({
       where: { id },
-      data: { fullName: dto.fullName, shopName: dto.shopName, avatarUrl: dto.avatarUrl },
+      data: { fullName: dto.fullName, shopName: dto.shopName, ...avatar },
       select: userSelect,
     });
+    return presentUser(row);
   }
 
-  /** Replaces the whole brand kit; an empty slogan is stored as null. */
-  updateBrandKit(id: string, dto: UpdateBrandKitDto): Promise<SafeUser> {
-    return this.prisma.user.update({
+  /** Replaces the whole brand kit; an empty slogan is stored as null. The logo must be an upload of the user. */
+  async updateBrandKit(id: string, dto: UpdateBrandKitDto): Promise<SafeUser> {
+    const logoKey = dto.logoUrl ? await this.storage.resolveUpload(dto.logoUrl, id, ['LOGO', 'IMAGE']) : null;
+    const row = await this.prisma.user.update({
       where: { id },
-      data: { brandKit: { logoUrl: dto.logoUrl, colors: dto.colors, fonts: dto.fonts, slogan: dto.slogan || null } },
+      data: { brandKit: { logoKey, colors: dto.colors, fonts: dto.fonts, slogan: dto.slogan || null } },
       select: userSelect,
     });
+    return presentUser(row);
   }
 
   async adminUpdate(id: string, dto: AdminUpdateUserDto, actorId: string): Promise<SafeUser> {
@@ -142,10 +154,10 @@ export class UsersService {
           data: { revokedAt: new Date() },
         }),
       ]);
-      return user;
+      return presentUser(user);
     }
 
-    return this.prisma.user.update({ where: { id }, data, select: userSelect });
+    return presentUser(await this.prisma.user.update({ where: { id }, data, select: userSelect }));
   }
 
   async remove(id: string, actorId: string): Promise<void> {

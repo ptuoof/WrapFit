@@ -5,8 +5,8 @@ import { PROJECT_FORKED, ProjectForkedEvent } from '../../common/events/project.
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProjectsService } from '../projects/application/projects.service';
 import type { ProjectDetail } from '../projects/domain/project.types';
-
-const authorSelect = { fullName: true, shopName: true, avatarUrl: true } satisfies Prisma.UserSelect;
+import { assetUrl, toClientCanvas } from '../storage/asset-keys';
+import { authorSelect, presentAuthor } from '../users/user.select';
 
 const publicSelect = {
   id: true,
@@ -20,7 +20,7 @@ const publicSelect = {
   dimensions: true,
   materialSpec: true,
   canvasState: true,
-  thumbnailUrl: true,
+  thumbnailKey: true,
   tags: true,
   occasion: true,
   industry: true,
@@ -69,7 +69,7 @@ export class PublicProjectsService {
 
     // An UNLISTED source must not leak its secret link through its remixes.
     const source = project.forkedFrom && isShared(project.forkedFrom) && project.forkedFrom.visibility === 'PUBLIC'
-      ? { slug: project.forkedFrom.slug, title: project.forkedFrom.title, author: project.forkedFrom.user }
+      ? { slug: project.forkedFrom.slug, title: project.forkedFrom.title, author: presentAuthor(project.forkedFrom.user) }
       : null;
 
     return {
@@ -80,8 +80,8 @@ export class PublicProjectsService {
       template: project.template,
       dimensions: project.dimensions,
       materialSpec: project.materialSpec,
-      canvasState: project.canvasState,
-      thumbnailUrl: project.thumbnailUrl,
+      canvasState: toClientCanvas(project.canvasState as never),
+      thumbnailUrl: assetUrl(project.thumbnailKey),
       tags: project.tags,
       occasion: project.occasion,
       industry: project.industry,
@@ -89,7 +89,7 @@ export class PublicProjectsService {
       likesCount: project.likesCount,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
-      author: project.user,
+      author: presentAuthor(project.user),
       forkedFrom: source,
       viewer: { isOwner, liked },
     };

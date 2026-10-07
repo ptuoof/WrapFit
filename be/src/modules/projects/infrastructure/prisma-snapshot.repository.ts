@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { FitCheckReport } from '@wrapfit/shared';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { toStoredCanvas } from '../../storage/asset-keys';
 import type {
   ISnapshotRepository,
   NewSnapshot,
@@ -61,7 +62,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
       this.prisma.packagingProject.update({
         where: { id: projectId },
         data: {
-          canvasState: json(snapshot.canvasState),
+          canvasState: json(toStoredCanvas(snapshot.canvasState)),
           dimensions: json(snapshot.dimensions),
           fitcheckState: nullableJson(fitCheck),
           fitcheckScore: fitCheck?.score ?? null,
@@ -77,8 +78,8 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     return {
       projectId,
       name: snapshot.name,
-      previewUrl: snapshot.previewUrl,
-      canvasState: json(snapshot.canvasState),
+      previewKey: snapshot.previewKey,
+      canvasState: json(toStoredCanvas(snapshot.canvasState)),
       dimensions: json(snapshot.dimensions),
     };
   }
