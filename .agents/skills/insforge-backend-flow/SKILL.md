@@ -10,6 +10,15 @@ This skill instructs the agent on implementing an agent-ready backend architectu
 
 ## 1. Relational Database Schema (PostgreSQL)
 
+> The SQL below is the original sketch. The source of truth is `be/prisma/schema.prisma`, and these rules apply to
+> every change (see `docs/02_DATABASE_DESIGN.md` and `docs/10_DB_HARDENING_DESIGN.md`):
+> - `timestamptz(3)` for every timestamp, `@default(uuid(7))` for primary keys, an index on every foreign key.
+> - CHECK constraints (`chk_*`) live in migrations only; keep them when renaming or retyping a column.
+> - Store object keys (`users/...`), never public URLs: the API builds URLs with `storage/asset-keys.ts`.
+> - Write a canvas through the repositories so `project_file_refs` stays in sync; never search keys in `canvas_state::text`.
+> - Projects are pinned to a `formula_version`; change a dieline formula by adding a version in `shared/src/parametric/registry.ts`.
+> - Accounts sign in only with a verified email (`users.email_verified_at`).
+
 ```sql
 -- 1. Users & Shop Profiles
 CREATE TABLE users (

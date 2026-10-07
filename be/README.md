@@ -67,13 +67,14 @@ Yêu cầu: Node.js >= 20, Docker. Các lệnh dưới đây chạy **tại gố
 npm install                                  # cài toàn bộ workspace (fe, be, shared)
 docker compose up -d postgres                # chỉ chạy database (postgres / password, db: wrapfit)
 docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 8333, bucket wrapfit)
-docker compose up -d redis                   # hàng đợi BullMQ (xuất file in)
+docker compose up -d redis                   # hàng đợi BullMQ (xuất file in, email)
+docker compose up -d mailpit                 # bắt mọi email (xác minh, quên mật khẩu): xem tại http://localhost:8025
 cp be/.env.example be/.env                   # nhớ đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 npm --workspace=be run db:generate
 npm --workspace=be run db:migrate            # áp dụng migration vào database dev
 npm --workspace=be run db:seed               # tạo 4 mẫu hộp + admin: admin@wrapfit.vn / Admin@12345 + dữ liệu mẫu
 npm run dev:be                               # = npm --workspace=be run dev (watch mode)
-npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất file in
+npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất file in + gửi email
 ```
 
 Hoặc `cd be` rồi dùng trực tiếp `npm run <script>`.
