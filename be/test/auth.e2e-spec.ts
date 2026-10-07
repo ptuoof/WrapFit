@@ -32,7 +32,7 @@ describe('Account emails (e2e)', () => {
       orderBy: { createdAt: 'desc' },
     });
     expect(await mailQueue.getJob(token.id)).toBeDefined(); // one email job per token
-    return rawAuthToken(process.env.JWT_REFRESH_SECRET!, token.id);
+    return rawAuthToken((process.env.AUTH_TOKEN_SECRET || process.env.JWT_REFRESH_SECRET)!, token.id);
   };
   const register = (address: string) =>
     api().post('/api/auth/register').send({ email: address, password: TEST_PASSWORD }).expect(201);

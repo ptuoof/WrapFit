@@ -1,4 +1,9 @@
 import { createHash, createHmac } from 'crypto';
+import type { AppConfigService } from '../../config/app-config.type';
+
+/** AUTH_TOKEN_SECRET, or JWT_REFRESH_SECRET for .env files written before it existed. */
+export const authTokenSecret = (env: AppConfigService) =>
+  env.get('AUTH_TOKEN_SECRET', { infer: true }) || env.get('JWT_REFRESH_SECRET', { infer: true });
 
 /**
  * One-time email tokens (verify email, reset password) are derived from their row id with a server secret, so neither

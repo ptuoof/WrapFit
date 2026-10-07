@@ -5,7 +5,7 @@ import { Job, UnrecoverableError } from 'bullmq';
 import { runWithRequestId } from '../../common/context/request-context';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
-import { rawAuthToken } from '../auth/auth-token.crypto';
+import { authTokenSecret, rawAuthToken } from '../auth/auth-token.crypto';
 import { AuthEmailJobData, MAIL_QUEUE } from './mail.constants';
 import { authEmail } from './mail.templates';
 import { isPermanentSmtpFailure, maskEmail, SmtpMailer } from './smtp-mailer';
@@ -30,7 +30,7 @@ export class MailProcessor extends WorkerHost {
   ) {
     super();
     const env = config as unknown as AppConfigService;
-    this.secret = env.get('JWT_REFRESH_SECRET', { infer: true });
+    this.secret = authTokenSecret(env);
     this.frontendUrl = env.get('FRONTEND_URL', { infer: true }).replace(/\/+$/, '');
   }
 

@@ -40,6 +40,13 @@ export class EnvironmentVariables {
   @MinLength(32)
   JWT_REFRESH_SECRET: string;
 
+  /**
+   * Derives the one-time links of verify / reset emails. Empty = JWT_REFRESH_SECRET (older .env files). Changing it
+   * invalidates the links already sent, and only them: rotate it separately from the JWT secrets.
+   */
+  @IsString()
+  AUTH_TOKEN_SECRET: string = '';
+
   @IsInt()
   @Min(60)
   JWT_ACCESS_TTL_SECONDS: number = 900;
@@ -195,6 +202,9 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(
       'Invalid environment variables:\n - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together (or both left empty)',
     );
+  }
+  if (validated.AUTH_TOKEN_SECRET && validated.AUTH_TOKEN_SECRET.length < 32) {
+    throw new Error('Invalid environment variables:\n - AUTH_TOKEN_SECRET must be at least 32 characters (or empty)');
   }
   if (!validated.SMTP_USER !== !validated.SMTP_PASS) {
     throw new Error('Invalid environment variables:\n - SMTP_USER and SMTP_PASS must be set together (or both left empty)');

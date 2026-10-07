@@ -4,7 +4,7 @@ import { AuthTokenPurpose, Prisma } from '@prisma/client';
 import { uuidv7 } from '../../common/utils/uuidv7';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
-import { hashAuthToken, rawAuthToken } from './auth-token.crypto';
+import { authTokenSecret, hashAuthToken, rawAuthToken } from './auth-token.crypto';
 import {
   AUTH_EMAIL_MIN_INTERVAL_MS,
   AUTH_EMAILS_PER_DAY,
@@ -35,7 +35,7 @@ export class AuthTokensService {
     private readonly prisma: PrismaService,
     config: ConfigService,
   ) {
-    this.secret = (config as unknown as AppConfigService).get('JWT_REFRESH_SECRET', { infer: true });
+    this.secret = authTokenSecret(config as unknown as AppConfigService);
   }
 
   /**

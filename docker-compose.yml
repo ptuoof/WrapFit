@@ -132,6 +132,7 @@ services:
       # Required: the API refuses to start if these are missing or shorter than 32 characters (see .env.example)
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
@@ -197,6 +198,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-wrapfit}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
       REDIS_URL: redis://redis:6379
       EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
       # Email (verify email, reset password): Mailpit above by default; set to the provider's SMTP in production
