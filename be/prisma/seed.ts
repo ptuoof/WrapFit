@@ -163,6 +163,7 @@ async function main() {
     update: {},
     create: {
       email,
+      emailVerifiedAt: new Date(),
       fullName: 'WrapFit Admin',
       shopName: 'WrapFit Studio',
       role: Role.ADMIN,
@@ -170,6 +171,9 @@ async function main() {
       passwordHash: await bcrypt.hash(password, Number(process.env.BCRYPT_ROUNDS ?? 10)),
     },
   });
+  // The operator chose this address: it counts as verified (accounts sign in only with a verified email), also for
+  // an admin created before email verification existed.
+  await prisma.user.updateMany({ where: { id: admin.id, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
   console.log(`Seeded admin user: ${admin.email}`);
 
   if (isProduction) return;

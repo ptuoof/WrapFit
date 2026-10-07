@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 
 /** Collections CRUD (IT3-05). Users use the `@e2e.test` domain and are removed afterwards. */
 describe('Collections API (e2e)', () => {
@@ -23,12 +24,8 @@ describe('Collections API (e2e)', () => {
   });
 
   const register = async (name: string) => {
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `${name}-${run}@e2e.test`, password: 'Passw0rd123' })
-      .expect(201);
-    const header = res.headers['set-cookie'] as unknown as string[];
-    return { cookie: header.find((line) => line.startsWith('wf_access='))!.split(';')[0] };
+    const { id, cookie } = await signUp(app, `${name}-${run}@e2e.test`);
+    return { id, cookie };
   };
 
   const createProject = async (collectionId: string, title: string) =>

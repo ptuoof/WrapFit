@@ -1,13 +1,16 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { AppConfigService } from '../../config/app-config.type';
 import { GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../../common/interfaces/auth.interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { SafeUser, toSafeUser, userSelect } from '../users/user.select';
 import { UsersService } from '../users/users.service';
+import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -28,32 +31,59 @@ export interface AuthResult extends TokenPair {
 // Compared against when the email is unknown, so response time does not reveal whether an account exists.
 const DUMMY_HASH = '$2a$10$CwTycUXWue0Thq9StjUM0uJ8.4o0n0o1Yb1Uq8wq1jU1ZpU3dQ6vK';
 
+/** 403 with a stable code: the frontend offers to resend the verification email. */
+export const emailNotVerified = () =>
+  new ForbiddenException({
+    code: 'EMAIL_NOT_VERIFIED',
+    message: 'Verify your email address before signing in: open the link we emailed you, or ask for a new one',
+  });
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly config: AppConfigService;
 
   constructor(
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly authTokens: AuthTokensService,
+    private readonly mail: MailService,
     config: ConfigService,
   ) {
     this.config = config as unknown as AppConfigService;
   }
 
-  async register(dto: RegisterDto, meta: SessionMeta = {}): Promise<AuthResult> {
+  /**
+   * Creates an account and emails its verification link. No session is opened: the account can sign in once the
+   * email is verified. A failure to queue the email does not fail the registration (the user can ask for a resend).
+   */
+  async register(dto: RegisterDto): Promise<SafeUser> {
     if (await this.usersService.findByEmail(dto.email)) {
       throw new ConflictException('Email is already registered');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.config.get('BCRYPT_ROUNDS', { infer: true }));
-    const user = await this.usersService.create({
-      email: dto.email,
-      passwordHash,
-      fullName: dto.fullName,
-    });
-
-    return { user, ...(await this.issueTokens(user, meta)) };
+    let tokenId: string | null = null;
+    let user: SafeUser;
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: { email: dto.email, passwordHash, fullName: dto.fullName },
+          select: userSelect,
+        });
+        tokenId = await this.authTokens.issue(tx, created.id, 'VERIFY_EMAIL');
+        return created;
+      });
+    } catch (error) {
+      // Two registrations of the same address at the same moment: the second one loses on the unique email.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Email is already registered');
+      }
+      throw error;
+    }
+    if (tokenId) await this.mail.sendAuthEmail(tokenId);
+    return user;
   }
 
   async login(dto: LoginDto, meta: SessionMeta = {}): Promise<AuthResult> {
@@ -64,6 +94,8 @@ export class AuthService {
     if (!user || !user.passwordHash || !passwordValid || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    // Only told after the password matched: the answer reveals nothing to someone who does not know it.
+    if (!user.emailVerifiedAt) throw emailNotVerified();
 
     const safeUser = toSafeUser(user);
     return { user: safeUser, ...(await this.issueTokens(safeUser, meta)) };
@@ -155,13 +187,13 @@ export class AuthService {
     }
   }
 
-  /** New token pair for an active user (refresh). */
+  /** New token pair for an active, verified user (refresh). */
   private async startSession(userId: string, meta: SessionMeta, refreshId?: string): Promise<AuthResult> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { ...userSelect },
     });
-    if (!user || !user.isActive) throw new UnauthorizedException('Invalid refresh token');
+    if (!user || !user.isActive || !user.emailVerifiedAt) throw new UnauthorizedException('Invalid refresh token');
     return { user, ...(await this.issueTokens(user, meta, refreshId)) };
   }
 

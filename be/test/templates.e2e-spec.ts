@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 
 /**
  * Template hub (IT3-07). Needs the seeded database (box templates + curated designs).
@@ -27,12 +28,8 @@ describe('Template hub (e2e)', () => {
     patch: (url: string) => api().patch(url).set('Cookie', user.cookie),
   });
   const register = async (name: string, fullName: string) => {
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `${name}-${run}@e2e.test`, password: 'Passw0rd123', fullName })
-      .expect(201);
-    const header = res.headers['set-cookie'] as unknown as string[];
-    return { cookie: header.find((line) => line.startsWith('wf_access='))!.split(';')[0] };
+    const { id, cookie } = await signUp(app, `${name}-${run}@e2e.test`, fullName);
+    return { id, cookie };
   };
   const hub = async (query: string) => (await api().get(`/api/templates/hub?${query}`).expect(200)).body;
 

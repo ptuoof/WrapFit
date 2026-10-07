@@ -5,6 +5,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 import { WorkerModule } from '../src/worker';
 
 /**
@@ -29,12 +30,8 @@ describe('Print export (e2e)', () => {
     delete: (url: string) => api().delete(url).set('Cookie', user.cookie),
   });
   const register = async (name: string) => {
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `${name}-${run}@e2e.test`, password: 'Passw0rd123' })
-      .expect(201);
-    const header = res.headers['set-cookie'] as unknown as string[];
-    return { cookie: header.find((line) => line.startsWith('wf_access='))!.split(';')[0] };
+    const { id, cookie } = await signUp(app, `${name}-${run}@e2e.test`);
+    return { id, cookie };
   };
 
   /** Polls like the frontend does (docs 07: every 2 s; faster here). */

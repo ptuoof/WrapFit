@@ -9,6 +9,7 @@ import { MAX_SNAPSHOTS_PER_PROJECT } from '../src/modules/projects/application/s
 import { FitCheckBackfillTask } from '../src/modules/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../src/modules/projects/presentation/trash-purge.task';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -33,13 +34,8 @@ describe('Projects API (e2e)', () => {
   });
 
   const register = async (name: string) => {
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `${name}-${run}@e2e.test`, password: 'Passw0rd123' })
-      .expect(201);
-    const header = res.headers['set-cookie'] as unknown as string[];
-    const access = header.find((line) => line.startsWith('wf_access='))!.split(';')[0];
-    return { id: res.body.user.id as string, cookie: access };
+    const { id, cookie } = await signUp(app, `${name}-${run}@e2e.test`);
+    return { id, cookie };
   };
 
   const newProject = (overrides: Record<string, unknown> = {}) => ({

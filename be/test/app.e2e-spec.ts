@@ -99,13 +99,31 @@ describe('API (e2e)', () => {
   });
 
   describe('auth (HttpOnly cookies)', () => {
-    it('registers a user and sets the auth cookies without exposing tokens to scripts', async () => {
+    it('registers a user without opening a session until the email is verified', async () => {
       const res = await api().post('/api/auth/register').send(alice).expect(201);
 
-      expect(res.body.user).toMatchObject({ email: alice.email, role: 'MAKER', subscriptionTier: 'FREE', isActive: true });
+      expect(res.body.user).toMatchObject({
+        email: alice.email,
+        emailVerifiedAt: null,
+        role: 'MAKER',
+        subscriptionTier: 'FREE',
+        isActive: true,
+      });
       expect(res.body.user.passwordHash).toBeUndefined();
-      expect(res.body).toEqual({ user: expect.any(Object), expiresIn: 900 });
+      expect(res.body).toEqual({ user: expect.any(Object), emailVerificationRequired: true });
+      expect(setCookie(res, 'wf_access')).toBeUndefined();
 
+      const refused = await api().post('/api/auth/login').send(alice).expect(403);
+      expect(refused.body.code).toBe('EMAIL_NOT_VERIFIED');
+      expect(setCookie(refused, 'wf_access')).toBeUndefined();
+
+      // The emailed link is covered by auth.e2e-spec.ts.
+      await prisma.user.update({ where: { email: alice.email }, data: { emailVerifiedAt: new Date() } });
+    });
+
+    it('signs in with HttpOnly cookies, never exposing tokens to scripts', async () => {
+      const res = await api().post('/api/auth/login').send(alice).expect(200);
+      expect(res.body).toEqual({ user: expect.objectContaining({ email: alice.email }), expiresIn: 900 });
       expect(setCookie(res, 'wf_access')).toMatch(/; Path=\/api; .*HttpOnly; SameSite=Lax/);
       expect(setCookie(res, 'wf_refresh')).toMatch(/; Path=\/api\/auth; .*HttpOnly; SameSite=Lax/);
     });
@@ -229,8 +247,9 @@ describe('API (e2e)', () => {
 
     beforeAll(async () => {
       aliceAccess = (await login(alice)).access;
-      const registered = await api().post('/api/auth/register').send(bob).expect(201);
-      bobAccess = cookieValue(registered, 'wf_access')!;
+      await api().post('/api/auth/register').send(bob).expect(201);
+      await prisma.user.update({ where: { email: bob.email }, data: { emailVerifiedAt: new Date() } });
+      bobAccess = (await login(bob)).access;
     });
 
     it('forbids regular users from admin routes', async () => {

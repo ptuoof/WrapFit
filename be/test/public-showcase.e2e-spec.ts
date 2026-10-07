@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PROJECT_FORKED } from '../src/common/events/project.events';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 
 /** Sharing, public page, remix and likes (IT3-06). Users use the `@e2e.test` domain and are removed afterwards. */
 describe('Public showcase (e2e)', () => {
@@ -29,12 +30,8 @@ describe('Public showcase (e2e)', () => {
     as(user).patch(`/api/projects/${id}/visibility`).send(body);
 
   const register = async (name: string, fullName: string) => {
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `${name}-${run}@e2e.test`, password: 'Passw0rd123', fullName })
-      .expect(201);
-    const header = res.headers['set-cookie'] as unknown as string[];
-    return { id: res.body.user.id as string, cookie: header.find((line) => line.startsWith('wf_access='))!.split(';')[0] };
+    const { id, cookie } = await signUp(app, `${name}-${run}@e2e.test`, fullName);
+    return { id, cookie };
   };
 
   beforeAll(async () => {

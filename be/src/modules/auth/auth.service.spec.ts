@@ -1,11 +1,13 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Role, SubscriptionTier } from '@prisma/client';
+import { Prisma, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
+import { AuthTokensService } from './auth-tokens.service';
 import { AuthService } from './auth.service';
 
 const env: Record<string, unknown> = {
@@ -28,12 +30,17 @@ describe('AuthService', () => {
   };
   const prisma = {
     refreshToken: { create: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
-    user: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn() },
+    // Interactive transaction: the callback receives the same mocks as its transaction client.
+    $transaction: jest.fn(),
   };
+  const authTokens = { issue: jest.fn() };
+  const mail = { sendAuthEmail: jest.fn() };
 
   const safeUser = {
     id: '11111111-1111-4111-8111-111111111111',
     email: 'user@example.com',
+    emailVerifiedAt: new Date(),
     fullName: 'User',
     avatarUrl: null,
     shopName: null,
@@ -49,6 +56,7 @@ describe('AuthService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     prisma.refreshToken.create.mockResolvedValue({});
+    prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -56,6 +64,8 @@ describe('AuthService', () => {
         JwtService,
         { provide: UsersService, useValue: users },
         { provide: PrismaService, useValue: prisma },
+        { provide: AuthTokensService, useValue: authTokens },
+        { provide: MailService, useValue: mail },
         { provide: ConfigService, useValue: { get: (key: string) => env[key] } },
       ],
     }).compile();
@@ -70,22 +80,34 @@ describe('AuthService', () => {
       await expect(
         service.register({ email: safeUser.email, password: 'Passw0rd123' }),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(users.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
-    it('hashes the password and returns a token pair', async () => {
+    it('hashes the password, emails a verification link and opens no session', async () => {
       users.findByEmail.mockResolvedValue(null);
-      users.create.mockResolvedValue(safeUser);
+      prisma.user.create.mockResolvedValue({ ...safeUser, emailVerifiedAt: null });
+      authTokens.issue.mockResolvedValue('token-1');
 
-      const result = await service.register({ email: safeUser.email, password: 'Passw0rd123' });
+      const user = await service.register({ email: safeUser.email, password: 'Passw0rd123' });
 
-      const { passwordHash } = users.create.mock.calls[0][0];
+      const { passwordHash } = prisma.user.create.mock.calls[0][0].data;
       expect(passwordHash).not.toBe('Passw0rd123');
       expect(await bcrypt.compare('Passw0rd123', passwordHash)).toBe(true);
-      expect(result.user).toEqual(safeUser);
-      expect(result.accessToken).toEqual(expect.any(String));
-      expect(result.refreshToken).toEqual(expect.any(String));
-      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
+      expect(user.emailVerifiedAt).toBeNull();
+      expect(authTokens.issue).toHaveBeenCalledWith(prisma, safeUser.id, 'VERIFY_EMAIL');
+      expect(mail.sendAuthEmail).toHaveBeenCalledWith('token-1');
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('answers 409 when the same email is registered twice at the same moment', async () => {
+      users.findByEmail.mockResolvedValue(null);
+      prisma.$transaction.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '6' }),
+      );
+      await expect(service.register({ email: safeUser.email, password: 'Passw0rd123' })).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(mail.sendAuthEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -118,6 +140,23 @@ describe('AuthService', () => {
     it('rejects password login for a Google-only account', async () => {
       users.findByEmail.mockResolvedValue({ ...safeUser, passwordHash: null, googleId: 'google-sub' });
       await expect(service.login({ email: safeUser.email, password: 'whatever1' })).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
+    it('refuses an account whose email is not verified yet, once the password matched', async () => {
+      users.findByEmail.mockResolvedValue({
+        ...safeUser,
+        emailVerifiedAt: null,
+        passwordHash: await bcrypt.hash('right-pass1', 4),
+      });
+      const error = await service.login({ email: safeUser.email, password: 'right-pass1' }).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect((error as ForbiddenException).getResponse()).toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+
+      // A wrong password says nothing about the verification state.
+      await expect(service.login({ email: safeUser.email, password: 'wrong-pass1' })).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
@@ -288,6 +327,16 @@ describe('AuthService', () => {
 
       await expect(service.refresh(await sign(jti))).rejects.toBeInstanceOf(UnauthorizedException);
       expect(prisma.refreshToken.updateMany).toHaveBeenLastCalledWith(revokeAll);
+    });
+
+    it('opens no new session for an account whose email is not verified (sessions from before verification existed)', async () => {
+      const jti = '66666666-6666-4666-8666-666666666666';
+      prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+      prisma.user.findUnique.mockResolvedValue({ ...safeUser, emailVerifiedAt: null });
+
+      await expect(service.refresh(await sign(jti))).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
   });
 });

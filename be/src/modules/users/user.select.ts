@@ -4,6 +4,7 @@ import { Prisma, User } from '@prisma/client';
 export const userSelect = {
   id: true,
   email: true,
+  emailVerifiedAt: true,
   fullName: true,
   avatarUrl: true,
   shopName: true,

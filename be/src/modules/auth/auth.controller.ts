@@ -9,9 +9,11 @@ import { GoogleProfile, SessionMeta } from '../../common/interfaces/auth.interfa
 import { AppConfigService } from '../../config/app-config.type';
 import { SafeUser } from '../users/user.select';
 import { UsersService } from '../users/users.service';
+import { AccountRecoveryService } from './account-recovery.service';
 import { AuthCookieService } from './auth-cookie.service';
 import { ACCESS_COOKIE, DEFAULT_LOGIN_REDIRECT, REFRESH_COOKIE } from './auth.constants';
 import { AuthResult, AuthService } from './auth.service';
+import { EmailOnlyDto, ResetPasswordDto, VerifyEmailDto } from './dto/account-recovery.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
@@ -19,6 +21,14 @@ import { readOAuthState } from './strategies/oauth-state.store';
 
 // Stricter limit than the global default to slow down brute force / credential stuffing.
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
+// Routes that send an email: per IP on top of the per-account limits of AuthTokensService.canSend.
+const AUTH_EMAIL_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
+
+/** Registration opens no session: the account signs in once its email is verified. */
+export interface RegisterResponse {
+  user: SafeUser;
+  emailVerificationRequired: true;
+}
 
 /** Tokens are never returned in the body: they are set as HttpOnly cookies (`wf_access`, `wf_refresh`). */
 export interface AuthSessionResponse {
@@ -35,6 +45,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly recovery: AccountRecoveryService,
     private readonly cookies: AuthCookieService,
     private readonly usersService: UsersService,
     config: ConfigService,
@@ -46,20 +57,65 @@ export class AuthController {
   @Public()
   @Throttle(AUTH_THROTTLE)
   @Post('register')
-  @ApiOperation({ summary: 'Create an account (sets the auth cookies)' })
-  async register(
-    @Body() dto: RegisterDto,
-    @Req() req: Request,
+  @ApiOperation({ summary: 'Create an account and email its verification link (no session until verified)' })
+  async register(@Body() dto: RegisterDto): Promise<RegisterResponse> {
+    return { user: await this.authService.register(dto), emailVerificationRequired: true };
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(200)
+  @Post('verify-email')
+  @ApiOperation({
+    summary: 'Verify the email with the token of the link (idempotent); then sign in. 400 code AUTH_TOKEN_INVALID | AUTH_TOKEN_EXPIRED',
+  })
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<{ verified: true }> {
+    await this.recovery.verifyEmail(dto.token);
+    return { verified: true };
+  }
+
+  @Public()
+  @Throttle(AUTH_EMAIL_THROTTLE)
+  @HttpCode(202)
+  @Post('verify-email/resend')
+  @ApiOperation({ summary: 'Email a new verification link (same answer whether the address has an account or not)' })
+  async resendVerification(@Body() dto: EmailOnlyDto): Promise<Record<string, never>> {
+    await this.recovery.resendVerification(dto.email);
+    return {};
+  }
+
+  @Public()
+  @Throttle(AUTH_EMAIL_THROTTLE)
+  @HttpCode(202)
+  @Post('password/forgot')
+  @ApiOperation({ summary: 'Email a password reset link (same answer whether the address has an account or not)' })
+  async forgotPassword(@Body() dto: EmailOnlyDto): Promise<Record<string, never>> {
+    await this.recovery.forgotPassword(dto.email);
+    return {};
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(200)
+  @Post('password/reset')
+  @ApiOperation({
+    summary:
+      'Set a new password with the token of the link; every session is revoked, then sign in. 400 code AUTH_TOKEN_INVALID | AUTH_TOKEN_EXPIRED | AUTH_TOKEN_CONSUMED',
+  })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthSessionResponse> {
-    return this.startSession(res, await this.authService.register(dto, sessionMeta(req)));
+  ): Promise<Record<string, never>> {
+    await this.recovery.resetPassword(dto.token, dto.password);
+    this.cookies.clearAuthCookies(res);
+    return {};
   }
 
   @Public()
   @Throttle(AUTH_THROTTLE)
   @HttpCode(200)
   @Post('login')
-  @ApiOperation({ summary: 'Login with email and password (sets the auth cookies)' })
+  @ApiOperation({ summary: 'Login with email and password (sets the auth cookies); 403 code EMAIL_NOT_VERIFIED' })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,

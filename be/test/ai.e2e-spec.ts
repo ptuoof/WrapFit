@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { signUp } from './helpers/accounts';
 
 /** AI pattern endpoint (IT3-09) with AI disabled (see e2e-env.ts): the procedural generator answers. */
 describe('AI pattern (e2e)', () => {
@@ -20,11 +21,7 @@ describe('AI pattern (e2e)', () => {
     await app.init();
     prisma = app.get(PrismaService);
 
-    const res = await api()
-      .post('/api/auth/register')
-      .send({ email: `mia-${Date.now()}@e2e.test`, password: 'Passw0rd123' })
-      .expect(201);
-    cookie = (res.headers['set-cookie'] as unknown as string[]).find((l) => l.startsWith('wf_access='))!.split(';')[0];
+    cookie = (await signUp(app, `mia-${Date.now()}@e2e.test`)).cookie;
   });
 
   afterAll(async () => {

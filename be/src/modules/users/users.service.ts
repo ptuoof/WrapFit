@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
 import { paginate, Paginated, PaginationQueryDto, toSkipTake } from '../../common/dto/pagination.dto';
 import { GoogleProfile } from '../../common/interfaces/auth.interfaces';
@@ -11,6 +11,8 @@ import { SafeUser, userSelect } from './user.select';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -43,23 +45,45 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { googleId } });
   }
 
-  /** Attaches a Google identity to an existing account; keeps the profile fields the user already set. */
+  /**
+   * Attaches a Google identity to an existing account; keeps the profile fields the user already set. Google proved
+   * the email, so the account becomes verified.
+   *
+   * An account whose password was set before anyone proved the email may belong to someone who registered this
+   * address first to wait for its owner (pre-account takeover): its password is removed and its sessions revoked, so
+   * only the owner of the Google account keeps access. They can set a password again with "forgot password".
+   */
   linkGoogleAccount(user: User, profile: GoogleProfile): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        googleId: profile.googleId,
-        fullName: user.fullName ?? profile.fullName,
-        avatarUrl: user.avatarUrl ?? profile.avatarUrl,
-      },
+    const unprovenPassword = user.passwordHash !== null && user.emailVerifiedAt === null;
+    return this.prisma.$transaction(async (tx) => {
+      if (unprovenPassword) {
+        const { count } = await tx.refreshToken.updateMany({
+          where: { userId: user.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        this.logger.warn(
+          `auth.google_link_cleared_unverified_password userId=${user.id} sessionsRevoked=${count}`,
+        );
+      }
+      return tx.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: profile.googleId,
+          fullName: user.fullName ?? profile.fullName,
+          avatarUrl: user.avatarUrl ?? profile.avatarUrl,
+          emailVerifiedAt: user.emailVerifiedAt ?? new Date(),
+          ...(unprovenPassword && { passwordHash: null }),
+        },
+      });
     });
   }
 
-  /** Creates a Google-only account (no password). */
+  /** Creates a Google-only account (no password); Google only hands out verified emails here. */
   createFromGoogle(profile: GoogleProfile): Promise<User> {
     return this.prisma.user.create({
       data: {
         email: profile.email,
+        emailVerifiedAt: new Date(),
         googleId: profile.googleId,
         fullName: profile.fullName,
         avatarUrl: profile.avatarUrl,

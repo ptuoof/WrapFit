@@ -64,6 +64,12 @@ enum FilePurpose {
   EXPORT // File in (PDF / SVG / DXF) do worker xuất (IT3-11)
 }
 
+// Mục đích của mã một lần gửi qua email (auth_tokens).
+enum AuthTokenPurpose {
+  VERIFY_EMAIL // Xác minh email sau khi đăng ký: chưa xác minh thì không đăng nhập được
+  RESET_PASSWORD // Đặt lại mật khẩu (quên mật khẩu)
+}
+
 enum ExportStatus {
   PENDING // Đã vào hàng đợi BullMQ
   PROCESSING // Worker đang xử lý
@@ -82,6 +88,8 @@ model User {
   email            String           @unique
   passwordHash     String?          @map("password_hash") // null nếu chỉ đăng nhập bằng Google
   googleId         String?          @unique @map("google_id")
+  // Thời điểm chứng minh sở hữu email (link xác minh, đặt lại mật khẩu hoặc Google). null = chưa đăng nhập được.
+  emailVerifiedAt  DateTime?        @map("email_verified_at") @db.Timestamptz(3)
   fullName         String?          @map("full_name")
   avatarUrl        String?          @map("avatar_url")
   shopName         String?          @map("shop_name")
@@ -97,6 +105,7 @@ model User {
   referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]              @relation("UserReferrals")
   refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
   projects      PackagingProject[]
   collections   ProjectCollection[]
   mockups       SocialMockup[]
@@ -126,6 +135,24 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt]) // AuthMaintenanceTask xóa token hết hạn
   @@map("refresh_tokens")
+}
+
+// Mã một lần gửi qua email (xác minh email, đặt lại mật khẩu). Chỉ lưu SHA-256 của mã: lộ DB không lộ link.
+// Mỗi người dùng có tối đa một mã còn hiệu lực cho mỗi mục đích (unique index một phần, chỉ có trong migration).
+model AuthToken {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  purpose    AuthTokenPurpose
+  tokenHash  String           @unique @map("token_hash")
+  expiresAt  DateTime         @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime?        @map("consumed_at") @db.Timestamptz(3) // Đã dùng, hoặc bị thay bằng mã mới hơn
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt]) // Giới hạn số lần gửi lại
+  @@index([expiresAt]) // AuthMaintenanceTask xóa mã hết hạn
+  @@map("auth_tokens")
 }
 
 model ProjectCollection {

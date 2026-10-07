@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AppConfigService } from '../../config/app-config.type';
+import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
+import { AccountRecoveryService } from './account-recovery.service';
+import { AuthMaintenanceTask } from './auth-maintenance.task';
+import { AuthTokensService } from './auth-tokens.service';
 import { AuthCookieService } from './auth-cookie.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -15,6 +19,7 @@ import { OAuthStateStore } from './strategies/oauth-state.store';
 @Module({
   imports: [
     UsersModule,
+    MailModule,
     PassportModule,
     // Global so the WebSocket gateway can verify tokens too. Tokens are signed with explicit secrets in AuthService.
     JwtModule.registerAsync({
@@ -26,6 +31,16 @@ import { OAuthStateStore } from './strategies/oauth-state.store';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthCookieService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard, OAuthStateStore],
+  providers: [
+    AuthService,
+    AuthTokensService,
+    AccountRecoveryService,
+    AuthMaintenanceTask,
+    AuthCookieService,
+    JwtStrategy,
+    GoogleStrategy,
+    GoogleOAuthGuard,
+    OAuthStateStore,
+  ],
 })
 export class AuthModule {}

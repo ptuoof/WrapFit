@@ -27,3 +27,13 @@ export function safeRedirectPath(value: unknown): string {
   if (/[\u0000-\u001f\u007f]/.test(value)) return DEFAULT_LOGIN_REDIRECT;
   return value;
 }
+
+/** Lifetime of the link in the "verify your email" message. */
+export const VERIFY_EMAIL_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Lifetime of the link in the "reset your password" message (short: it grants access to the account). */
+export const RESET_PASSWORD_TTL_MS = 30 * 60 * 1000;
+
+/** At most one email of each kind per user per minute, and this many per day (resend / forgot password). */
+export const AUTH_EMAIL_MIN_INTERVAL_MS = 60 * 1000;
+export const AUTH_EMAILS_PER_DAY = 5;
