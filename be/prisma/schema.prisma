@@ -1,4 +1,5 @@
 // WrapFit — Schema v2.1 (xem tài liệu 07, Mục 4.1).
+// Khóa chính UUIDv7 (tăng dần theo thời gian: index B-tree không bị phân mảnh), trừ refresh_tokens.id = jti do code sinh.
 // Chỉ truy cập qua PrismaService (src/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
 
 generator client {
@@ -77,7 +78,7 @@ enum ExportFileType {
 }
 
 model User {
-  id               String           @id @default(uuid()) @db.Uuid
+  id               String           @id @default(uuid(7)) @db.Uuid
   email            String           @unique
   passwordHash     String?          @map("password_hash") // null nếu chỉ đăng nhập bằng Google
   googleId         String?          @unique @map("google_id")
@@ -109,7 +110,7 @@ model User {
 
 // Mỗi refresh token là một dòng; `id` chính là `jti` trong JWT -> hỗ trợ nhiều thiết bị, xoay vòng và thu hồi.
 model RefreshToken {
-  id           String    @id @default(uuid()) @db.Uuid
+  id           String    @id @default(uuid(7)) @db.Uuid
   userId       String    @map("user_id") @db.Uuid
   userAgent    String?   @map("user_agent")
   ipAddress    String?   @map("ip_address")
@@ -128,7 +129,7 @@ model RefreshToken {
 }
 
 model ProjectCollection {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
   title       String
   description String?
@@ -162,7 +163,7 @@ model BoxTemplate {
 // Mẫu thiết kế "WrapFit Curated" trong Thư viện mẫu (UC-12, UC-13): cấu trúc hộp + kích thước + đồ họa dựng sẵn.
 // Mẫu cộng đồng không nằm ở đây: đó là các PackagingProject PUBLIC.
 model DesignTemplate {
-  id            String    @id @default(uuid()) @db.Uuid
+  id            String    @id @default(uuid(7)) @db.Uuid
   boxTemplateId String    @map("box_template_id")
   title         String
   description   String?
@@ -187,7 +188,7 @@ model DesignTemplate {
 }
 
 model PackagingProject {
-  id            String            @id @default(uuid()) @db.Uuid
+  id            String            @id @default(uuid(7)) @db.Uuid
   userId        String            @map("user_id") @db.Uuid
   templateId    String            @map("template_id")
   collectionId  String?           @map("collection_id") @db.Uuid
@@ -235,7 +236,7 @@ model PackagingProject {
 }
 
 model ProjectSnapshot {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   projectId   String   @map("project_id") @db.Uuid
   name        String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
   canvasState Json     @map("canvas_state")
@@ -251,7 +252,7 @@ model ProjectSnapshot {
 }
 
 model ProjectLike {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   projectId String   @map("project_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -265,7 +266,7 @@ model ProjectLike {
 }
 
 model UnboxingExperience {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
   projectId      String   @unique @map("project_id") @db.Uuid
   slug           String   @unique @default(nanoid(12))
   recipientName  String   @map("recipient_name")
@@ -282,7 +283,7 @@ model UnboxingExperience {
 }
 
 model SocialMockup {
-  id         String   @id @default(uuid()) @db.Uuid
+  id         String   @id @default(uuid(7)) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
   projectId  String   @map("project_id") @db.Uuid
   presetName String   @map("preset_name")
@@ -298,7 +299,7 @@ model SocialMockup {
 }
 
 model ExportJob {
-  id          String         @id @default(uuid()) @db.Uuid
+  id          String         @id @default(uuid(7)) @db.Uuid
   projectId   String         @map("project_id") @db.Uuid
   fileType    ExportFileType @map("file_type")
   status      ExportStatus   @default(PENDING)
@@ -316,7 +317,7 @@ model ExportJob {
 // File trên S3 / R2 (IT3-08). Ghi lại lúc cấp pre-signed URL: chữ ký khóa đúng dung lượng và định dạng,
 // nên `size` dùng được để tính hạn mức theo gói. File gắn với dự án bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn.
 model StoredFile {
-  id          String      @id @default(uuid()) @db.Uuid
+  id          String      @id @default(uuid(7)) @db.Uuid
   userId      String      @map("user_id") @db.Uuid
   projectId   String?     @map("project_id") @db.Uuid
   key         String      @unique // users/<userId>/<purpose>/<uuid>.<ext>
@@ -350,7 +351,7 @@ model OrphanedObject {
 // Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.
 // Lần sinh bằng thuật toán dự phòng (không gọi AI) không được ghi.
 model AiGeneration {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(uuid(7)) @db.Uuid
   userId       String   @map("user_id") @db.Uuid
   theme        String
   model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)

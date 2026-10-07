@@ -92,6 +92,8 @@ describe('Projects API (e2e)', () => {
       });
       expect(res.body.slug).toMatch(/^[\w-]{10}$/);
       expect(res.body.userId).toBeUndefined();
+      // UUIDv7: time-ordered primary keys (version nibble 7, RFC 9562 variant).
+      expect(res.body.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     });
 
     it('stores a canvas that follows the @wrapfit/shared contract', async () => {
