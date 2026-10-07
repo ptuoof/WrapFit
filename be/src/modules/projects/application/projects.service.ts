@@ -103,11 +103,16 @@ export class ProjectsService {
     return project;
   }
 
+  /**
+   * Saves the design. The write only succeeds if nobody saved in between (compare-and-set on `version`), so an older
+   * tab cannot overwrite a newer save and the stored FitCheck always matches the stored canvas and dimensions.
+   */
   async update(projectId: string, userId: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
     const project = await this.findOne(projectId);
     if (!canEdit(project.status)) {
       throw new ConflictException('Restore the project from the trash before editing it');
     }
+    if (dto.version !== undefined && dto.version !== project.version) throw versionConflict(project.version);
     if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, userId);
 
     const changes: ProjectChanges = {
@@ -135,7 +140,12 @@ export class ProjectsService {
       );
     }
 
-    return this.projects.update(projectId, changes);
+    const saved = await this.projects.updateContent(projectId, changes, project.version);
+    if (!saved) {
+      // Another save landed between our read and our write.
+      throw versionConflict((await this.findOne(projectId)).version);
+    }
+    return saved;
   }
 
   /** Archive, move to the trash or restore. Setting the current status again changes nothing. */
@@ -276,4 +286,13 @@ export class ProjectsService {
     const violations = findDimensionViolations(dimensions, readDimensionLimits(formulaSchema));
     if (violations.length) throw new BadRequestException(violations);
   }
+}
+
+/** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */
+function versionConflict(currentVersion: number): ConflictException {
+  return new ConflictException({
+    code: 'PROJECT_VERSION_CONFLICT',
+    message: 'The project was saved from somewhere else in the meantime; reload it before saving again',
+    currentVersion,
+  });
 }

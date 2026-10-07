@@ -10,6 +10,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -22,6 +23,10 @@ import type {
   MaterialType,
 } from '@wrapfit/shared';
 import type { CanvasState } from '../../domain/project.types';
+
+/** Editor presets (pattern, palette, paper look) are ids, never raw SVG / CSS that a public page would render. */
+const PRESET_ID = /^[a-z0-9_-]{1,40}$/;
+const PRESET_ID_MESSAGE = '$property must be a preset id (a-z, 0-9, _ and -, at most 40 characters)';
 
 // `satisfies Record<Union, true>` makes the compiler fail when IT2 adds a value to the shared union.
 const MATERIAL_TYPES = Object.keys({ ivory: true, kraft: true, duplex: true } satisfies Record<MaterialType, true>);
@@ -168,4 +173,23 @@ export class CanvasStateDto implements CanvasState {
   @ValidateNested({ each: true })
   @Type(() => CanvasElementDto)
   elements: CanvasElementDto[];
+
+  @ApiPropertyOptional({ nullable: true, example: 'tet', description: 'Seamless pattern preset behind the artwork' })
+  @IsOptional()
+  @Matches(PRESET_ID, { message: PRESET_ID_MESSAGE })
+  backgroundPattern?: string | null;
+
+  @ApiPropertyOptional({ nullable: true, example: 'earthy_olive', description: 'Color palette of the editor' })
+  @IsOptional()
+  @Matches(PRESET_ID, { message: PRESET_ID_MESSAGE })
+  backgroundTheme?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 'forest',
+    description: 'Paper look of the editor; the printable stock is `materialSpec`',
+  })
+  @IsOptional()
+  @Matches(PRESET_ID, { message: PRESET_ID_MESSAGE })
+  materialTheme?: string | null;
 }

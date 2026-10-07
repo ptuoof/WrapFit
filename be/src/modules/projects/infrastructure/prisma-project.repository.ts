@@ -115,26 +115,23 @@ export class PrismaProjectRepository implements IProjectRepository {
   async update(projectId: string, changes: ProjectChanges): Promise<ProjectDetail> {
     const row = await this.prisma.packagingProject.update({
       where: { id: projectId },
-      data: {
-        title: changes.title,
-        collectionId: changes.collectionId,
-        thumbnailUrl: changes.thumbnailUrl,
-        tags: changes.tags,
-        occasion: changes.occasion,
-        industry: changes.industry,
-        visibility: changes.visibility,
-        allowFork: changes.allowFork,
-        dimensions: changes.dimensions && json(changes.dimensions),
-        materialSpec: changes.materialSpec && json(changes.materialSpec),
-        canvasState: changes.canvasState && json(changes.canvasState),
-        ...(changes.fitCheck !== undefined && {
-          fitcheckState: nullableJson(changes.fitCheck),
-          fitcheckScore: changes.fitCheck?.score ?? null,
-        }),
-      },
+      data: this.toData(changes),
       select: detailSelect,
     });
     return toDetail(row);
+  }
+
+  async updateContent(
+    projectId: string,
+    changes: ProjectChanges,
+    expectedVersion: number,
+  ): Promise<ProjectDetail | null> {
+    // Compare-and-set on `version`: one statement, so two saves can never both win.
+    const { count } = await this.prisma.packagingProject.updateMany({
+      where: { id: projectId, version: expectedVersion },
+      data: { ...this.toData(changes), version: { increment: 1 } },
+    });
+    return count ? this.findById(projectId) : null;
   }
 
   async setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail> {
@@ -189,5 +186,26 @@ export class PrismaProjectRepository implements IProjectRepository {
       UPDATE packaging_projects
       SET fitcheck_state = ${JSON.stringify(fitCheck)}::jsonb, fitcheck_score = ${fitCheck.score}
       WHERE id = ${projectId}::uuid`;
+  }
+
+  /** Prisma data of the changed fields (`undefined` = unchanged). */
+  private toData(changes: ProjectChanges) {
+    return {
+      title: changes.title,
+      collectionId: changes.collectionId,
+      thumbnailUrl: changes.thumbnailUrl,
+      tags: changes.tags,
+      occasion: changes.occasion,
+      industry: changes.industry,
+      visibility: changes.visibility,
+      allowFork: changes.allowFork,
+      dimensions: changes.dimensions && json(changes.dimensions),
+      materialSpec: changes.materialSpec && json(changes.materialSpec),
+      canvasState: changes.canvasState && json(changes.canvasState),
+      ...(changes.fitCheck !== undefined && {
+        fitcheckState: nullableJson(changes.fitCheck),
+        fitcheckScore: changes.fitCheck?.score ?? null,
+      }),
+    } satisfies Prisma.PackagingProjectUncheckedUpdateManyInput;
   }
 }

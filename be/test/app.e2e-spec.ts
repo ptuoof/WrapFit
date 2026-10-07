@@ -80,7 +80,12 @@ describe('API (e2e)', () => {
 
   it('GET /api/health reports the database as up', async () => {
     const res = await api().get('/api/health').expect(200);
-    expect(res.body).toMatchObject({ status: 'ok', database: 'up' });
+    expect(res.body).toMatchObject({ status: 'ok', database: 'up', redis: 'up' });
+    // Reported for monitoring only: an export worker may or may not be running next to the tests.
+    expect(['up', 'down']).toContain(res.body.worker);
+    expect(res.body.exportQueue).toEqual(
+      expect.objectContaining({ waiting: expect.any(Number), failed: expect.any(Number) }),
+    );
   });
 
   it('rejects unauthenticated access to protected routes', async () => {
@@ -88,6 +93,9 @@ describe('API (e2e)', () => {
     const res = await api().get('/api/users/me').expect(401);
     // Error format from docs 07, section 4.3.
     expect(res.body).toMatchObject({ statusCode: 401, error: 'Unauthorized', path: '/api/users/me' });
+    // The error carries the request id of the response header, to find the matching log lines.
+    expect(res.body.requestId).toEqual(expect.any(String));
+    expect(res.headers['x-request-id']).toBe(res.body.requestId);
   });
 
   describe('auth (HttpOnly cookies)', () => {
@@ -132,7 +140,7 @@ describe('API (e2e)', () => {
       await api().get('/api/users/me').set('Authorization', `Bearer ${access}`).expect(200);
     });
 
-    it('rotates the refresh cookie and revokes the whole session family on reuse', async () => {
+    it('rotates the refresh cookie, tolerates a concurrent tab, and revokes every session on a late reuse', async () => {
       const first = (await login(alice)).refresh;
 
       const rotated = await api().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: first })).expect(200);
@@ -141,12 +149,22 @@ describe('API (e2e)', () => {
       expect(second).not.toBe(first);
       expect(cookieValue(rotated, 'wf_access')).toEqual(expect.any(String));
 
-      // Replaying the already-used token is treated as theft: 401 and the browser cookies are cleared...
+      // Right after the rotation, the same token is another tab refreshing at the same moment: it gets its own session.
+      const otherTab = await api().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: first })).expect(200);
+      expect(cookieValue(otherTab, 'wf_refresh')).not.toBe(second);
+
+      // Later, replaying the already-used token is treated as theft: 401 and the browser cookies are cleared...
+      const jti = (JSON.parse(Buffer.from(first!.split('.')[1], 'base64url').toString()) as { jti: string }).jti;
+      await prisma.refreshToken.update({ where: { id: jti }, data: { revokedAt: new Date(Date.now() - 60_000) } });
       const replay = await api().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: first })).expect(401);
       expect(isCleared(replay, 'wf_access')).toBe(true);
       expect(isCleared(replay, 'wf_refresh')).toBe(true);
-      // ...and the token that replaced it is dead as well.
+      // ...and the tokens that replaced it are dead as well.
       await api().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: second })).expect(401);
+      await api()
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies({ wf_refresh: cookieValue(otherTab, 'wf_refresh') }))
+        .expect(401);
     });
 
     it('refuses to refresh without a refresh cookie', async () => {

@@ -94,7 +94,13 @@ export interface IProjectRepository {
   findById(projectId: string): Promise<ProjectDetail | null>;
   list(query: ProjectListQuery): Promise<{ items: ProjectSummary[]; total: number }>;
   create(project: NewProject): Promise<ProjectDetail>;
+  /** Settings that do not touch the design (visibility, remix permission): the version stays the same. */
   update(projectId: string, changes: ProjectChanges): Promise<ProjectDetail>;
+  /**
+   * Changes the design only if the project is still at `expectedVersion`, and increases the version.
+   * Returns `null` when another save got there first.
+   */
+  updateContent(projectId: string, changes: ProjectChanges, expectedVersion: number): Promise<ProjectDetail | null>;
   setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail>;
   delete(projectId: string): Promise<void>;
   /** Ids of projects moved to the trash before `cutoff` (at most `limit`). */

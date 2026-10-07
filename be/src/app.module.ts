@@ -20,6 +20,7 @@ import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { PublicShowcaseModule } from './modules/public-showcase/public-showcase.module';
+import { StorageMaintenanceModule } from './modules/storage/storage-maintenance.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { UnboxingModule } from './modules/unboxing/unboxing.module';
@@ -41,10 +42,11 @@ import { PrismaModule } from './prisma/prisma.module';
         ];
       },
     }),
-    ScheduleModule.forRoot(), // @Cron tasks, e.g. TrashPurgeTask
+    ScheduleModule.forRoot(), // @Cron / @Interval tasks: TrashPurgeTask, ExportReconcileTask, StorageMaintenanceTask
     EventEmitterModule.forRoot(), // internal events, e.g. project.forked
     PrismaModule,
     StorageModule,
+    StorageMaintenanceModule,
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
     AuthModule,
     UsersModule,

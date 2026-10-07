@@ -5,12 +5,14 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
   IsUUID,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { IsOptionalNotNull } from '../../../../common/decorators/optional-not-null.decorator';
@@ -25,6 +27,17 @@ import { BoxDimensionsDto, CanvasStateDto, MaterialSpecDto } from './project-spe
  * visibility and sharing too (IT3-06).
  */
 export class UpdateProjectDto {
+  @ApiPropertyOptional({
+    example: 7,
+    description:
+      '`version` of the project as last loaded or saved. When another save changed the project since, the request ' +
+      'answers 409 PROJECT_VERSION_CONFLICT instead of overwriting it. Omit it to save over any version.',
+  })
+  @IsOptionalNotNull()
+  @IsInt()
+  @Min(1)
+  version?: number;
+
   @ApiPropertyOptional()
   @IsOptionalNotNull()
   @Transform(trim)

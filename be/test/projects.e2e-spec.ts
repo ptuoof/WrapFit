@@ -122,6 +122,36 @@ describe('Projects API (e2e)', () => {
       expect(res.body.dimensions.paperThickness).toBe(0.45);
     });
 
+    it('accepts the editor autosave payload and keeps its look presets, never raw SVG', async () => {
+      // Own user: the list tests below count carol's projects.
+      const erin = await register('erin');
+      const created = await as(erin).post('/api/projects').send(newProject()).expect(201);
+      // Exactly what fe/src/app/editor/[id]/page.tsx sends (materialSpecFor("gold_foil", 0.52)).
+      const autosave = {
+        version: created.body.version,
+        title: 'Hộp nến thơm',
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.52 },
+        materialSpec: { type: 'duplex', gsm: 400, finish: 'glossy', caliper: 0.52 },
+        canvasState: { elements: [], backgroundPattern: 'tet', backgroundTheme: 'cyber_citron', materialTheme: 'gold_foil' },
+      };
+      const saved = await as(erin).patch(`/api/projects/${created.body.id}`).send(autosave).expect(200);
+      expect(saved.body.canvasState).toEqual(autosave.canvasState);
+
+      const cleared = { ...autosave.canvasState, backgroundPattern: null };
+      await as(erin)
+        .patch(`/api/projects/${created.body.id}`)
+        .send({ version: saved.body.version, canvasState: cleared })
+        .expect(200);
+
+      const svg = await as(erin)
+        .patch(`/api/projects/${created.body.id}`)
+        .send({ canvasState: { elements: [], backgroundPattern: '<svg onload="alert(1)"/>' } })
+        .expect(400);
+      expect(svg.body.message).toEqual([expect.stringContaining('backgroundPattern must be a preset id')]);
+      // The box structure belongs to the project: the editor no longer sends it.
+      await as(erin).patch(`/api/projects/${created.body.id}`).send({ templateId: 'pillow' }).expect(400);
+    });
+
     it('rejects invalid payloads with readable messages', async () => {
       const res = await as(carol)
         .post('/api/projects')
@@ -255,6 +285,23 @@ describe('Projects API (e2e)', () => {
         .expect(400);
       await as(carol).patch(`/api/projects/${projectId}`).send({ templateId: 'pillow' }).expect(400);
       await as(carol).patch(`/api/projects/${projectId}`).send({ thumbnailUrl: 'http://insecure.example/a.png' }).expect(400);
+    });
+
+    it('refuses a save based on an older version instead of overwriting the newer one (409)', async () => {
+      const { version } = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+
+      // Tab A saves first: the version moves on.
+      const saved = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab A' }).expect(200);
+      expect(saved.body.version).toBe(version + 1);
+
+      // Tab B still holds the old version.
+      const stale = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab B' }).expect(409);
+      expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: version + 1 });
+      expect((await as(carol).get(`/api/projects/${projectId}`).expect(200)).body.title).toBe('Tab A');
+
+      // Sharing settings do not touch the design: they leave the version alone.
+      await as(carol).patch(`/api/projects/${projectId}/visibility`).send({ allowFork: false }).expect(200);
+      await as(carol).patch(`/api/projects/${projectId}`).send({ version: version + 1, title: 'Hộp đã sửa' }).expect(200);
     });
 
     it('rejects null for fields that cannot be cleared (400, not 500)', async () => {
@@ -444,6 +491,13 @@ describe('Projects API (e2e)', () => {
       // Undo the restore with the backup.
       const undo = await as(carol).post(url(`/${res.body.backup.id}/restore`)).expect(200);
       expect(undo.body.project.canvasState).toEqual(text('v2'));
+
+      // An editor still showing the design from before the restores cannot save over them.
+      expect(undo.body.project.version).toBe(res.body.project.version + 1);
+      await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send({ version: res.body.project.version, canvasState: text('stale') })
+        .expect(409);
     });
 
     it('deletes a version', async () => {

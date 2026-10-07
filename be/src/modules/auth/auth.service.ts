@@ -8,6 +8,7 @@ import { GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../../co
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser, toSafeUser, userSelect } from '../users/user.select';
 import { UsersService } from '../users/users.service';
+import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -91,31 +92,38 @@ export class AuthService {
     return { user: safeUser, ...(await this.issueTokens(safeUser, meta)) };
   }
 
-  /** Rotates the refresh token: the presented one is revoked and a new pair is issued. */
+  /**
+   * Rotates the refresh token: the presented one is revoked and a new pair is issued. Replaying a revoked token logs
+   * the user out everywhere (it may have been stolen), except right after a rotation: tabs share the cookie and
+   * refresh at the same moment, so the slower one gets its own new session (REFRESH_REUSE_GRACE_MS).
+   */
   async refresh(refreshToken: string, meta: SessionMeta = {}): Promise<AuthResult> {
     const payload = await this.verifyRefreshToken(refreshToken);
 
     const record = await this.prisma.refreshToken.findUnique({ where: { id: payload.jti } });
     if (!record || record.userId !== payload.sub) throw new UnauthorizedException('Invalid refresh token');
-
-    if (record.revokedAt) {
-      // A revoked token being replayed means it may have been stolen: kill every session of this user.
-      await this.revokeAllForUser(record.userId);
-      throw new UnauthorizedException('Refresh token reuse detected');
-    }
     if (record.expiresAt <= new Date()) throw new UnauthorizedException('Refresh token expired');
 
-    // Atomic claim: only one concurrent request can revoke the token and succeed.
+    // Atomic claim: only one concurrent request can revoke the token and take its place.
+    const replacementId = randomUUID();
     const claimed = await this.prisma.refreshToken.updateMany({
       where: { id: record.id, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), replacedById: replacementId },
     });
-    if (claimed.count !== 1) throw new UnauthorizedException('Invalid refresh token');
+    if (claimed.count === 1) return this.startSession(record.userId, meta, replacementId);
 
-    const user = await this.prisma.user.findUnique({ where: { id: record.userId }, select: { ...userSelect } });
-    if (!user || !user.isActive) throw new UnauthorizedException('Invalid refresh token');
+    // Already revoked, possibly a moment ago by the request that won the claim above.
+    const current = await this.prisma.refreshToken.findUnique({
+      where: { id: record.id },
+      select: { revokedAt: true, replacedById: true },
+    });
+    const justRotated =
+      current?.replacedById && current.revokedAt && Date.now() - current.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS;
+    if (justRotated) return this.startSession(record.userId, meta);
 
-    return { user, ...(await this.issueTokens(user, meta)) };
+    // A revoked token being replayed means it may have been stolen: kill every session of this user.
+    await this.revokeAllForUser(record.userId);
+    throw new UnauthorizedException('Refresh token reuse detected');
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -147,10 +155,27 @@ export class AuthService {
     }
   }
 
-  private async issueTokens(user: Pick<SafeUser, 'id' | 'email' | 'role'>, meta: SessionMeta): Promise<TokenPair> {
-    const accessTtl = this.config.get('JWT_ACCESS_TTL_SECONDS', { infer: true });
-    const refreshTtl = this.config.get('JWT_REFRESH_TTL_SECONDS', { infer: true });
-    const refreshId = randomUUID();
+  /** New token pair for an active user (refresh). */
+  private async startSession(userId: string, meta: SessionMeta, refreshId?: string): Promise<AuthResult> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { ...userSelect },
+    });
+    if (!user || !user.isActive) throw new UnauthorizedException('Invalid refresh token');
+    return { user, ...(await this.issueTokens(user, meta, refreshId)) };
+  }
+
+  private async issueTokens(
+    user: Pick<SafeUser, 'id' | 'email' | 'role'>,
+    meta: SessionMeta,
+    refreshId: string = randomUUID(),
+  ): Promise<TokenPair> {
+    const accessTtl = this.config.get('JWT_ACCESS_TTL_SECONDS', {
+      infer: true,
+    });
+    const refreshTtl = this.config.get('JWT_REFRESH_TTL_SECONDS', {
+      infer: true,
+    });
 
     await this.prisma.refreshToken.create({
       data: {

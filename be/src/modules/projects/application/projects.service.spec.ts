@@ -22,6 +22,7 @@ describe('ProjectsService', () => {
     ({
       id: 'project-1',
       status: 'ACTIVE',
+      version: 4,
       template: { id: 'tuck-top', name: 'Tuck top' },
       materialSpec: { type: 'kraft', gsm: 300, caliper: 0.4, finish: 'matte' },
       dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
@@ -55,6 +56,7 @@ describe('ProjectsService', () => {
       list: jest.fn().mockResolvedValue({ items: [], total: 0 }),
       create: jest.fn().mockImplementation(async (data) => data),
       update: jest.fn().mockImplementation(async (_id, changes) => changes),
+      updateContent: jest.fn().mockImplementation(async (_id, changes) => changes),
       setLifecycle: jest.fn().mockImplementation(async (_id, state) => state),
       delete: jest.fn(),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
@@ -201,14 +203,38 @@ describe('ProjectsService', () => {
     it('refuses to edit a project in the trash', async () => {
       repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
       await expect(service.update('project-1', userId, { title: 'x' })).rejects.toThrow(ConflictException);
-      expect(repo.update).not.toHaveBeenCalled();
+      expect(repo.updateContent).not.toHaveBeenCalled();
+    });
+
+    it('writes only over the version it read, so the stored FitCheck matches the stored design', async () => {
+      await service.update('project-1', userId, { title: 'x' });
+      expect(repo.updateContent).toHaveBeenCalledWith('project-1', expect.objectContaining({ title: 'x' }), 4);
+    });
+
+    it('answers 409 PROJECT_VERSION_CONFLICT when the editor saves over a newer version', async () => {
+      const error = await service.update('project-1', userId, { version: 3, title: 'x' }).catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: 4 });
+      expect(repo.updateContent).not.toHaveBeenCalled();
+
+      await service.update('project-1', userId, { version: 4, title: 'x' });
+      expect(repo.updateContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('answers 409 when another save lands between the read and the write', async () => {
+      repo.updateContent.mockResolvedValueOnce(null);
+      repo.findById.mockResolvedValueOnce(project()).mockResolvedValueOnce(project({ version: 5 }));
+      const error = await service.update('project-1', userId, { title: 'x' }).catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: 5 });
     });
 
     it('re-checks new dimensions against the template and keeps the material caliper', async () => {
       await service.update('project-1', userId, { dimensions: { length: 200, width: 100, height: 50 } });
-      expect(repo.update).toHaveBeenCalledWith(
+      expect(repo.updateContent).toHaveBeenCalledWith(
         'project-1',
         expect.objectContaining({ dimensions: { length: 200, width: 100, height: 50, paperThickness: 0.4 } }),
+        4,
       );
 
       await expect(
@@ -218,19 +244,20 @@ describe('ProjectsService', () => {
 
     it('recomputes FitCheck when the canvas or the dimensions change, not for other fields', async () => {
       await service.update('project-1', userId, { canvasState: { elements: [text(1.5)] } });
-      expect(repo.update).toHaveBeenLastCalledWith(
+      expect(repo.updateContent).toHaveBeenLastCalledWith(
         'project-1',
         expect.objectContaining({ fitCheck: expect.objectContaining({ score: 90, isValidForProduction: true }) }),
+        4,
       );
 
       await service.update('project-1', userId, { title: 'Hộp mới' });
-      expect(repo.update.mock.lastCall![1]).not.toHaveProperty('fitCheck');
+      expect(repo.updateContent.mock.lastCall![1]).not.toHaveProperty('fitCheck');
     });
 
     it('allows removing the project from its collection without an ownership lookup', async () => {
       await service.update('project-1', userId, { collectionId: null });
       expect(repo.isCollectionOwnedBy).not.toHaveBeenCalled();
-      expect(repo.update).toHaveBeenCalledWith('project-1', expect.objectContaining({ collectionId: null }));
+      expect(repo.updateContent).toHaveBeenCalledWith('project-1', expect.objectContaining({ collectionId: null }), 4);
     });
   });
 

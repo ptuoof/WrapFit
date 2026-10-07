@@ -24,6 +24,9 @@ describe('StorageService', () => {
     storedFile: Record<string, jest.Mock>;
     user: Record<string, jest.Mock>;
     packagingProject: Record<string, jest.Mock>;
+    orphanedObject: Record<string, jest.Mock>;
+    $transaction: jest.Mock;
+    $executeRaw: jest.Mock;
   };
   const build = (overrides?: Record<string, string>) => new StorageService(env(overrides), prisma as unknown as PrismaService);
 
@@ -35,8 +38,15 @@ describe('StorageService', () => {
       },
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ subscriptionTier: 'FREE' }) },
       packagingProject: { findUnique: jest.fn() },
+      orphanedObject: { createMany: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn(), update: jest.fn() },
+      // Interactive transaction: the callback receives the same mocks as its transaction client.
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $executeRaw: jest.fn(),
     };
   });
+  /** Replaces the S3 client calls of a service: `send` receives the SDK command objects. */
+  const mockS3 = (service: StorageService, send: (command: { input: unknown }) => unknown) =>
+    jest.spyOn(service['client']!, 'send').mockImplementation(send as never);
 
   it('answers 503 while storage is not configured', async () => {
     const service = build({ STORAGE_BUCKET: '' });
@@ -73,6 +83,20 @@ describe('StorageService', () => {
     expect(prisma.storedFile.create).not.toHaveBeenCalled();
   });
 
+  it('reserves the space under a per-user lock, and counts confirmed files plus uploads still in progress', async () => {
+    await build().presignUpload('u-1', { purpose: 'IMAGE', contentType: 'image/png', size: 1024 });
+
+    expect(prisma.$executeRaw).toHaveBeenCalled(); // pg_advisory_xact_lock, before the quota read
+    expect(prisma.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.storedFile.aggregate.mock.invocationCallOrder[0],
+    );
+    expect(prisma.storedFile.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'u-1', OR: [{ confirmedAt: { not: null } }, { createdAt: { gt: expect.any(Date) } }] },
+      }),
+    );
+  });
+
   it('enforces the quota of the subscription tier', async () => {
     prisma.storedFile.aggregate.mockResolvedValue({ _sum: { size: 95 * 1024 * 1024 }, _count: 40 });
     await expect(
@@ -83,6 +107,67 @@ describe('StorageService', () => {
     await expect(
       build().presignUpload('u-1', { purpose: 'IMAGE', contentType: 'image/png', size: 6 * 1024 * 1024 }),
     ).resolves.toMatchObject({ fileId: 'file-1' });
+  });
+
+  describe('maintenance', () => {
+    it('confirms uploads that exist with their real size and drops the ones never uploaded', async () => {
+      const service = build();
+      prisma.storedFile.findMany = jest.fn().mockResolvedValue([
+        { id: 'f-1', key: 'users/u-1/image/a.png' },
+        { id: 'f-2', key: 'users/u-1/image/never.png' },
+        { id: 'f-3', key: 'users/u-1/image/later.png' },
+      ]);
+      prisma.storedFile.updateMany = jest.fn();
+      prisma.storedFile.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+      mockS3(service, async (command) => {
+        const key = (command.input as { Key: string }).Key;
+        if (key.endsWith('a.png')) return { ContentLength: 4242 };
+        if (key.endsWith('never.png')) {
+          throw Object.assign(new Error('NotFound'), { $metadata: { httpStatusCode: 404 } });
+        }
+        throw new Error('socket hang up'); // storage unreachable: left for the next run
+      });
+      jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+
+      await expect(service.confirmPendingUploads()).resolves.toEqual({ confirmed: 1, dropped: 1 });
+      expect(prisma.storedFile.updateMany).toHaveBeenCalledWith({
+        where: { id: 'f-1' },
+        data: { confirmedAt: expect.any(Date), size: 4242 },
+      });
+      expect(prisma.storedFile.deleteMany).toHaveBeenCalledWith({ where: { id: 'f-2', confirmedAt: null } });
+    });
+
+    it('records objects it could not delete, and deletes them on a later run', async () => {
+      const service = build();
+      jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
+      jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+      const send = mockS3(service, async () => {
+        throw new Error('503 Slow Down');
+      });
+
+      await service.deleteObjects(['projects/p-1/a.png', 'projects/p-1/b.png']);
+      expect(prisma.orphanedObject.createMany).toHaveBeenCalledWith({
+        data: [
+          { key: 'projects/p-1/a.png', lastError: '503 Slow Down' },
+          { key: 'projects/p-1/b.png', lastError: '503 Slow Down' },
+        ],
+        skipDuplicates: true,
+      });
+
+      prisma.orphanedObject.findMany.mockResolvedValue([{ key: 'projects/p-1/a.png' }, { key: 'projects/p-1/b.png' }]);
+      prisma.orphanedObject.update.mockResolvedValue({ attempts: 2 });
+      const partial = { Errors: [{ Key: 'projects/p-1/b.png', Message: 'AccessDenied' }] };
+      send.mockImplementation((async () => partial) as never);
+
+      await expect(service.retryOrphanedObjects()).resolves.toBe(1);
+      expect(prisma.orphanedObject.deleteMany).toHaveBeenCalledWith({ where: { key: { in: ['projects/p-1/a.png'] } } });
+      expect(prisma.orphanedObject.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { key: 'projects/p-1/b.png' },
+          data: expect.objectContaining({ lastError: 'AccessDenied' }),
+        }),
+      );
+    });
   });
 
   it('recognizes the URLs of user uploads only (any scheme), for the print export', () => {

@@ -1,5 +1,5 @@
 // Domain layer: plain TypeScript only (no @nestjs/*, no @prisma/client) — see docs 08, section 1.1.
-import type { BoxDimensions, CanvasElement, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
+import type { BoxDimensions, CanvasState, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
 
 /** Same values as the Prisma enums, declared here so the domain does not depend on Prisma. */
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
@@ -7,10 +7,8 @@ export type ProjectVisibility = 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
 export type Occasion = 'TET' | 'CHRISTMAS' | 'WEDDING' | 'VALENTINE' | 'BIRTHDAY' | 'MINIMAL';
 export type Industry = 'COSMETICS' | 'CANDLES' | 'BAKERY' | 'JEWELRY' | 'TEA_AGRI';
 
-/** Content of the `canvas_state` column. */
-export interface CanvasState {
-  elements: CanvasElement[];
-}
+/** Content of the `canvas_state` column: elements + editor look (contract of `@wrapfit/shared`). */
+export type { CanvasState };
 
 /** One card on the dashboard (no canvas, which can be large). */
 export interface ProjectSummary {
@@ -40,6 +38,8 @@ export interface ProjectSummary {
 
 /** Everything the editor needs to open a project. */
 export interface ProjectDetail extends ProjectSummary {
+  /** Increases on every content change; sent back by the editor so a stale save answers 409 (see UpdateProjectDto). */
+  version: number;
   allowFork: boolean;
   forkedFromId: string | null;
   canvasState: CanvasState;

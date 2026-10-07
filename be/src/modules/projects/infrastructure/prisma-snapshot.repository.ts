@@ -65,6 +65,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
           dimensions: json(snapshot.dimensions),
           fitcheckState: nullableJson(fitCheck),
           fitcheckScore: fitCheck?.score ?? null,
+          version: { increment: 1 }, // an editor still showing the old design must reload, not save over it
         },
         select: detailSelect,
       }),

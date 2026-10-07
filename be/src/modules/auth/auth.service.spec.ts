@@ -221,30 +221,20 @@ describe('AuthService', () => {
       await expect(service.refresh('not-a-token')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it('revokes every session when a revoked token is replayed', async () => {
-      const jti = '22222222-2222-4222-8222-222222222222';
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: jti,
-        userId: safeUser.id,
-        revokedAt: new Date(),
-        expiresAt: new Date(Date.now() + 60_000),
-      });
-
-      await expect(service.refresh(await sign(jti))).rejects.toBeInstanceOf(UnauthorizedException);
-      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
-        where: { userId: safeUser.id, revokedAt: null },
-        data: { revokedAt: expect.any(Date) },
-      });
+    const record = (jti: string, revokedAt: Date | null = null) => ({
+      id: jti,
+      userId: safeUser.id,
+      revokedAt,
+      expiresAt: new Date(Date.now() + 60_000),
     });
+    const revokeAll = {
+      where: { userId: safeUser.id, revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    };
 
-    it('rotates a valid token', async () => {
+    it('rotates a valid token and links it to its replacement', async () => {
       const jti = '33333333-3333-4333-8333-333333333333';
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: jti,
-        userId: safeUser.id,
-        revokedAt: null,
-        expiresAt: new Date(Date.now() + 60_000),
-      });
+      prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
       prisma.user.findUnique.mockResolvedValue(safeUser);
 
@@ -253,22 +243,51 @@ describe('AuthService', () => {
       expect(result.user).toEqual(safeUser);
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
         where: { id: jti, revokedAt: null },
-        data: { revokedAt: expect.any(Date) },
+        data: { revokedAt: expect.any(Date), replacedById: expect.any(String) },
       });
-      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1); // the new refresh token
+      // The new refresh token is the replacement recorded on the old one.
+      const { replacedById } = prisma.refreshToken.updateMany.mock.calls[0][0].data;
+      expect(prisma.refreshToken.create).toHaveBeenCalledWith({ data: expect.objectContaining({ id: replacedById }) });
     });
 
-    it('fails when another request already claimed the token', async () => {
+    it('gives a second tab that refreshed at the same moment its own session instead of a logout', async () => {
       const jti = '44444444-4444-4444-8444-444444444444';
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        id: jti,
-        userId: safeUser.id,
-        revokedAt: null,
-        expiresAt: new Date(Date.now() + 60_000),
-      });
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce(record(jti))
+        .mockResolvedValueOnce({ revokedAt: new Date(Date.now() - 2_000), replacedById: 'replacement-id' });
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 }); // the other tab won the claim
+      prisma.user.findUnique.mockResolvedValue(safeUser);
+
+      const result = await service.refresh(await sign(jti));
+
+      expect(result.user).toEqual(safeUser);
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledTimes(1); // no revoke-all
+      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('revokes every session when a token rotated long ago is replayed (possibly stolen)', async () => {
+      const jti = '22222222-2222-4222-8222-222222222222';
+      const rotatedAt = new Date(Date.now() - 5 * 60_000);
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce(record(jti, rotatedAt))
+        .mockResolvedValueOnce({ revokedAt: rotatedAt, replacedById: 'replacement-id' });
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.refresh(await sign(jti))).rejects.toThrow('Refresh token reuse detected');
+      expect(prisma.refreshToken.updateMany).toHaveBeenLastCalledWith(revokeAll);
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('revokes every session when a logged-out token is replayed, even right away', async () => {
+      const jti = '55555555-5555-4555-8555-555555555555';
+      const loggedOutAt = new Date();
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce(record(jti, loggedOutAt))
+        .mockResolvedValueOnce({ revokedAt: loggedOutAt, replacedById: null });
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
       await expect(service.refresh(await sign(jti))).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prisma.refreshToken.updateMany).toHaveBeenLastCalledWith(revokeAll);
     });
   });
 });

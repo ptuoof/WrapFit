@@ -26,3 +26,12 @@ export const STORAGE_QUOTA_BYTES: Record<SubscriptionTier, number> = {
 
 /** Lifetime of a pre-signed upload URL. */
 export const UPLOAD_URL_TTL_SECONDS = 300;
+
+/**
+ * An upload not confirmed yet still counts against the quota for this long: long enough for StorageMaintenanceTask
+ * (every 10 minutes, on uploads older than CONFIRM_UPLOADS_AFTER_MS) to confirm it or drop it.
+ */
+export const PENDING_UPLOAD_RESERVE_MS = 60 * 60 * 1000;
+
+/** Unconfirmed uploads are checked once their URL has expired (5 min) plus a margin for a slow upload. */
+export const CONFIRM_UPLOADS_AFTER_MS = 15 * 60 * 1000;

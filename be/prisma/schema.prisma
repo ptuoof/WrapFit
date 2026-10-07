@@ -108,13 +108,16 @@ model User {
 
 // Mỗi refresh token là một dòng; `id` chính là `jti` trong JWT -> hỗ trợ nhiều thiết bị, xoay vòng và thu hồi.
 model RefreshToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  userAgent String?   @map("user_agent")
-  ipAddress String?   @map("ip_address")
-  expiresAt DateTime  @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  userAgent    String?   @map("user_agent")
+  ipAddress    String?   @map("ip_address")
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+  // Token mới thay thế khi /auth/refresh xoay vòng (logout thì để null): dùng lại token ngay sau đó là một tab khác
+  // refresh cùng lúc, không phải token bị đánh cắp.
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -202,6 +205,7 @@ model PackagingProject {
   industry      Industry?
   viewsCount    Int               @default(0) @map("views_count")
   likesCount    Int               @default(0) @map("likes_count")
+  version       Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
   deletedAt     DateTime?         @map("deleted_at") // Thời điểm vào thùng rác
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
@@ -313,6 +317,9 @@ model StoredFile {
   purpose     FilePurpose
   contentType String      @map("content_type")
   size        Int // byte
+  // Thời điểm xác nhận file có thật trên bucket. null = mới cấp URL, chưa biết trình duyệt đã upload chưa:
+  // StorageMaintenanceTask kiểm tra (HEAD) rồi xác nhận hoặc xóa dòng.
+  confirmedAt DateTime?   @map("confirmed_at")
   createdAt   DateTime    @default(now()) @map("created_at")
 
   user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -320,7 +327,18 @@ model StoredFile {
 
   @@index([userId])
   @@index([projectId])
+  @@index([confirmedAt, createdAt])
   @@map("stored_files")
+}
+
+// Object trên bucket không xóa được (lỗi S3) sau khi dòng DB đã bị xóa: StorageMaintenanceTask thử xóa lại.
+model OrphanedObject {
+  key       String   @id
+  attempts  Int      @default(0)
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("orphaned_objects")
 }
 
 // Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.

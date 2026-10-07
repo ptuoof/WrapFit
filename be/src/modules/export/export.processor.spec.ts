@@ -15,7 +15,11 @@ describe('ExportProcessor', () => {
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
     canvasState: { elements: [] },
   };
-  let prisma: { exportJob: { update: jest.Mock }; projectSnapshot: { create: jest.Mock }; $transaction: jest.Mock };
+  let prisma: {
+    exportJob: { update: jest.Mock; updateMany: jest.Mock };
+    projectSnapshot: { create: jest.Mock };
+    $transaction: jest.Mock;
+  };
   let storage: { putGeneratedFile: jest.Mock; uploadedKeyOf: jest.Mock; getObject: jest.Mock };
   let events: { emit: jest.Mock };
   let processor: ExportProcessor;
@@ -24,7 +28,7 @@ describe('ExportProcessor', () => {
 
   beforeEach(() => {
     prisma = {
-      exportJob: { update: jest.fn().mockResolvedValue({ fileType: 'DXF', project }) },
+      exportJob: { update: jest.fn().mockResolvedValue({ fileType: 'DXF', project }), updateMany: jest.fn() },
       projectSnapshot: { create: jest.fn() },
       $transaction: jest.fn(),
     };
@@ -66,11 +70,12 @@ describe('ExportProcessor', () => {
 
     await expect(processor.process(job(0))).rejects.toThrow('bucket unreachable');
     await expect(processor.process(job(1))).rejects.toThrow('bucket unreachable');
-    expect(prisma.exportJob.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'FAILED' }) }));
+    expect(prisma.exportJob.updateMany).not.toHaveBeenCalled();
 
     await expect(processor.process(job(2))).rejects.toThrow('bucket unreachable');
-    expect(prisma.exportJob.update).toHaveBeenCalledWith({
-      where: { id: 'job-1' },
+    // Only an unfinished row: a job completed meanwhile (stalled, then re-run) is never turned into FAILED.
+    expect(prisma.exportJob.updateMany).toHaveBeenCalledWith({
+      where: { id: 'job-1', status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'FAILED', errorLog: 'bucket unreachable' },
     });
   });
@@ -114,7 +119,7 @@ describe('ExportProcessor', () => {
 
       withImages('SVG', image('a', 'https://cdn/users/u-1/image/huge.png'));
       storage.getObject.mockResolvedValueOnce({ body: Buffer.alloc(MAX_ARTWORK_BYTES + 1), contentType: 'image/png' });
-      await expect(processor.process(job(0))).rejects.toThrow('exceed 100 MB');
+      await expect(processor.process(job(0))).rejects.toThrow('exceed 40 MB');
     });
 
     it('does not load images for a DXF (cutting lines only)', async () => {

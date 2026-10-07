@@ -10,6 +10,7 @@ import {
 import { ExportFileType, Prisma } from '@prisma/client';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
+import { currentRequestId } from '../../common/context/request-context';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import {
@@ -95,7 +96,11 @@ export class ExportService {
 
     const job = await this.prisma.exportJob.create({ data: { projectId, fileType }, select: jobSelect });
     try {
-      await this.queue.add(RENDER_JOB, { exportJobId: job.id }, { ...EXPORT_JOB_OPTIONS, jobId: job.id });
+      await this.queue.add(
+        RENDER_JOB,
+        { exportJobId: job.id, requestId: currentRequestId() },
+        { ...EXPORT_JOB_OPTIONS, jobId: job.id },
+      );
     } catch (error) {
       this.logger.error('Could not queue the export', error instanceof Error ? error.stack : String(error));
       await this.prisma.exportJob.update({

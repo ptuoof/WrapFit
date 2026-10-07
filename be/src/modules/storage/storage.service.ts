@@ -1,5 +1,12 @@
-import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
-import { FilePurpose } from '@prisma/client';
+import {
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  S3ClientConfig,
+} from '@aws-sdk/client-s3';
+import { FilePurpose, Prisma } from '@prisma/client';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   BadRequestException,
@@ -18,7 +25,13 @@ import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { IProjectFiles, ProjectFile } from '../projects/application/ports/project-files.port';
 import { PresignUploadDto } from './dto/presign-upload.dto';
-import { STORAGE_QUOTA_BYTES, UPLOAD_RULES, UPLOAD_URL_TTL_SECONDS } from './storage.rules';
+import {
+  CONFIRM_UPLOADS_AFTER_MS,
+  PENDING_UPLOAD_RESERVE_MS,
+  STORAGE_QUOTA_BYTES,
+  UPLOAD_RULES,
+  UPLOAD_URL_TTL_SECONDS,
+} from './storage.rules';
 
 export interface PresignedUpload {
   fileId: string;
@@ -33,6 +46,13 @@ export interface PresignedUpload {
 }
 
 const DELETE_BATCH = 1000; // S3 DeleteObjects limit
+/** Rows handled per maintenance run (StorageMaintenanceTask); the rest wait for the next run. */
+const MAINTENANCE_BATCH = 200;
+/** A bucket object that still cannot be deleted after this many retries is left for an operator (logged). */
+const MAX_DELETE_ATTEMPTS = 10;
+
+/** Prisma client or transaction client: quota reads run inside the transaction that records the upload. */
+type Db = Prisma.TransactionClient;
 
 /**
  * S3-compatible object storage (Cloudflare R2 in production, SeaweedFS locally). The browser uploads directly
@@ -92,12 +112,16 @@ export class StorageService implements IProjectFiles {
       );
     }
     if (dto.projectId) await this.assertEditableProject(dto.projectId, userId);
-    await this.assertQuota(userId, dto.size);
 
     const key = `users/${userId}/${dto.purpose.toLowerCase()}/${randomUUID()}.${extension}`;
-    const file = await this.prisma.storedFile.create({
-      data: { userId, projectId: dto.projectId, key, purpose: dto.purpose, contentType: dto.contentType, size: dto.size },
-      select: { id: true },
+    // Check and reserve the space in one transaction, serialized per user: parallel requests cannot all pass the check.
+    const file = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
+      await this.assertQuota(tx, userId, dto.size);
+      return tx.storedFile.create({
+        data: { userId, projectId: dto.projectId, key, purpose: dto.purpose, contentType: dto.contentType, size: dto.size },
+        select: { id: true },
+      });
     });
 
     const uploadUrl = await getSignedUrl(
@@ -140,6 +164,7 @@ export class StorageService implements IProjectFiles {
       purpose: file.purpose,
       contentType: file.contentType,
       size: file.body.length,
+      confirmedAt: new Date(), // written by the server itself: it exists
     };
     await this.prisma.storedFile.upsert({
       where: { key: file.key },
@@ -185,10 +210,19 @@ export class StorageService implements IProjectFiles {
     );
   }
 
-  async usage(userId: string) {
+  /**
+   * Counts confirmed files, plus recent uploads not confirmed yet (their space is reserved while the browser
+   * uploads). Uploads that never happened stop counting after PENDING_UPLOAD_RESERVE_MS and are then removed.
+   */
+  async usage(userId: string, db: Db = this.prisma) {
+    const pendingSince = new Date(Date.now() - PENDING_UPLOAD_RESERVE_MS);
     const [user, files] = await Promise.all([
-      this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { subscriptionTier: true } }),
-      this.prisma.storedFile.aggregate({ where: { userId }, _sum: { size: true }, _count: true }),
+      db.user.findUniqueOrThrow({ where: { id: userId }, select: { subscriptionTier: true } }),
+      db.storedFile.aggregate({
+        where: { userId, OR: [{ confirmedAt: { not: null } }, { createdAt: { gt: pendingSince } }] },
+        _sum: { size: true },
+        _count: true,
+      }),
     ]);
     return {
       tier: user.subscriptionTier,
@@ -239,19 +273,112 @@ export class StorageService implements IProjectFiles {
     }) as Promise<ProjectFile[]>;
   }
 
-  /** Never throws: a file that could not be deleted only costs storage, it must not block a project deletion. */
+  /**
+   * Never throws: a file that could not be deleted only costs storage, it must not block a project deletion.
+   * Keys that failed are recorded in `orphaned_objects` and retried by StorageMaintenanceTask.
+   */
   async deleteObjects(keys: string[]): Promise<void> {
-    if (!this.client || !keys.length) return;
+    const failed = await this.tryDeleteObjects(keys);
+    if (!failed.length) return;
+    try {
+      await this.prisma.orphanedObject.createMany({
+        data: failed.map(({ key, error }) => ({ key, lastError: error.slice(0, 1000) })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Could not record ${failed.length} undeleted file(s): ${failed.map((f) => f.key).join(', ')}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /**
+   * Called by StorageMaintenanceTask. Checks the uploads whose pre-signed URL has expired: the row is confirmed with
+   * the real size when the object exists, and deleted when the browser never uploaded it (it would otherwise count
+   * against the quota forever).
+   */
+  async confirmPendingUploads(now = new Date()): Promise<{ confirmed: number; dropped: number }> {
+    const result = { confirmed: 0, dropped: 0 };
+    if (!this.client) return result;
+    const pending = await this.prisma.storedFile.findMany({
+      where: { confirmedAt: null, createdAt: { lt: new Date(now.getTime() - CONFIRM_UPLOADS_AFTER_MS) } },
+      select: { id: true, key: true },
+      orderBy: { createdAt: 'asc' },
+      take: MAINTENANCE_BATCH,
+    });
+    for (const file of pending) {
+      const size = await this.objectSize(file.key);
+      if (size === undefined) continue; // storage unreachable: next run
+      if (size === null) {
+        const { count } = await this.prisma.storedFile.deleteMany({ where: { id: file.id, confirmedAt: null } });
+        result.dropped += count;
+      } else {
+        await this.prisma.storedFile.updateMany({ where: { id: file.id }, data: { confirmedAt: now, size } });
+        result.confirmed++;
+      }
+    }
+    return result;
+  }
+
+  /** Called by StorageMaintenanceTask: retries deleting orphaned objects. Returns how many are gone. */
+  async retryOrphanedObjects(): Promise<number> {
+    if (!this.client) return 0;
+    const orphans = await this.prisma.orphanedObject.findMany({
+      where: { attempts: { lt: MAX_DELETE_ATTEMPTS } },
+      select: { key: true },
+      orderBy: { createdAt: 'asc' },
+      take: MAINTENANCE_BATCH,
+    });
+    if (!orphans.length) return 0;
+
+    const failed = await this.tryDeleteObjects(orphans.map((orphan) => orphan.key));
+    const failedKeys = new Set(failed.map((f) => f.key));
+    const deleted = orphans.map((orphan) => orphan.key).filter((key) => !failedKeys.has(key));
+    if (deleted.length) await this.prisma.orphanedObject.deleteMany({ where: { key: { in: deleted } } });
+    for (const { key, error } of failed) {
+      const row = await this.prisma.orphanedObject.update({
+        where: { key },
+        data: { attempts: { increment: 1 }, lastError: error.slice(0, 1000) },
+        select: { attempts: true },
+      });
+      if (row.attempts >= MAX_DELETE_ATTEMPTS) this.logger.error(`Giving up deleting ${key}: ${error}`);
+    }
+    return deleted.length;
+  }
+
+  /** Deletes objects in batches and returns the keys that could not be deleted, with the reason. */
+  private async tryDeleteObjects(keys: string[]): Promise<{ key: string; error: string }[]> {
+    if (!this.client || !keys.length) return [];
+    const failed: { key: string; error: string }[] = [];
     for (let i = 0; i < keys.length; i += DELETE_BATCH) {
       const batch = keys.slice(i, i + DELETE_BATCH);
       try {
         const result = await this.client.send(
           new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true } }),
         );
-        for (const error of result.Errors ?? []) this.logger.warn(`Could not delete ${error.Key}: ${error.Message}`);
+        for (const error of result.Errors ?? []) {
+          this.logger.warn(`Could not delete ${error.Key}: ${error.Message}`);
+          if (error.Key) failed.push({ key: error.Key, error: error.Message ?? 'unknown error' });
+        }
       } catch (error) {
-        this.logger.error(`Could not delete ${batch.length} file(s)`, error instanceof Error ? error.stack : String(error));
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Could not delete ${batch.length} file(s): ${message}`);
+        failed.push(...batch.map((key) => ({ key, error: message })));
       }
+    }
+    return failed;
+  }
+
+  /** Size of an object in bytes, `null` when it does not exist, `undefined` when storage could not be reached. */
+  private async objectSize(key: string): Promise<number | null | undefined> {
+    try {
+      const head = await this.client!.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      return head.ContentLength ?? 0;
+    } catch (error) {
+      if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null;
+      this.logger.warn(`Could not check ${key}: ${error instanceof Error ? error.message : String(error)}`);
+      return undefined;
     }
   }
 
@@ -266,8 +393,8 @@ export class StorageService implements IProjectFiles {
     }
   }
 
-  private async assertQuota(userId: string, size: number): Promise<void> {
-    const { usedBytes, quotaBytes } = await this.usage(userId);
+  private async assertQuota(db: Db, userId: string, size: number): Promise<void> {
+    const { usedBytes, quotaBytes } = await this.usage(userId, db);
     if (usedBytes + size > quotaBytes) {
       throw new ForbiddenException(
         `Storage quota exceeded: ${Math.ceil(usedBytes / 1024 / 1024)} MB of ${quotaBytes / 1024 / 1024} MB used`,

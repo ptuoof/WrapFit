@@ -5,6 +5,12 @@ export const ACCESS_COOKIE = 'wf_access';
 export const REFRESH_COOKIE = 'wf_refresh';
 export const REFRESH_COOKIE_PATH = '/api/auth';
 
+/**
+ * A refresh token replayed within this window after it was rotated is another tab of the same browser refreshing at
+ * the same moment (they share the cookie), not a stolen token: it gets its own new session instead of a logout.
+ */
+export const REFRESH_REUSE_GRACE_MS = 30_000;
+
 /** OAuth `state` (CSRF protection) + where to send the user after Google login. */
 export const OAUTH_STATE_COOKIE = 'wf_oauth_state';
 export const OAUTH_STATE_COOKIE_PATH = '/api/auth/google';

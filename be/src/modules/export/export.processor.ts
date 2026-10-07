@@ -4,21 +4,26 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
+import { runWithRequestId } from '../../common/context/request-context';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS } from './export.constants';
+import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, canEmbedInPdf, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
 
 export const EXPORT_COMPLETED = 'export.completed';
 
-/** Images embedded in one print file, in total (300 elements x 15 MB would exhaust the worker's memory). */
-export const MAX_ARTWORK_BYTES = 100 * 1024 * 1024;
+/**
+ * Images embedded in one print file, in total. The SVG export holds them twice more as base64 text (about 1.33 x
+ * each), on a 384 MB heap with EXPORT_CONCURRENCY jobs at once: 40 MB keeps two jobs well inside the worker's memory.
+ */
+export const MAX_ARTWORK_BYTES = 40 * 1024 * 1024;
 
 /**
  * Renders print files in the worker process (src/worker.ts). BullMQ retries a failed job 3 times; the ExportJob
  * row is marked FAILED only after the last attempt. Concurrency is set by EXPORT_CONCURRENCY.
+ * A worker that dies mid-job (out of memory) never reaches the catch below: ExportReconcileTask fails those rows.
  */
 @Processor(EXPORT_QUEUE)
 export class ExportProcessor extends WorkerHost implements OnApplicationBootstrap {
@@ -37,25 +42,28 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     this.worker.concurrency = (this.config as unknown as AppConfigService).get('EXPORT_CONCURRENCY', { infer: true });
   }
 
-  async process(job: Job<ExportJobData>): Promise<{ storageKey: string }> {
-    const { exportJobId } = job.data;
-    try {
-      return await this.render(exportJobId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const lastAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
-      this.logger.warn(`Export ${exportJobId} attempt ${job.attemptsMade + 1} failed: ${message}`);
-      if (lastAttempt) {
-        await this.prisma.exportJob.update({
-          where: { id: exportJobId },
-          data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
-        });
+  process(job: Job<ExportJobData>): Promise<{ storageKey: string }> {
+    const { exportJobId, requestId } = job.data;
+    return runWithRequestId(requestId ?? `job:${exportJobId}`, async () => {
+      try {
+        return await this.render(exportJobId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const lastAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+        this.logger.warn(`Export ${exportJobId} attempt ${job.attemptsMade + 1} failed: ${message}`);
+        if (lastAttempt) {
+          await this.prisma.exportJob.updateMany({
+            where: { id: exportJobId, status: UNFINISHED_EXPORT },
+            data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
+          });
+        }
+        throw error; // lets BullMQ schedule the next attempt
       }
-      throw error; // lets BullMQ schedule the next attempt
-    }
+    });
   }
 
   private async render(exportJobId: string): Promise<{ storageKey: string }> {
+    const startedAt = Date.now();
     const job = await this.prisma.exportJob.update({
       where: { id: exportJobId },
       data: { status: 'PROCESSING', errorLog: null },
@@ -113,7 +121,9 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       }),
     ]);
     this.events.emit(EXPORT_COMPLETED, { exportJobId, projectId: project.id, userId: project.userId });
-    this.logger.log(`Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed`);
+    this.logger.log(
+      `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,
+    );
     return { storageKey };
   }
 
