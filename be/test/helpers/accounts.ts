@@ -18,9 +18,8 @@ export async function signUp(
   fullName?: string,
 ): Promise<{ id: string; cookie: string; setCookie: string[] }> {
   const api = () => request(app.getHttpServer());
-  const registered = await api().post('/api/auth/register').send({ email, password: TEST_PASSWORD, fullName }).expect(201);
-  const id = registered.body.user.id as string;
-  await app.get(PrismaService).user.update({ where: { id }, data: { emailVerifiedAt: new Date() } });
+  await api().post('/api/auth/register').send({ email, password: TEST_PASSWORD, fullName }).expect(201);
+  const { id } = await app.get(PrismaService).user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
 
   const login = await api().post('/api/auth/login').send({ email, password: TEST_PASSWORD }).expect(200);
   const setCookie = login.headers['set-cookie'] as unknown as string[];

@@ -7,9 +7,9 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { AccountRecoveryService } from '../src/modules/auth/account-recovery.service';
 import { rawAuthToken } from '../src/modules/auth/auth-token.crypto';
-import { AuthMaintenanceTask } from '../src/modules/auth/auth-maintenance.task';
+import { AuthMaintenanceTask, UNVERIFIED_ACCOUNT_TTL_MS } from '../src/modules/auth/auth-maintenance.task';
 import { AuthService } from '../src/modules/auth/auth.service';
-import { MAIL_QUEUE } from '../src/modules/mail/mail.constants';
+import { ACCOUNT_EXISTS_WINDOW_MS, MAIL_QUEUE } from '../src/modules/mail/mail.constants';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { accessCookie, TEST_PASSWORD } from './helpers/accounts';
 
@@ -26,7 +26,7 @@ describe('Account emails (e2e)', () => {
   const api = () => request(app.getHttpServer());
 
   /** Token of the newest usable link of this purpose, as the worker would put it in the email. */
-  const linkToken = async (address: string, purpose: 'VERIFY_EMAIL' | 'RESET_PASSWORD') => {
+  const linkToken = async (address: string, purpose: 'VERIFY_EMAIL' | 'RESET_PASSWORD' | 'COMPLETE_SIGNUP') => {
     const token = await prisma.authToken.findFirstOrThrow({
       where: { user: { email: address }, purpose, consumedAt: null },
       orderBy: { createdAt: 'desc' },
@@ -127,6 +127,88 @@ describe('Account emails (e2e)', () => {
       const recovery = app.get(AccountRecoveryService);
       await Promise.all([recovery.resendVerification(other), recovery.resendVerification(other)]);
       expect(await prisma.authToken.count({ where: { user: { email: other }, consumedAt: null } })).toBe(1);
+    });
+  });
+
+  describe('registering an address that already has an account', () => {
+    // Through the services where possible: the per-IP limit of the auth routes (10 / minute) is shared by this file.
+    const signUpAs = (address: string, password: string) =>
+      app.get(AuthService).register({ email: address, password });
+    const signIn = (address: string, password: string) => app.get(AuthService).login({ email: address, password });
+
+    it('answers exactly like for a new address', async () => {
+      const taken = email('taken');
+      await signUpAs(taken, TEST_PASSWORD);
+      const fresh = await api().post('/api/auth/register').send({ email: email('fresh'), password: TEST_PASSWORD }).expect(201);
+      const again = await api().post('/api/auth/register').send({ email: taken, password: TEST_PASSWORD }).expect(201);
+      expect(Object.keys(again.body)).toEqual(Object.keys(fresh.body));
+      expect(again.body).toEqual({ email: taken, emailVerificationRequired: true });
+    });
+
+    it('lets the owner of the mailbox choose the password of an address someone registered first', async () => {
+      const victim = email('chi');
+      await signUpAs(victim, 'Squatter0Pass'); // registered by someone who does not own the mailbox
+      const squatterLink = await linkToken(victim, 'VERIFY_EMAIL');
+      await ageTokens(victim);
+
+      await signUpAs(victim, 'Owner0Pass1'); // the owner registers: no error, a link to choose the password
+      const completeLink = await linkToken(victim, 'COMPLETE_SIGNUP');
+      // The password sent with a repeated registration is never stored; the first link stops working.
+      await expect(signIn(victim, 'Owner0Pass1')).rejects.toThrow('Invalid credentials');
+      const replaced = await api().post('/api/auth/verify-email').send({ token: squatterLink }).expect(400);
+      expect(replaced.body.code).toBe('AUTH_TOKEN_INVALID');
+
+      await api().post('/api/auth/password/reset').send({ token: completeLink, password: 'Owner0Pass2' }).expect(200);
+      await expect(signIn(victim, 'Squatter0Pass')).rejects.toThrow('Invalid credentials');
+      await expect(signIn(victim, 'Owner0Pass2')).resolves.toMatchObject({ user: { emailVerifiedAt: expect.any(Date) } });
+    });
+
+    it('tells the owner of a verified account, at most once an hour, and changes nothing', async () => {
+      const owner = email('dung');
+      await signUpAs(owner, TEST_PASSWORD);
+      const user = await prisma.user.update({ where: { email: owner }, data: { emailVerifiedAt: new Date() } });
+      const tokensBefore = await prisma.authToken.count({ where: { userId: user.id } });
+
+      await signUpAs(owner, 'Other0Pass1');
+      await signUpAs(owner, 'Other0Pass2');
+
+      expect(await prisma.authToken.count({ where: { userId: user.id } })).toBe(tokensBefore);
+      const hour = Math.floor(Date.now() / ACCOUNT_EXISTS_WINDOW_MS);
+      const notice = await mailQueue.getJob(`account-exists-${user.id}-${hour}`);
+      expect(notice?.data).toMatchObject({ userId: user.id });
+      expect((await mailQueue.getJobs(['waiting', 'delayed'])).filter((j) => j.data.userId === user.id)).toHaveLength(1);
+      await notice?.remove();
+      await expect(signIn(owner, TEST_PASSWORD)).resolves.toBeDefined();
+    });
+
+    it('deletes accounts that stayed unverified and empty for a week', async () => {
+      const [stale, recent, busy] = [email('stale'), email('recent'), email('busy')];
+      for (const address of [stale, recent, busy]) await signUpAs(address, TEST_PASSWORD);
+      const old = new Date(Date.now() - UNVERIFIED_ACCOUNT_TTL_MS - 60_000);
+      await prisma.user.updateMany({ where: { email: { in: [stale, busy] } }, data: { createdAt: old } });
+      const busyUser = await prisma.user.findUniqueOrThrow({ where: { email: busy } });
+      await prisma.packagingProject.create({
+        data: {
+          userId: busyUser.id,
+          templateId: 'tuck-top',
+          formulaVersion: 1,
+          title: 'Đang làm dở',
+          dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
+          materialSpec: { type: 'ivory', gsm: 300, caliper: 0.35, finish: 'matte' },
+          canvasState: { elements: [] },
+        },
+      });
+
+      await app.get(AuthMaintenanceTask).cleanup();
+
+      expect(await prisma.user.findUnique({ where: { email: stale } })).toBeNull();
+      expect(await prisma.user.findUnique({ where: { email: recent } })).not.toBeNull();
+      expect(await prisma.user.findUnique({ where: { email: busy } })).not.toBeNull();
+    });
+
+    it('refuses accounts without a way to sign in, and unverified Google accounts (CHECK constraints)', async () => {
+      await expect(prisma.user.create({ data: { email: email('nobody') } })).rejects.toThrow();
+      await expect(prisma.user.create({ data: { email: email('gg'), googleId: `gg-${run}` } })).rejects.toThrow();
     });
   });
 

@@ -2,6 +2,7 @@ import type { JobsOptions } from 'bullmq';
 
 export const MAIL_QUEUE = 'mail';
 export const AUTH_EMAIL_JOB = 'auth-email';
+export const ACCOUNT_EXISTS_JOB = 'account-exists';
 
 /**
  * Data of an auth email job: the AuthToken row only. The worker reads the recipient and derives the link itself, so
@@ -12,6 +13,15 @@ export interface AuthEmailJobData {
   /** Id of the HTTP request that queued the email, so worker logs can be matched with it. */
   requestId?: string;
 }
+
+/** "Someone tried to register with your address": the account only, the worker reads the recipient. */
+export interface AccountExistsJobData {
+  userId: string;
+  requestId?: string;
+}
+
+/** One account-exists notice per account and hour: the job id of the hour is kept that long (see MailService). */
+export const ACCOUNT_EXISTS_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * 5 attempts with exponential backoff (10 s, 20 s, 40 s, 80 s) for temporary SMTP failures (4xx replies, network).

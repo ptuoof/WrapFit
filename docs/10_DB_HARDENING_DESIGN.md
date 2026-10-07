@@ -1,7 +1,10 @@
 # 10 — Thiết kế đợt củng cố Database (DB hardening batch)
 
 > Trạng thái: **ĐÃ TRIỂN KHAI** (backend, 2026-10-07). Frontend chưa sửa: hợp đồng API giữ nguyên trừ đăng ký / đăng nhập.
-> Môi trường: MVP chạy local, chưa có dữ liệu production. Migration `20261008000100` → `20261008000500`.
+> Môi trường: MVP chạy local, chưa có dữ liệu production. Migration `20261008000100` → `20261008000600`.
+> Nền: xây tiếp trên các thay đổi chưa commit của migration `20261007090000_reliability_fixes`
+> (`refresh_tokens.replaced_by_id`, `packaging_projects.version`, `stored_files.confirmed_at`, `orphaned_objects`,
+> `StorageMaintenanceTask`, `AppLogger`, `runWithRequestId`).
 
 ## Khác với bản thiết kế bên dưới (quyết định khi triển khai)
 
@@ -36,9 +39,14 @@
    - Kiểm tra cấu hình: worker log `mail.smtp_ready` / `mail.smtp_unreachable` lúc khởi động; gửi thư thử bằng
      `npm --workspace=be run mail:test -- you@example.com` (dev) hoặc
      `docker compose exec worker node dist/mail-test.js you@example.com` (production), rồi xem thư có vào Spam không.
-> Nền: xây tiếp trên các thay đổi chưa commit của migration `20261007090000_reliability_fixes`
-> (`refresh_tokens.replaced_by_id`, `packaging_projects.version`, `stored_files.confirmed_at`, `orphaned_objects`,
-> `StorageMaintenanceTask`, `AppLogger`, `runWithRequestId`).
+8. **Đăng ký không lộ email nào đã có tài khoản** (sau audit, 2026-10-07): `register` luôn `201 { email, emailVerificationRequired }`.
+   Email đã có tài khoản chưa xác minh → link `COMPLETE_SIGNUP` để chủ hộp thư đặt mật khẩu (mật khẩu của lần đăng ký
+   sau không được lưu, link xác minh cũ bị hủy); đã xác minh → thư báo, tối đa 1 lần / giờ (jobId theo giờ trong
+   BullMQ). Tài khoản chưa xác minh, không dự án, không file bị xóa sau 7 ngày. CHECK mới: `chk_users_sign_in_method`,
+   `chk_users_google_verified`. Rủi ro còn lại: chủ hộp thư bấm link "Xác nhận" mà họ không yêu cầu trong 24 giờ đầu →
+   tài khoản dùng mật khẩu của người đăng ký trước; chặn hẳn khi FE làm trang `/verify-email` bắt nhập mật khẩu.
+9. **Sau audit**: file mà dự án khác còn hiển thị được chuyển sang dự án đó thay vì `project_id = NULL` (hết file mồ
+   côi); ref được tính lại mỗi khi thêm snapshot; link email dùng `AUTH_TOKEN_SECRET` riêng (trống = `JWT_REFRESH_SECRET`).
 
 ## Tóm tắt phạm vi
 

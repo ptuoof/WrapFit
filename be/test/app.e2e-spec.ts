@@ -103,16 +103,14 @@ describe('API (e2e)', () => {
     it('registers a user without opening a session until the email is verified', async () => {
       const res = await api().post('/api/auth/register').send(alice).expect(201);
 
-      expect(res.body.user).toMatchObject({
-        email: alice.email,
+      expect(res.body).toEqual({ email: alice.email, emailVerificationRequired: true });
+      expect(setCookie(res, 'wf_access')).toBeUndefined();
+      expect(await prisma.user.findUnique({ where: { email: alice.email } })).toMatchObject({
         emailVerifiedAt: null,
         role: 'MAKER',
         subscriptionTier: 'FREE',
         isActive: true,
       });
-      expect(res.body.user.passwordHash).toBeUndefined();
-      expect(res.body).toEqual({ user: expect.any(Object), emailVerificationRequired: true });
-      expect(setCookie(res, 'wf_access')).toBeUndefined();
 
       const refused = await api().post('/api/auth/login').send(alice).expect(403);
       expect(refused.body.code).toBe('EMAIL_NOT_VERIFIED');
@@ -129,8 +127,9 @@ describe('API (e2e)', () => {
       expect(setCookie(res, 'wf_refresh')).toMatch(/; Path=\/api\/auth; .*HttpOnly; SameSite=Lax/);
     });
 
-    it('rejects a duplicate email and invalid payloads', async () => {
-      await api().post('/api/auth/register').send(alice).expect(409);
+    it('answers a duplicate email like a new one (no account enumeration) and rejects invalid payloads', async () => {
+      const again = await api().post('/api/auth/register').send(alice).expect(201);
+      expect(again.body).toEqual({ email: alice.email, emailVerificationRequired: true });
       await api()
         .post('/api/auth/register')
         .send({ email: 'not-an-email', password: 'short' })

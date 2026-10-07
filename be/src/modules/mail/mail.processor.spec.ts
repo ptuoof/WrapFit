@@ -11,9 +11,10 @@ describe('MailProcessor', () => {
   const env: Record<string, unknown> = { JWT_REFRESH_SECRET: secret, FRONTEND_URL: 'https://wrapfit.vn/' };
   const config = { get: (key: string) => env[key] } as unknown as ConfigService;
   const tokenId = '0192a4c0-0000-7000-8000-000000000001';
-  const job = (attemptsMade = 0) => ({ data: { authTokenId: tokenId }, attemptsMade }) as Job<AuthEmailJobData>;
+  const job = (attemptsMade = 0) =>
+    ({ name: 'auth-email', data: { authTokenId: tokenId }, attemptsMade }) as Job<AuthEmailJobData>;
 
-  let prisma: { authToken: { findUnique: jest.Mock } };
+  let prisma: { authToken: { findUnique: jest.Mock }; user: { findUnique: jest.Mock } };
   let mailer: { send: jest.Mock };
   let processor: MailProcessor;
 
@@ -26,7 +27,7 @@ describe('MailProcessor', () => {
   });
 
   beforeEach(() => {
-    prisma = { authToken: { findUnique: jest.fn() } };
+    prisma = { authToken: { findUnique: jest.fn() }, user: { findUnique: jest.fn() } };
     mailer = { send: jest.fn() };
     processor = new MailProcessor(prisma as unknown as PrismaService, mailer as unknown as SmtpMailer, config);
     for (const level of ['log', 'warn', 'error'] as const) {
@@ -46,6 +47,30 @@ describe('MailProcessor', () => {
     expect(content.html).toContain(`https://wrapfit.vn/verify-email?token=${token}`);
     expect(content.subject).toBe('Xác nhận email WrapFit của bạn');
     expect(hashAuthToken(token)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('links the email of a repeated registration to the page that sets the password', async () => {
+    prisma.authToken.findUnique.mockResolvedValue(usable({ purpose: 'COMPLETE_SIGNUP' }));
+    await processor.process(job());
+    const [, content] = mailer.send.mock.calls[0];
+    expect(content.subject).toBe('Hoàn tất đăng ký WrapFit');
+    expect(content.text).toContain('https://wrapfit.vn/complete-signup?token=');
+  });
+
+  it('tells the owner of an existing account that someone tried to register, without any link that signs in', async () => {
+    prisma.user.findUnique.mockResolvedValue({ email: 'an.nguyen@gmail.com', fullName: 'An', isActive: true });
+    const notice = { name: 'account-exists', data: { userId: 'u-1' }, attemptsMade: 0 } as unknown as Job<AuthEmailJobData>;
+
+    await expect(processor.process(notice)).resolves.toEqual({ sent: true });
+    const [to, content] = mailer.send.mock.calls[0];
+    expect(to).toBe('an.nguyen@gmail.com');
+    expect(content.subject).toBe('Email của bạn đã có tài khoản WrapFit');
+    expect(content.text).toContain('https://wrapfit.vn/forgot-password');
+    expect(content.text).not.toContain('token=');
+    expect(prisma.authToken.findUnique).not.toHaveBeenCalled();
+
+    prisma.user.findUnique.mockResolvedValue({ email: 'x@y.z', fullName: null, isActive: false });
+    await expect(processor.process(notice)).resolves.toEqual({ sent: false }); // disabled meanwhile
   });
 
   it('links a reset email to the reset page', async () => {

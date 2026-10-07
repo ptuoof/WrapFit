@@ -8,7 +8,7 @@
 
 - **Thời gian**: mọi cột `DateTime` là `timestamptz(3)` (`@db.Timestamptz(3)`), giá trị lưu theo UTC.
 - **Khóa chính**: `@default(uuid(7))` (UUIDv7, tăng dần theo thời gian). Ngoại lệ: `refresh_tokens.id` = `jti` do code sinh.
-- **Ràng buộc CHECK** (tiền tố `chk_`) chỉ nằm trong migration, Prisma không thấy chúng: khi đổi tên / đổi kiểu một cột, sửa luôn CHECK của cột đó trong migration mới. Hiện có: email viết thường, `fitcheck_score` 0–100, bộ đếm ≥ 0, `size > 0`, `version` / `formula_version` ≥ 1, `(status = 'DELETED') = (deleted_at IS NOT NULL)`, cột `*_key` chỉ chứa key `users/...`.
+- **Ràng buộc CHECK** (tiền tố `chk_`) chỉ nằm trong migration, Prisma không thấy chúng: khi đổi tên / đổi kiểu một cột, sửa luôn CHECK của cột đó trong migration mới. Hiện có: email viết thường, `fitcheck_score` 0–100, bộ đếm ≥ 0, `size > 0`, `version` / `formula_version` ≥ 1, `(status = 'DELETED') = (deleted_at IS NOT NULL)`, cột `*_key` chỉ chứa key `users/...`, mỗi tài khoản có `password_hash` hoặc `google_id`, tài khoản Google luôn có `email_verified_at`.
 - **File lưu bằng key, không lưu URL**: `thumbnail_key`, `preview_key`, `avatar_key`, `render_key`, `brand_kit.logoKey` và `content` của phần tử `logo` / `image` / `pattern` trong `canvas_state`. API vẫn trả URL (`thumbnailUrl`...), dựng từ `STORAGE_PUBLIC_URL` lúc đọc (`be/src/modules/storage/asset-keys.ts`).
 - **Ảnh dự án đang dùng** nằm ở `project_file_refs`, đồng bộ trong cùng transaction với mỗi lần ghi canvas (`syncProjectFileRefs`). Không tìm key bằng cách quét `canvas_state::text`.
 - **Công thức hộp có phiên bản**: dự án chốt `formula_version` lúc tạo; đổi công thức = thêm phiên bản mới trong `shared/src/parametric/registry.ts`, không sửa phiên bản cũ.
@@ -69,7 +69,7 @@ erDiagram
     AuthToken {
         uuid id PK
         uuid user_id FK
-        enum purpose "VERIFY_EMAIL | RESET_PASSWORD"
+        enum purpose "VERIFY_EMAIL | RESET_PASSWORD | COMPLETE_SIGNUP"
         string token_hash UK "SHA-256 của mã, không lưu mã gốc"
         timestamptz expires_at "24 giờ / 30 phút"
         timestamptz consumed_at "đã dùng hoặc bị thay; tối đa 1 mã còn hiệu lực mỗi mục đích"
@@ -225,4 +225,4 @@ erDiagram
 13. **`ai_generations`** (thêm ở IT3-09): Mỗi lần gọi Claude sinh hoa văn — để giới hạn số lượt trong 24 giờ theo gói và theo dõi số token (chi phí).
 14. **`orphaned_objects`**: Object trên bucket chưa xóa được (lỗi S3) sau khi dòng DB đã bị xóa; `StorageMaintenanceTask` thử xóa lại.
 15. **`auth_tokens`**: Mã một lần gửi qua email (xác minh email, đặt lại mật khẩu). Chỉ lưu SHA-256; mã trong link được suy ra từ `id` bằng HMAC phía server nên cả DB lẫn hàng đợi mail đều không chứa link dùng được.
-16. **`project_file_refs`**: Ảnh tải lên mà mỗi dự án đang hiển thị (canvas + các mốc phiên bản). File chỉ bị xóa khỏi bucket khi không còn dự án nào trỏ tới; khi xóa người dùng, ảnh mà dự án của người khác (Remix) còn dùng được chuyển cho chủ dự án Remix cũ nhất.
+16. **`project_file_refs`**: Ảnh tải lên mà mỗi dự án đang hiển thị (canvas + các mốc phiên bản). Khi dự án bị xóa, ảnh mà dự án khác (bản sao, Remix) còn hiển thị được chuyển sang dự án cũ nhất trong số đó (khi xóa người dùng: sang cả chủ của dự án đó, kèm hạn mức), nên file bị xóa cùng dự án cuối cùng còn dùng nó, không bao giờ mồ côi trên bucket.

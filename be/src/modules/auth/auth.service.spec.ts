@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
+import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { AuthService } from './auth.service';
 
@@ -36,6 +37,7 @@ describe('AuthService', () => {
   };
   const authTokens = { issue: jest.fn() };
   const mail = { sendAuthEmail: jest.fn() };
+  const recovery = { handleRepeatedSignup: jest.fn() };
 
   const safeUser = {
     id: '11111111-1111-4111-8111-111111111111',
@@ -65,6 +67,7 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: users },
         { provide: PrismaService, useValue: prisma },
         { provide: AuthTokensService, useValue: authTokens },
+        { provide: AccountRecoveryService, useValue: recovery },
         { provide: MailService, useValue: mail },
         { provide: ConfigService, useValue: { get: (key: string) => env[key] } },
       ],
@@ -75,38 +78,40 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('rejects an email that is already registered', async () => {
-      users.findByEmail.mockResolvedValue({ ...safeUser, passwordHash: 'hash' });
-      await expect(
-        service.register({ email: safeUser.email, password: 'Passw0rd123' }),
-      ).rejects.toBeInstanceOf(ConflictException);
-      expect(prisma.user.create).not.toHaveBeenCalled();
-    });
-
     it('hashes the password, emails a verification link and opens no session', async () => {
       users.findByEmail.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({ ...safeUser, emailVerifiedAt: null });
+      prisma.user.create.mockResolvedValue({ id: safeUser.id });
       authTokens.issue.mockResolvedValue('token-1');
 
-      const user = await service.register({ email: safeUser.email, password: 'Passw0rd123' });
+      await service.register({ email: safeUser.email, password: 'Passw0rd123' });
 
       const { passwordHash } = prisma.user.create.mock.calls[0][0].data;
       expect(passwordHash).not.toBe('Passw0rd123');
       expect(await bcrypt.compare('Passw0rd123', passwordHash)).toBe(true);
-      expect(user.emailVerifiedAt).toBeNull();
       expect(authTokens.issue).toHaveBeenCalledWith(prisma, safeUser.id, 'VERIFY_EMAIL');
       expect(mail.sendAuthEmail).toHaveBeenCalledWith('token-1');
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
 
-    it('answers 409 when the same email is registered twice at the same moment', async () => {
-      users.findByEmail.mockResolvedValue(null);
+    it('does not tell an existing address: no error, the existing account gets its own email', async () => {
+      const existing = { ...safeUser, passwordHash: 'someone-else', emailVerifiedAt: null };
+      users.findByEmail.mockResolvedValue(existing);
+
+      await expect(service.register({ email: safeUser.email, password: 'Passw0rd123' })).resolves.toBeUndefined();
+
+      expect(recovery.handleRepeatedSignup).toHaveBeenCalledWith(existing);
+      expect(prisma.user.create).not.toHaveBeenCalled(); // the stored password is never replaced from here
+      expect(mail.sendAuthEmail).not.toHaveBeenCalled();
+    });
+
+    it('treats the loser of two simultaneous registrations as a repeated registration', async () => {
+      const winner = { ...safeUser, passwordHash: 'hash', emailVerifiedAt: null };
+      users.findByEmail.mockResolvedValueOnce(null).mockResolvedValueOnce(winner);
       prisma.$transaction.mockRejectedValue(
         new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '6' }),
       );
-      await expect(service.register({ email: safeUser.email, password: 'Passw0rd123' })).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(service.register({ email: safeUser.email, password: 'Passw0rd123' })).resolves.toBeUndefined();
+      expect(recovery.handleRepeatedSignup).toHaveBeenCalledWith(winner);
       expect(mail.sendAuthEmail).not.toHaveBeenCalled();
     });
   });

@@ -24,9 +24,12 @@ const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 // Routes that send an email: per IP on top of the per-account limits of AuthTokensService.canSend.
 const AUTH_EMAIL_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
 
-/** Registration opens no session: the account signs in once its email is verified. */
+/**
+ * Registration opens no session (the account signs in once its email is verified), and its answer is the same for a
+ * new and an existing address: show "check your inbox".
+ */
 export interface RegisterResponse {
-  user: SafeUser;
+  email: string;
   emailVerificationRequired: true;
 }
 
@@ -57,9 +60,13 @@ export class AuthController {
   @Public()
   @Throttle(AUTH_THROTTLE)
   @Post('register')
-  @ApiOperation({ summary: 'Create an account and email its verification link (no session until verified)' })
+  @ApiOperation({
+    summary:
+      'Create an account and email its verification link (no session until verified). Same 201 answer when the address already has an account: that mailbox gets a different email',
+  })
   async register(@Body() dto: RegisterDto): Promise<RegisterResponse> {
-    return { user: await this.authService.register(dto), emailVerificationRequired: true };
+    await this.authService.register(dto);
+    return { email: dto.email, emailVerificationRequired: true };
   }
 
   @Public()

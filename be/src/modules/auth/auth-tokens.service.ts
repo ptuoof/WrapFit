@@ -15,6 +15,7 @@ import {
 const TTL_MS: Record<AuthTokenPurpose, number> = {
   VERIFY_EMAIL: VERIFY_EMAIL_TTL_MS,
   RESET_PASSWORD: RESET_PASSWORD_TTL_MS,
+  COMPLETE_SIGNUP: RESET_PASSWORD_TTL_MS, // also sets the password
 };
 
 /** Outcome of presenting a token. `consumed` also covers a token replaced by a newer one. */
@@ -76,12 +77,17 @@ export class AuthTokensService {
    * Uses a token inside the caller's transaction. The claim is a single conditional UPDATE, so two requests with the
    * same link cannot both succeed.
    */
-  async consume(tx: Tx, rawToken: string, purpose: AuthTokenPurpose, now = new Date()): Promise<ConsumeResult> {
+  async consume(
+    tx: Tx,
+    rawToken: string,
+    purposes: AuthTokenPurpose[],
+    now = new Date(),
+  ): Promise<ConsumeResult> {
     const row = await tx.authToken.findUnique({
       where: { tokenHash: hashAuthToken(rawToken) },
       select: { id: true, userId: true, purpose: true, expiresAt: true, consumedAt: true },
     });
-    if (!row || row.purpose !== purpose) return { status: 'invalid' };
+    if (!row || !purposes.includes(row.purpose)) return { status: 'invalid' };
     if (row.consumedAt) return { status: 'consumed', userId: row.userId };
     if (row.expiresAt <= now) return { status: 'expired' };
 
@@ -90,5 +96,10 @@ export class AuthTokensService {
       data: { consumedAt: now },
     });
     return count ? { status: 'ok', userId: row.userId } : { status: 'consumed', userId: row.userId };
+  }
+
+  /** Makes the usable links of these purposes stop working (a newer kind of link replaces them). */
+  async revoke(tx: Tx, userId: string, purposes: AuthTokenPurpose[], now = new Date()): Promise<void> {
+    await tx.authToken.updateMany({ where: { userId, purpose: { in: purposes }, consumedAt: null }, data: { consumedAt: now } });
   }
 }

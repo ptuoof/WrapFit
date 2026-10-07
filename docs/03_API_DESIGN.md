@@ -24,12 +24,12 @@
 | Method | Đường dẫn | Quyền | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/health` | Public | Trạng thái server + kết nối CSDL |
-| `POST` | `/api/auth/register` | Public | Đăng ký (`email`, `password`, `fullName`) → `201 { user, emailVerificationRequired: true }`, gửi email xác minh. **Không** đặt cookie: chưa xác minh email thì chưa đăng nhập được |
+| `POST` | `/api/auth/register` | Public | Đăng ký (`email`, `password`, `fullName`) → luôn `201 { email, emailVerificationRequired: true }`, kể cả khi email đã có tài khoản (không lộ email nào đã đăng ký). **Không** đặt cookie: chưa xác minh email thì chưa đăng nhập được. FE luôn hiện "Kiểm tra hộp thư" |
 | `POST` | `/api/auth/login` | Public | Đăng nhập bằng email & mật khẩu → đặt cookie đăng nhập; email chưa xác minh → `403 code EMAIL_NOT_VERIFIED` |
 | `POST` | `/api/auth/verify-email` | Public | `{ token }` (giá trị `?token=` trong link email) → `200 { verified: true }`; mở lại link lần hai vẫn `200`. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED` |
 | `POST` | `/api/auth/verify-email/resend` | Public | `{ email }` → luôn `202 {}` (không lộ email nào có tài khoản) |
 | `POST` | `/api/auth/password/forgot` | Public | `{ email }` → luôn `202 {}`; gửi link đặt lại mật khẩu (30 phút) |
-| `POST` | `/api/auth/password/reset` | Public | `{ token, password }` → `200 {}`, thu hồi mọi phiên, xóa cookie; rồi đăng nhập lại. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED \| AUTH_TOKEN_CONSUMED` |
+| `POST` | `/api/auth/password/reset` | Public | `{ token, password }` (link đặt lại mật khẩu **hoặc** link hoàn tất đăng ký) → `200 {}`, thu hồi mọi phiên, xóa cookie; rồi đăng nhập lại. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED \| AUTH_TOKEN_CONSUMED` |
 | `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
 | `POST` | `/api/auth/logout` | Public | Thu hồi phiên hiện tại, xoá cookie |
 | `GET` | `/api/auth/google?redirect=/p/abc` | Public | Bắt đầu đăng nhập Google (điều hướng trình duyệt) |
@@ -136,7 +136,11 @@
 ### Tài khoản & email (xác minh, quên mật khẩu)
 
 - Đăng ký gửi email xác minh (link 24 giờ). Chưa xác minh: `login` trả `403 EMAIL_NOT_VERIFIED`, `refresh` trả `401`. FE hiển thị nút "Gửi lại email" (`verify-email/resend`).
-- Link trong email trỏ tới trang FE `/verify-email?token=…` hoặc `/reset-password?token=…`; trang đó gọi API tương ứng với `token`.
+- Đăng ký một email **đã có tài khoản**: trả lời y hệt, chỉ email gửi đi khác nhau:
+  - tài khoản chưa xác minh → email "Hoàn tất đăng ký" với link đặt mật khẩu (30 phút). Mật khẩu gửi kèm lần đăng ký sau **không** được lưu, link xác minh cũ hết hiệu lực: chỉ chủ hộp thư quyết định mật khẩu, kể cả khi người khác đã đăng ký email đó trước;
+  - tài khoản đã xác minh → email "Email của bạn đã có tài khoản" (đăng nhập / quên mật khẩu), tối đa 1 lần / giờ, không thay đổi gì.
+- Tài khoản mật khẩu chưa xác minh, không có dự án và file nào bị xóa sau 7 ngày (cron 03:00).
+- Link trong email trỏ tới trang FE `/verify-email?token=…`, `/reset-password?token=…` hoặc `/complete-signup?token=…`; trang đó gọi API tương ứng với `token` (`/complete-signup` và `/reset-password` cùng gọi `POST /api/auth/password/reset`).
 - Mỗi tài khoản: tối đa 1 email mỗi loại / phút và 5 / ngày (vượt thì bỏ qua im lặng, vẫn `202`); thêm giới hạn 5 yêu cầu / phút / IP. Gửi lại email làm link cũ hết hiệu lực.
 - Đặt lại mật khẩu cũng xác minh email (link đến từ hộp thư). Tài khoản chỉ có Google dùng được để đặt mật khẩu lần đầu.
 - Đăng nhập Google vào email đã có tài khoản mật khẩu **chưa xác minh**: mật khẩu đó bị xóa và mọi phiên bị thu hồi (chặn chiếm tài khoản trước khi chủ thật đăng ký); chủ tài khoản đặt lại mật khẩu bằng "quên mật khẩu".

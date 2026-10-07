@@ -30,6 +30,20 @@ function layout(greeting: string, body: string, action: string, link: string, fo
 </html>`;
 }
 
+/** Someone registered with the address of an existing account: the owner learns it, the requester learns nothing. */
+export function accountExistsEmail(name: string | null, loginUrl: string, forgotUrl: string): EmailContent {
+  const greeting = name ? `Chào ${name},` : 'Chào bạn,';
+  const body =
+    'Vừa có người dùng email này để đăng ký WrapFit, nhưng email đã có tài khoản. Nếu là bạn, hãy đăng nhập; nếu quên mật khẩu, hãy đặt lại tại: ' +
+    forgotUrl;
+  const footer = 'Nếu không phải bạn, hãy bỏ qua email này: tài khoản của bạn không bị thay đổi.';
+  return {
+    subject: 'Email của bạn đã có tài khoản WrapFit',
+    text: `${greeting}\n\n${body}\n\n${loginUrl}\n\n${footer}\n`,
+    html: layout(greeting, body, 'Đăng nhập', loginUrl, footer),
+  };
+}
+
 /** Message of `npm run mail:test`: checks delivery and spam placement with the real settings. */
 export function testEmail(target: string, sentAt: Date, frontendUrl: string): EmailContent {
   const greeting = 'Chào bạn,';
@@ -52,6 +66,17 @@ export function authEmail(purpose: AuthTokenPurpose, link: string, name: string 
       subject: 'Xác nhận email WrapFit của bạn',
       text: `${greeting}\n\n${body}\n\n${link}\n\n${footer}\n`,
       html: layout(greeting, body, 'Xác nhận email', link, footer),
+    };
+  }
+  if (purpose === 'COMPLETE_SIGNUP') {
+    const body =
+      'Email này vừa được dùng để đăng ký WrapFit nhưng tài khoản chưa được xác nhận. Đặt mật khẩu của bạn để hoàn tất đăng ký.';
+    const footer =
+      'Liên kết có hiệu lực trong 30 phút và chỉ dùng được một lần. Nếu bạn không đăng ký WrapFit, hãy bỏ qua email này: không ai đăng nhập được bằng địa chỉ của bạn khi chưa có liên kết này.';
+    return {
+      subject: 'Hoàn tất đăng ký WrapFit',
+      text: `${greeting}\n\n${body}\n\n${link}\n\n${footer}\n`,
+      html: layout(greeting, body, 'Đặt mật khẩu', link, footer),
     };
   }
   const body = 'Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản WrapFit gắn với email này.';

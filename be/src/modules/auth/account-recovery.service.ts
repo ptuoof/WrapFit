@@ -40,7 +40,7 @@ export class AccountRecoveryService {
   async verifyEmail(rawToken: string): Promise<void> {
     const now = new Date();
     const result = await this.prisma.$transaction(async (tx) => {
-      const outcome = await this.tokens.consume(tx, rawToken, 'VERIFY_EMAIL', now);
+      const outcome = await this.tokens.consume(tx, rawToken, ['VERIFY_EMAIL'], now);
       if (outcome.status === 'ok') {
         await tx.user.updateMany({ where: { id: outcome.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: now } });
       }
@@ -87,7 +87,8 @@ export class AccountRecoveryService {
     const passwordHash = await bcrypt.hash(newPassword, this.bcryptRounds);
     const now = new Date();
     const result = await this.prisma.$transaction(async (tx) => {
-      const outcome = await this.tokens.consume(tx, rawToken, 'RESET_PASSWORD', now);
+      // The link of a repeated registration (COMPLETE_SIGNUP) sets the password the same way.
+      const outcome = await this.tokens.consume(tx, rawToken, ['RESET_PASSWORD', 'COMPLETE_SIGNUP'], now);
       if (outcome.status !== 'ok') return { outcome, sessionsRevoked: 0 };
       await tx.user.update({ where: { id: outcome.userId }, data: { passwordHash } });
       await tx.user.updateMany({ where: { id: outcome.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: now } });
@@ -112,12 +113,35 @@ export class AccountRecoveryService {
     );
   }
 
-  private async sendLink(userId: string, purpose: AuthTokenPurpose): Promise<void> {
+  /**
+   * Someone registered an address that already has an account. The answer to the request is the same as for a new
+   * account; only the mailbox learns the difference:
+   * - not verified yet: a link to choose the password. The stored password is kept until then (it may belong to
+   *   whoever registered the address first), and the earlier verification links stop working, so only the owner of
+   *   the mailbox decides the password the account will use;
+   * - verified: a notice that the account exists, with the way to sign in or reset the password.
+   */
+  async handleRepeatedSignup(user: { id: string; isActive: boolean; emailVerifiedAt: Date | null }): Promise<void> {
+    if (!user.isActive) return;
+    if (user.emailVerifiedAt) {
+      await this.mail.sendAccountExistsNotice(user.id);
+      this.logger.log(`auth.signup_existing_account userId=${user.id}`);
+      return;
+    }
+    await this.sendLink(user.id, 'COMPLETE_SIGNUP', ['VERIFY_EMAIL']);
+    this.logger.log(`auth.signup_unverified_account userId=${user.id}`);
+  }
+
+  /** `replaces`: other kinds of links of the user that stop working when this one is issued. */
+  private async sendLink(userId: string, purpose: AuthTokenPurpose, replaces: AuthTokenPurpose[] = []): Promise<void> {
     if (!(await this.tokens.canSend(userId, purpose))) {
       this.logger.log(`auth.email_rate_limited purpose=${purpose} userId=${userId}`);
       return;
     }
-    const tokenId = await this.prisma.$transaction((tx) => this.tokens.issue(tx, userId, purpose));
+    const tokenId = await this.prisma.$transaction(async (tx) => {
+      if (replaces.length) await this.tokens.revoke(tx, userId, replaces);
+      return this.tokens.issue(tx, userId, purpose);
+    });
     if (tokenId) await this.mail.sendAuthEmail(tokenId);
   }
 }

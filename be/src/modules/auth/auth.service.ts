@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { presentUser, SafeUser, toSafeUser, userSelect } from '../users/user.select';
 import { UsersService } from '../users/users.service';
+import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
@@ -49,41 +50,42 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly authTokens: AuthTokensService,
     private readonly mail: MailService,
+    private readonly recovery: AccountRecoveryService,
     config: ConfigService,
   ) {
     this.config = config as unknown as AppConfigService;
   }
 
   /**
-   * Creates an account and emails its verification link. No session is opened: the account can sign in once the
-   * email is verified. A failure to queue the email does not fail the registration (the user can ask for a resend).
+   * Registration answers the same way whether the address is new or not, so it never tells who has an account; only
+   * the email sent differs (see AccountRecoveryService.handleRepeatedSignup for an existing address). A new account
+   * gets its verification link; no session is opened until the email is verified. A failure to queue the email does
+   * not fail the registration (the user can ask for a resend).
    */
-  async register(dto: RegisterDto): Promise<SafeUser> {
-    if (await this.usersService.findByEmail(dto.email)) {
-      throw new ConflictException('Email is already registered');
-    }
-
+  async register(dto: RegisterDto): Promise<void> {
+    // Hashed in every case: the time to answer does not tell an existing address either.
     const passwordHash = await bcrypt.hash(dto.password, this.config.get('BCRYPT_ROUNDS', { infer: true }));
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) return this.recovery.handleRepeatedSignup(existing);
+
     let tokenId: string | null = null;
-    let user: SafeUser;
     try {
-      user = await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         const created = await tx.user.create({
           data: { email: dto.email, passwordHash, fullName: dto.fullName },
-          select: userSelect,
+          select: { id: true },
         });
         tokenId = await this.authTokens.issue(tx, created.id, 'VERIFY_EMAIL');
-        return presentUser(created);
       });
     } catch (error) {
-      // Two registrations of the same address at the same moment: the second one loses on the unique email.
+      // Two registrations of the same address at the same moment: the second one is a repeated registration.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Email is already registered');
+        const winner = await this.usersService.findByEmail(dto.email);
+        if (winner) return this.recovery.handleRepeatedSignup(winner);
       }
       throw error;
     }
     if (tokenId) await this.mail.sendAuthEmail(tokenId);
-    return user;
   }
 
   async login(dto: LoginDto, meta: SessionMeta = {}): Promise<AuthResult> {

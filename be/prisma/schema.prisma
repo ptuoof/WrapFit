@@ -68,6 +68,7 @@ enum FilePurpose {
 enum AuthTokenPurpose {
   VERIFY_EMAIL // Xác minh email sau khi đăng ký: chưa xác minh thì không đăng nhập được
   RESET_PASSWORD // Đặt lại mật khẩu (quên mật khẩu)
+  COMPLETE_SIGNUP // Đăng ký lại một email chưa xác minh: chủ hộp thư đặt mật khẩu của mình (giống RESET_PASSWORD)
 }
 
 enum ExportStatus {
