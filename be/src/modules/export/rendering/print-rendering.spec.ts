@@ -1,6 +1,12 @@
 import type { CanvasElement } from '@wrapfit/shared';
 import { fileNameFor } from '../export.service';
-import { buildPrintLayout, PIECE_GAP_MM, SHEET_MARGIN_MM, UnsupportedStructureError } from './print-layout';
+import {
+  buildPrintLayout,
+  PIECE_GAP_MM,
+  SHEET_MARGIN_MM,
+  UnsupportedFormulaVersionError,
+  UnsupportedStructureError,
+} from './print-layout';
 import QRCode from 'qrcode';
 import { Artwork, canEmbedInPdf, hexToCmyk, renderDxf, renderPdf, renderSvg } from './print-renderers';
 
@@ -18,7 +24,7 @@ const greeting = {
   style: { fontSize: 14, color: '#C0392B' },
 };
 const layoutOf = (structure: string, elements: CanvasElement[] = [greeting]) =>
-  buildPrintLayout({ title: 'Hộp nến Tết', structure, dimensions, elements });
+  buildPrintLayout({ title: 'Hộp nến Tết', structure, formulaVersion: 1, dimensions, elements });
 
 describe('print layout', () => {
   it.each([
@@ -68,6 +74,12 @@ describe('print layout', () => {
 
   it('rejects unknown structures', () => {
     expect(() => layoutOf('hexagon')).toThrow(UnsupportedStructureError);
+  });
+
+  it('never draws a project with formulas that were not registered (no silent fallback to the current ones)', () => {
+    expect(() =>
+      buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 99, dimensions, elements: [] }),
+    ).toThrow(UnsupportedFormulaVersionError);
   });
 });
 

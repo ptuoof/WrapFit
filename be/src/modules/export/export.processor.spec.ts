@@ -12,6 +12,7 @@ describe('ExportProcessor', () => {
     userId: 'u-1',
     title: 'Hộp nến',
     templateId: 'tuck-top',
+    formulaVersion: 1,
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
     canvasState: { elements: [] },
   };

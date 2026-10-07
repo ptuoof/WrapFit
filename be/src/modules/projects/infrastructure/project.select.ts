@@ -26,6 +26,7 @@ export const summarySelect = {
 export const detailSelect = {
   ...summarySelect,
   version: true,
+  formulaVersion: true,
   allowFork: true,
   forkedFromId: true,
   canvasState: true,

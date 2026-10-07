@@ -10,6 +10,7 @@ describe('SnapshotsService', () => {
     status: 'ACTIVE',
     thumbnailUrl: 'https://cdn/now.png',
     template: { id: 'tuck-top', name: 'Tuck top' },
+    formulaVersion: 1,
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
     canvasState: { elements: [] },
   } as unknown as ProjectDetail;

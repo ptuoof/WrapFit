@@ -71,7 +71,7 @@ export class ExportService {
 
     const project = await this.prisma.packagingProject.findUniqueOrThrow({
       where: { id: projectId },
-      select: { status: true, templateId: true, dimensions: true, canvasState: true },
+      select: { status: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
     });
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before exporting it');
@@ -82,6 +82,7 @@ export class ExportService {
       project.templateId,
       project.dimensions as unknown as BoxDimensions,
       (project.canvasState as { elements?: CanvasElement[] }).elements ?? [],
+      project.formulaVersion,
     );
     await this.prisma.packagingProject.update({
       where: { id: projectId },

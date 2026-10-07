@@ -16,11 +16,15 @@ export interface TemplateRules {
   id: string;
   isActive: boolean;
   formulaSchema: unknown;
+  /** Formula version given to new projects of this structure. */
+  formulaVersion: number;
 }
 
 export interface NewProject {
   userId: string;
   templateId: string;
+  /** Dieline formulas the project is pinned to (never changes afterwards). */
+  formulaVersion: number;
   collectionId: string | null;
   title: string;
   dimensions: BoxDimensions;
@@ -79,6 +83,7 @@ export interface DesignTemplateSource {
 export interface UncheckedProject {
   id: string;
   templateId: string;
+  formulaVersion: number;
   dimensions: BoxDimensions;
   canvasState: { elements?: CanvasElement[] };
 }

@@ -22,7 +22,7 @@ export class PrismaProjectRepository implements IProjectRepository {
   findTemplateRules(templateId: string): Promise<TemplateRules | null> {
     return this.prisma.boxTemplate.findUnique({
       where: { id: templateId },
-      select: { id: true, isActive: true, formulaSchema: true },
+      select: { id: true, isActive: true, formulaSchema: true, formulaVersion: true },
     });
   }
 
@@ -95,6 +95,7 @@ export class PrismaProjectRepository implements IProjectRepository {
       data: {
         userId: project.userId,
         templateId: project.templateId,
+        formulaVersion: project.formulaVersion,
         collectionId: project.collectionId,
         title: project.title,
         dimensions: json(project.dimensions),
@@ -172,7 +173,7 @@ export class PrismaProjectRepository implements IProjectRepository {
   async findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]> {
     const rows = await this.prisma.packagingProject.findMany({
       where: { fitcheckScore: null, ...(afterId && { id: { gt: afterId } }) },
-      select: { id: true, templateId: true, dimensions: true, canvasState: true },
+      select: { id: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
       orderBy: { id: 'asc' },
       take: limit,
     });

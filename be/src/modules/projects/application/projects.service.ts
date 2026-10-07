@@ -68,12 +68,13 @@ export class ProjectsService {
     const project = await this.projects.create({
       userId,
       templateId: template.id,
+      formulaVersion: template.formulaVersion,
       collectionId: dto.collectionId ?? null,
       title: dto.title,
       dimensions,
       materialSpec,
       canvasState,
-      fitCheck: fitCheckOf(template.id, dimensions, canvasState.elements),
+      fitCheck: fitCheckOf(template.id, dimensions, canvasState.elements, template.formulaVersion),
       tags: dto.tags ?? [],
       occasion: dto.occasion ?? null,
       industry: dto.industry ?? null,
@@ -137,6 +138,7 @@ export class ProjectsService {
         project.template.id,
         changes.dimensions ?? project.dimensions,
         (changes.canvasState ?? project.canvasState).elements,
+        project.formulaVersion,
       );
     }
 
@@ -201,6 +203,8 @@ export class ProjectsService {
     return this.projects.create({
       userId,
       templateId: source.template.id,
+      // A copy keeps the formulas of its source: same cut lines, same FitCheck result.
+      formulaVersion: source.formulaVersion,
       dimensions: source.dimensions,
       materialSpec: source.materialSpec,
       canvasState: source.canvasState,
@@ -239,7 +243,12 @@ export class ProjectsService {
       const batch = await this.projects.findUnchecked(afterId, BACKFILL_BATCH);
       if (!batch.length) return checked;
       for (const project of batch) {
-        const fitCheck = fitCheckOf(project.templateId, project.dimensions, project.canvasState.elements ?? []);
+        const fitCheck = fitCheckOf(
+          project.templateId,
+          project.dimensions,
+          project.canvasState.elements ?? [],
+          project.formulaVersion,
+        );
         if (fitCheck) {
           await this.projects.saveFitCheck(project.id, fitCheck);
           checked++;

@@ -5,5 +5,6 @@ export * from "./parametric/tuck-top";
 export * from "./parametric/sleeve-drawer";
 export * from "./parametric/lid-base";
 export * from "./parametric/pillow";
+export * from "./parametric/registry";
 export * from "./fitcheck/validator";
 export * from "./exporter/pdf-export";

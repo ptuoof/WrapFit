@@ -17,12 +17,14 @@ describe('ProjectsService', () => {
     id: 'tuck-top',
     isActive: true,
     formulaSchema: { params: { length: { min: 40, max: 600 }, width: { min: 30 }, height: { min: 20 } } },
+    formulaVersion: 1,
   };
   const project = (overrides: Partial<ProjectDetail> = {}) =>
     ({
       id: 'project-1',
       status: 'ACTIVE',
       version: 4,
+      formulaVersion: 1,
       template: { id: 'tuck-top', name: 'Tuck top' },
       materialSpec: { type: 'kraft', gsm: 300, caliper: 0.4, finish: 'matte' },
       dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
@@ -89,6 +91,7 @@ describe('ProjectsService', () => {
       expect(repo.create).toHaveBeenCalledWith({
         userId,
         templateId: 'tuck-top',
+        formulaVersion: 1,
         collectionId: null,
         title: 'Gift box',
         dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
@@ -292,6 +295,7 @@ describe('ProjectsService', () => {
       expect(repo.create).toHaveBeenCalledWith({
         userId,
         templateId: 'tuck-top',
+        formulaVersion: 1,
         collectionId: 'c-1',
         title: '[Bản sao] Hộp nến',
         dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
@@ -330,6 +334,7 @@ describe('ProjectsService', () => {
     const unchecked = (id: string, templateId = 'tuck-top') => ({
       id,
       templateId,
+      formulaVersion: 1,
       dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
       canvasState: { elements: [text(0.5)] },
     });

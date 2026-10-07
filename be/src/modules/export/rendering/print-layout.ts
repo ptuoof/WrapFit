@@ -3,7 +3,7 @@
 import type { BoxDimensions, CanvasElement, DielineGeometry } from '@wrapfit/shared';
 import { dielinePieces, matchesPanel } from '../../projects/domain/project-fitcheck';
 
-export { dielinePieces, matchesPanel, UnsupportedStructureError } from '../../projects/domain/project-fitcheck';
+export { dielinePieces, matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '../../projects/domain/project-fitcheck';
 
 /** Margin around the artwork and gap between pieces, in mm. */
 export const SHEET_MARGIN_MM = 20;
@@ -40,13 +40,15 @@ const PT_PER_MM = 72 / 25.4;
 export function buildPrintLayout(input: {
   title: string;
   structure: string;
+  /** Dieline formulas the project is pinned to. */
+  formulaVersion: number;
   dimensions: BoxDimensions;
   elements: CanvasElement[];
 }): PrintLayout {
   const pieces: PlacedPiece[] = [];
   let cursor = SHEET_MARGIN_MM;
   let tallest = 0;
-  for (const piece of dielinePieces(input.structure, input.dimensions)) {
+  for (const piece of dielinePieces(input.structure, input.dimensions, input.formulaVersion)) {
     pieces.push({ ...piece, x: cursor, y: SHEET_MARGIN_MM });
     cursor += piece.geometry.totalBoundingBox.width + PIECE_GAP_MM;
     tallest = Math.max(tallest, piece.geometry.totalBoundingBox.height);

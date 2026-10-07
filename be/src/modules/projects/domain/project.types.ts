@@ -40,6 +40,8 @@ export interface ProjectSummary {
 export interface ProjectDetail extends ProjectSummary {
   /** Increases on every content change; sent back by the editor so a stale save answers 409 (see UpdateProjectDto). */
   version: number;
+  /** Dieline formulas the project is pinned to (`@wrapfit/shared` generateDielinePieces). */
+  formulaVersion: number;
   allowFork: boolean;
   forkedFromId: string | null;
   canvasState: CanvasState;

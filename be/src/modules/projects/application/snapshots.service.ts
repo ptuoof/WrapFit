@@ -58,7 +58,7 @@ export class SnapshotsService {
         canvasState: project.canvasState,
         dimensions: project.dimensions,
       },
-      fitCheckOf(project.template.id, snapshot.dimensions, snapshot.canvasState.elements),
+      fitCheckOf(project.template.id, snapshot.dimensions, snapshot.canvasState.elements, project.formulaVersion),
     );
   }
 

@@ -70,7 +70,15 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       select: {
         fileType: true,
         project: {
-          select: { id: true, userId: true, title: true, templateId: true, dimensions: true, canvasState: true },
+          select: {
+            id: true,
+            userId: true,
+            title: true,
+            templateId: true,
+            formulaVersion: true,
+            dimensions: true,
+            canvasState: true,
+          },
         },
       },
     });
@@ -80,6 +88,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     const layout = buildPrintLayout({
       title: project.title,
       structure: project.templateId,
+      formulaVersion: project.formulaVersion,
       dimensions,
       elements: canvasState.elements ?? [],
     });

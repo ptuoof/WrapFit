@@ -186,6 +186,7 @@ async function main() {
           create: {
             userId: admin.id,
             templateId: 'tuck-top',
+            formulaVersion: 1,
             title: 'Hộp Nến Thơm Tinh Dầu',
             visibility: 'PUBLIC',
             dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },

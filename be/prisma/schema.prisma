@@ -145,14 +145,16 @@ model ProjectCollection {
 }
 
 model BoxTemplate {
-  id            String  @id // tuck-top, sleeve-drawer, lid-base, pillow
-  name          String
-  category      String  @default("retail") // retail, luxury, food, accessories
-  description   String?
-  formulaSchema Json    @map("formula_schema")
-  preview3dUrl  String? @map("preview_3d_url")
-  isCurated     Boolean @default(true) @map("is_curated")
-  isActive      Boolean @default(true) @map("is_active")
+  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow
+  name           String
+  category       String  @default("retail") // retail, luxury, food, accessories
+  description    String?
+  formulaSchema  Json    @map("formula_schema")
+  // Phiên bản công thức dieline (@wrapfit/shared, parametric/registry.ts) gán cho dự án mới của cấu trúc này
+  formulaVersion Int     @default(1) @map("formula_version")
+  preview3dUrl   String? @map("preview_3d_url")
+  isCurated      Boolean @default(true) @map("is_curated")
+  isActive       Boolean @default(true) @map("is_active")
 
   projects        PackagingProject[]
   designTemplates DesignTemplate[]
@@ -188,31 +190,33 @@ model DesignTemplate {
 }
 
 model PackagingProject {
-  id            String            @id @default(uuid(7)) @db.Uuid
-  userId        String            @map("user_id") @db.Uuid
-  templateId    String            @map("template_id")
-  collectionId  String?           @map("collection_id") @db.Uuid
-  title         String
-  slug          String            @unique @default(nanoid(10)) // Link công khai /p/[slug]
-  status        ProjectStatus     @default(ACTIVE)
-  visibility    ProjectVisibility @default(PRIVATE)
-  allowFork     Boolean           @default(true) @map("allow_fork")
-  forkedFromId  String?           @map("forked_from_id") @db.Uuid
-  dimensions    Json // { length, width, height, paperThickness }
-  materialSpec  Json              @map("material_spec") // { type, gsm, caliper, finish }
-  canvasState   Json              @map("canvas_state") // { elements: [...] }
-  fitcheckState Json?             @map("fitcheck_state") // { isValid, score, violations }
-  fitcheckScore Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
-  thumbnailUrl  String?           @map("thumbnail_url")
-  tags          String[]          @default([])
-  occasion      Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
-  industry      Industry?
-  viewsCount    Int               @default(0) @map("views_count")
-  likesCount    Int               @default(0) @map("likes_count")
-  version       Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
-  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
-  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id             String            @id @default(uuid(7)) @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  templateId     String            @map("template_id")
+  collectionId   String?           @map("collection_id") @db.Uuid
+  title          String
+  slug           String            @unique @default(nanoid(10)) // Link công khai /p/[slug]
+  status         ProjectStatus     @default(ACTIVE)
+  visibility     ProjectVisibility @default(PRIVATE)
+  allowFork      Boolean           @default(true) @map("allow_fork")
+  forkedFromId   String?           @map("forked_from_id") @db.Uuid
+  dimensions     Json // { length, width, height, paperThickness }
+  materialSpec   Json              @map("material_spec") // { type, gsm, caliper, finish }
+  canvasState    Json              @map("canvas_state") // { elements: [...] }
+  fitcheckState  Json?             @map("fitcheck_state") // { isValid, score, violations }
+  fitcheckScore  Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
+  thumbnailUrl   String?           @map("thumbnail_url")
+  tags           String[]          @default([])
+  occasion       Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
+  industry       Industry?
+  viewsCount     Int               @default(0) @map("views_count")
+  likesCount     Int               @default(0) @map("likes_count")
+  version        Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
+  // Chốt lúc tạo dự án (= boxTemplate.formulaVersion), không bao giờ đổi: sửa công thức không làm xê dịch dieline cũ
+  formulaVersion Int               @map("formula_version")
+  deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       BoxTemplate         @relation(fields: [templateId], references: [id])
