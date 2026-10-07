@@ -161,11 +161,10 @@ export class PrismaProjectRepository implements IProjectRepository {
   async deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]> {
     if (!projectIds.length) return [];
     // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
-    // Prisma stores DateTime as UTC in `timestamp` columns: compare in UTC whatever the session time zone.
     const rows = await this.prisma.$queryRaw<{ id: string }[]>`
       DELETE FROM packaging_projects
       WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED'
-        AND deleted_at < (${cutoff.toISOString()}::timestamptz AT TIME ZONE 'UTC')
+        AND deleted_at < ${cutoff.toISOString()}::timestamptz
       RETURNING id`;
     return rows.map((row) => row.id);
   }

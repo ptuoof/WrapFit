@@ -310,9 +310,13 @@ export class StorageService implements IProjectFiles {
     for (const file of pending) {
       const size = await this.objectSize(file.key);
       if (size === undefined) continue; // storage unreachable: next run
-      if (size === null) {
+      if (size === null || size === 0) {
+        // An empty object is an upload that never completed (and would break `size > 0`): drop it like a missing one.
         const { count } = await this.prisma.storedFile.deleteMany({ where: { id: file.id, confirmedAt: null } });
         result.dropped += count;
+        if (count && size === 0) {
+          await this.prisma.orphanedObject.upsert({ where: { key: file.key }, create: { key: file.key }, update: {} });
+        }
       } else {
         await this.prisma.storedFile.updateMany({ where: { id: file.id }, data: { confirmedAt: now, size } });
         result.confirmed++;

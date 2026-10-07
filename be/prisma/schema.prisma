@@ -90,8 +90,8 @@ model User {
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]              @relation("UserReferrals")
@@ -103,6 +103,7 @@ model User {
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
 
+  @@index([referredById])
   @@map("users")
 }
 
@@ -112,16 +113,17 @@ model RefreshToken {
   userId       String    @map("user_id") @db.Uuid
   userAgent    String?   @map("user_agent")
   ipAddress    String?   @map("ip_address")
-  expiresAt    DateTime  @map("expires_at")
-  revokedAt    DateTime? @map("revoked_at")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
   // Token mới thay thế khi /auth/refresh xoay vòng (logout thì để null): dùng lại token ngay sau đó là một tab khác
   // refresh cùng lúc, không phải token bị đánh cắp.
   replacedById String?   @map("replaced_by_id") @db.Uuid
-  createdAt    DateTime  @default(now()) @map("created_at")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt]) // AuthMaintenanceTask xóa token hết hạn
   @@map("refresh_tokens")
 }
 
@@ -131,8 +133,8 @@ model ProjectCollection {
   title       String
   description String?
   colorTag    String?  @default("#D4A373") @map("color_tag")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects PackagingProject[]
@@ -174,12 +176,13 @@ model DesignTemplate {
   usesCount     Int       @default(0) @map("uses_count") // Số lần "Dùng mẫu này"
   sortOrder     Int       @default(0) @map("sort_order") // Nhỏ hơn = hiển thị trước
   isActive      Boolean   @default(true) @map("is_active")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   boxTemplate BoxTemplate @relation(fields: [boxTemplateId], references: [id])
 
   @@index([isActive, sortOrder])
+  @@index([boxTemplateId])
   @@map("design_templates")
 }
 
@@ -206,9 +209,9 @@ model PackagingProject {
   viewsCount    Int               @default(0) @map("views_count")
   likesCount    Int               @default(0) @map("likes_count")
   version       Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
-  deletedAt     DateTime?         @map("deleted_at") // Thời điểm vào thùng rác
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       BoxTemplate         @relation(fields: [templateId], references: [id])
@@ -226,6 +229,8 @@ model PackagingProject {
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
   @@index([status, deletedAt]) // Cron dọn thùng rác
   @@index([collectionId])
+  @@index([templateId])
+  @@index([forkedFromId]) // Đếm lượt remix trên thẻ Thư viện; SET NULL khi xóa bản gốc
   @@map("packaging_projects")
 }
 
@@ -237,7 +242,7 @@ model ProjectSnapshot {
   dimensions  Json
   previewUrl  String?  @map("preview_url")
   isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -249,7 +254,7 @@ model ProjectLike {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   projectId String   @map("project_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -269,7 +274,7 @@ model UnboxingExperience {
   particleEffect String   @default("confetti") @map("particle_effect")
   qrCodeUrl      String?  @map("qr_code_url")
   viewsCount     Int      @default(0) @map("views_count")
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -282,12 +287,13 @@ model SocialMockup {
   projectId  String   @map("project_id") @db.Uuid
   presetName String   @map("preset_name")
   renderUrl  String   @map("render_url")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+  @@index([userId])
   @@map("social_mockups")
 }
 
@@ -298,8 +304,8 @@ model ExportJob {
   status      ExportStatus   @default(PENDING)
   storageKey  String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
   errorLog    String?        @map("error_log")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -319,8 +325,8 @@ model StoredFile {
   size        Int // byte
   // Thời điểm xác nhận file có thật trên bucket. null = mới cấp URL, chưa biết trình duyệt đã upload chưa:
   // StorageMaintenanceTask kiểm tra (HEAD) rồi xác nhận hoặc xóa dòng.
-  confirmedAt DateTime?   @map("confirmed_at")
-  createdAt   DateTime    @default(now()) @map("created_at")
+  confirmedAt DateTime?   @map("confirmed_at") @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -336,7 +342,7 @@ model OrphanedObject {
   key       String   @id
   attempts  Int      @default(0)
   lastError String?  @map("last_error")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("orphaned_objects")
 }
@@ -350,7 +356,7 @@ model AiGeneration {
   model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
   inputTokens  Int      @map("input_tokens")
   outputTokens Int      @map("output_tokens")
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

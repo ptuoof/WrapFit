@@ -137,6 +137,23 @@ describe('StorageService', () => {
       expect(prisma.storedFile.deleteMany).toHaveBeenCalledWith({ where: { id: 'f-2', confirmedAt: null } });
     });
 
+    it('drops an empty object like a missing one and queues its key for deletion', async () => {
+      const service = build();
+      prisma.storedFile.findMany = jest.fn().mockResolvedValue([{ id: 'f-1', key: 'users/u-1/image/empty.png' }]);
+      prisma.storedFile.updateMany = jest.fn();
+      prisma.storedFile.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.orphanedObject.upsert = jest.fn();
+      mockS3(service, async () => ({ ContentLength: 0 }));
+
+      await expect(service.confirmPendingUploads()).resolves.toEqual({ confirmed: 0, dropped: 1 });
+      expect(prisma.storedFile.updateMany).not.toHaveBeenCalled();
+      expect(prisma.orphanedObject.upsert).toHaveBeenCalledWith({
+        where: { key: 'users/u-1/image/empty.png' },
+        create: { key: 'users/u-1/image/empty.png' },
+        update: {},
+      });
+    });
+
     it('records objects it could not delete, and deletes them on a later run', async () => {
       const service = build();
       jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
