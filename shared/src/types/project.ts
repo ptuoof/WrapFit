@@ -37,6 +37,20 @@ export interface CanvasElement {
 }
 
 /**
+ * Content of a project's `canvas_state` (PATCH /api/projects/:id). Besides the elements, the editor keeps how the box
+ * looks on screen. These are preset ids, never raw SVG or CSS: the backend accepts `[a-z0-9_-]{1,40}` only.
+ */
+export interface CanvasState {
+  elements: CanvasElement[];
+  /** Seamless pattern preset behind the artwork, e.g. "tet"; null = none. */
+  backgroundPattern?: string | null;
+  /** Curated color palette of the editor, e.g. "earthy_olive". */
+  backgroundTheme?: string | null;
+  /** Paper look of the editor ("ivory" | "kraft" | "forest" | "gold_foil"); the printable stock is `materialSpec`. */
+  materialTheme?: string | null;
+}
+
+/**
  * Brand identity of a handmade shop (UC-02), stored in `users.brand_kit`.
  * Shown in the editor toolbox to apply the logo, colors and fonts to a box in one click.
  */

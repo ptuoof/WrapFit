@@ -25,6 +25,7 @@ import { GoiMascot } from "@/components/mascot/GoiMascot";
 import { AiCopilotAssistant } from "@/components/ai/AiCopilotAssistant";
 import { tactileAudio } from "@/lib/audio/tactileAudio";
 import { apiClient } from "@/lib/apiClient";
+import { materialThemeOf } from "@/lib/projectMaterial";
 
 interface ProjectItem {
   id: string;
@@ -96,24 +97,32 @@ export default function DashboardPage() {
       try {
         const res = await apiClient.listProjects({ search: searchQuery });
         if (res && res.items && res.items.length > 0) {
-          const mapped: ProjectItem[] = res.items.map((p, idx) => ({
-            id: p.id,
-            title: p.title || "Dự Án Hộp Quà",
-            boxType: (p.templateId || "tuck-top") as any,
-            boxTypeName:
-              p.templateId === "sleeve-drawer"
-                ? "Hộp bao diêm (Khay rút)"
-                : p.templateId === "lid-base"
-                ? "Hộp âm dương"
-                : p.templateId === "pillow"
-                ? "Hộp gối"
-                : "Hộp nắp gài đáy khóa",
-            dimensions: p.dimensions || { length: 120, width: 80, height: 60 },
-            paperGsm: `${p.materialSpec?.gsm || 300} GSM ${p.materialSpec?.type || "Ivory"}`,
-            fitCheckScore: 100,
-            updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString("vi-VN") : "Hôm nay",
-            thumbnailTheme: ((p.materialSpec?.type as any) || (idx % 2 === 0 ? "ivory" : "forest")),
-          }));
+          const mapped: ProjectItem[] = res.items.map((p, idx) => {
+            // The API returns the structure as `template.id`; the offline demo data uses `templateId`.
+            const structure = p.template?.id ?? p.templateId;
+            return {
+              id: p.id,
+              title: p.title || "Dự Án Hộp Quà",
+              boxType: (structure || "tuck-top") as any,
+              boxTypeName:
+                structure === "sleeve-drawer"
+                  ? "Hộp bao diêm (Khay rút)"
+                  : structure === "lid-base"
+                  ? "Hộp âm dương"
+                  : structure === "pillow"
+                  ? "Hộp gối"
+                  : "Hộp nắp gài đáy khóa",
+              dimensions: p.dimensions || { length: 120, width: 80, height: 60 },
+              paperGsm: `${p.materialSpec?.gsm || 300} GSM ${p.materialSpec?.type || "Ivory"}`,
+              fitCheckScore: 100,
+              updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString("vi-VN") : "Hôm nay",
+              thumbnailTheme: p.materialSpec
+                ? materialThemeOf(null, p.materialSpec)
+                : idx % 2 === 0
+                ? "ivory"
+                : "forest",
+            };
+          });
           setProjects(mapped);
         }
       } catch {

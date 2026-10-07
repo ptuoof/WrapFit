@@ -61,7 +61,8 @@ import { StickerAssetBank } from "@/components/studio/StickerAssetBank";
 import { Step1BoxTemplatePicker } from "@/components/studio/Step1BoxTemplatePicker";
 import { Step2DimensionAndMaterial } from "@/components/studio/Step2DimensionAndMaterial";
 import { Step4Model3DWithEnvironments } from "@/components/studio/Step4Model3DWithEnvironments";
-import { apiClient, ExportJobStatus, SnapshotDto } from "@/lib/apiClient";
+import { apiClient, ApiError, ExportJobStatus, SnapshotDto } from "@/lib/apiClient";
+import { materialSpecFor, materialThemeOf } from "@/lib/projectMaterial";
 import { tactileAudio } from "@/lib/audio/tactileAudio";
 
 export default function PackagingStudioPage({ params }: { params: { id: string } }) {
@@ -143,22 +144,37 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
+  // Version of the project as last loaded / saved (optimistic concurrency, 409 PROJECT_VERSION_CONFLICT).
+  const versionRef = useRef<number | undefined>(undefined);
+  // Saves run one after another, so each one sends the version returned by the previous one.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  // Last payload sent (or loaded): an unchanged design is not saved again.
+  const lastSavedRef = useRef<string | null>(null);
+  const justLoadedRef = useRef<boolean>(false);
+  const [saveConflict, setSaveConflict] = useState<boolean>(false);
+  // Box structure of the project on the server; null until the real project is loaded (no autosave before that).
+  const [savedStructure, setSavedStructure] = useState<BoxStructureType | null>(null);
+
   // 1. Initial Load from Backend NestJS API (GET /projects/:id)
   useEffect(() => {
     async function loadProjectData() {
       if (params.id === "demo" || params.id === "new") return;
       try {
         const proj = await apiClient.getProject(params.id);
-        if (proj) {
-          if (proj.title) setProjectTitle(proj.title);
-          if (proj.templateId) setBoxType(proj.templateId as BoxStructureType);
-          if (proj.dimensions) setDimensions(proj.dimensions);
-          if (proj.materialSpec?.type) setActiveMaterial(proj.materialSpec.type as BoxMaterialTheme);
-          if (proj.canvasState?.elements) setElements(proj.canvasState.elements);
-          if (proj.canvasState?.backgroundPattern) {
-            setBackgroundPatternSvg(proj.canvasState.backgroundPattern);
-          }
-        }
+        // getProject falls back to a demo project when offline: never autosave that over the real one.
+        if (!proj || proj.version === undefined) return;
+        const structure = (proj.template?.id ?? proj.templateId) as BoxStructureType;
+        versionRef.current = proj.version;
+        justLoadedRef.current = true;
+        setSavedStructure(structure);
+        if (proj.title) setProjectTitle(proj.title);
+        setBoxType(structure);
+        if (proj.dimensions) setDimensions(proj.dimensions);
+        setActiveMaterial(materialThemeOf(proj.canvasState?.materialTheme, proj.materialSpec));
+        if (proj.canvasState?.elements) setElements(proj.canvasState.elements);
+        setBackgroundPatternSvg(proj.canvasState?.backgroundPattern ?? null);
+        const palette = CURATED_COLOR_FRAMES.find((frame) => frame.id === proj.canvasState?.backgroundTheme);
+        if (palette) setSelectedPalette(palette);
       } catch {
         // Fallback to local default state
       }
@@ -168,33 +184,64 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
 
   // 2. Real-time Debounced Auto-Save to Backend NestJS API (PATCH /projects/:id)
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    // Only a project loaded from the server is saved; after a 409, never save over the newer version.
+    if (!savedStructure || saveConflict) return;
+    if (boxType !== savedStructure) {
+      // The API keeps the structure of a project (its dieline): another box type is another project.
+      setSaveStatus("Không lưu: dự án đã lưu không đổi được kiểu hộp, hãy tạo dự án mới");
+      return;
+    }
+
+    // Only fields UpdateProjectDto accepts (the API rejects unknown fields with 400).
+    const payload = {
+      title: projectTitle,
+      dimensions,
+      materialSpec: materialSpecFor(activeMaterial, dimensions.paperThickness),
+      canvasState: {
+        elements,
+        backgroundPattern: backgroundPatternSvg,
+        backgroundTheme: selectedPalette.id,
+        materialTheme: activeMaterial,
+      },
+    };
+    const key = JSON.stringify(payload);
+    if (justLoadedRef.current) {
+      // First render with the loaded design: it is already saved.
+      justLoadedRef.current = false;
+      lastSavedRef.current = key;
+      return;
+    }
+    if (key === lastSavedRef.current) return;
+
+    const timer = setTimeout(() => {
+      saveQueueRef.current = saveQueueRef.current.then(saveNow);
+    }, 900);
+
+    async function saveNow() {
       setSaveStatus("Đang lưu...");
       try {
-        await apiClient.updateProject(params.id, {
-          title: projectTitle,
-          templateId: boxType,
-          dimensions,
-          materialSpec: {
-            type: activeMaterial,
-            gsm: dimensions.paperThickness >= 0.4 ? 350 : 300,
-            caliper: dimensions.paperThickness,
-            finish: activeMaterial === "gold_foil" ? "foil" : "matte",
-          },
-          canvasState: {
-            elements,
-            backgroundPattern: backgroundPatternSvg || undefined,
-            backgroundTheme: selectedPalette.id,
-          },
-        });
+        const saved = await apiClient.updateProject(params.id, { ...payload, version: versionRef.current });
+        versionRef.current = saved.version;
+        lastSavedRef.current = key;
         setSaveStatus("Đã lưu trên Cloud");
-      } catch {
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409 && err.body?.code === "PROJECT_VERSION_CONFLICT") {
+          setSaveConflict(true);
+          setSaveStatus("Đã có bản lưu mới hơn ở tab khác — tải lại trang để tiếp tục");
+          return;
+        }
+        if (err instanceof ApiError && err.status === 400) {
+          setSaveStatus("Không lưu được: dữ liệu không hợp lệ");
+          return;
+        }
         setSaveStatus("Lưu cục bộ (Offline)");
       }
-    }, 900);
+    }
 
     return () => clearTimeout(timer);
   }, [
+    savedStructure,
+    saveConflict,
     projectTitle,
     boxType,
     dimensions,

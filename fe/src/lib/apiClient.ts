@@ -4,26 +4,21 @@
  * BullMQ Export Polling, S3/R2 Pre-signed Uploads, and 3D QR Unboxing.
  */
 
-import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
+import { BoxDimensions, CanvasState, MaterialSpecification } from "@wrapfit/shared";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export interface ProjectDto {
   id: string;
-  templateId: string;
+  /** Box structure as returned by the API (`template.id`); `templateId` is only set by the offline demo data. */
+  template?: { id: string; name: string };
+  templateId?: string;
   title: string;
+  /** Increases on every save; send it back with the next save so an older tab cannot overwrite a newer save (409). */
+  version?: number;
   dimensions: BoxDimensions;
-  materialSpec?: {
-    type: string;
-    gsm: number;
-    caliper: number;
-    finish: string;
-  };
-  canvasState?: {
-    elements: CanvasElement[];
-    backgroundPattern?: string;
-    backgroundTheme?: string;
-  };
+  materialSpec?: MaterialSpecification;
+  canvasState?: CanvasState;
   status?: string;
   thumbnailUrl?: string | null;
   tags?: string[];
@@ -72,6 +67,17 @@ export interface PublicUnboxingData {
   };
 }
 
+/** Error of a failed API call, with the HTTP status and the error body (e.g. `code: "PROJECT_VERSION_CONFLICT"`). */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly body: Record<string, unknown> | null,
+  ) {
+    super(message);
+  }
+}
+
 class WrapFitApiClient {
   private async request<T>(
     endpoint: string,
@@ -92,13 +98,14 @@ class WrapFitApiClient {
 
       if (!res.ok) {
         let errMessage = `HTTP Error ${res.status}`;
+        let errData: Record<string, unknown> | null = null;
         try {
-          const errData = await res.json();
-          errMessage = errData.message || errData.error || errMessage;
+          errData = await res.json();
+          errMessage = String(errData?.message || errData?.error || errMessage);
         } catch {
           // ignore
         }
-        throw new Error(errMessage);
+        throw new ApiError(errMessage, res.status, errData);
       }
 
       if (res.status === 204) {
@@ -146,7 +153,7 @@ class WrapFitApiClient {
             templateId: "sleeve-drawer",
             title: "Nước Hoa Unisex L'Automne 50ml",
             dimensions: { length: 65, width: 40, height: 120, paperThickness: 0.45 },
-            materialSpec: { type: "forest", gsm: 350, caliper: 0.45, finish: "soft_touch" },
+            materialSpec: { type: "duplex", gsm: 350, caliper: 0.45, finish: "matte" },
             updatedAt: new Date().toISOString(),
           },
           {
@@ -154,7 +161,7 @@ class WrapFitApiClient {
             templateId: "lid-base",
             title: "Bộ Trang Sức Vòng Tay Bạc Tinh Xảo",
             dimensions: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
-            materialSpec: { type: "gold_foil", gsm: 400, caliper: 0.5, finish: "gold_foil" },
+            materialSpec: { type: "duplex", gsm: 400, caliper: 0.5, finish: "glossy" },
             updatedAt: new Date().toISOString(),
           },
         ],
@@ -210,14 +217,15 @@ class WrapFitApiClient {
 
   async updateProject(
     id: string,
+    // Fields of the API's UpdateProjectDto: anything else is rejected with 400 (the box structure cannot change).
     data: {
-      templateId?: string;
       title?: string;
       dimensions?: BoxDimensions;
-      materialSpec?: any;
-      canvasState?: any;
+      materialSpec?: MaterialSpecification;
+      canvasState?: CanvasState;
       tags?: string[];
       thumbnailUrl?: string;
+      version?: number;
     }
   ): Promise<ProjectDto> {
     return await this.request<ProjectDto>(`/projects/${id}`, {
