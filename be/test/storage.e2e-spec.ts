@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { TrashPurgeTask } from '../src/modules/projects/presentation/trash-purge.task';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { signUp } from './helpers/accounts';
+import { signUp, uploadPng } from './helpers/accounts';
 
 /**
  * File uploads (IT3-08) against a real S3-compatible server: the local SeaweedFS of docker-compose.yml
@@ -243,5 +243,44 @@ describe('Storage (e2e)', () => {
     expect((await fetch(avatar)).status).toBe(404);
     expect((await fetch(inProject)).status).toBe(404);
     expect((await fetch(shared)).status).toBe(200);
+  });
+
+  it('tracks the uploads each project shows, through its canvas and its snapshots', async () => {
+    const projectId = await newProject(kim);
+    const [a, b] = [await uploadPng(app, kim.cookie, 'IMAGE'), await uploadPng(app, kim.cookie, 'LOGO')];
+    const keyOf = (url: string) => url.slice(url.indexOf('users/'));
+    const element = (id: string, content: string) => ({ id, type: 'image', panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content });
+    const save = (...contents: string[]) =>
+      as(kim)
+        .patch(`/api/projects/${projectId}`)
+        .send({ canvasState: { elements: contents.map((content, i) => element(`e${i}`, content)) } })
+        .expect(200);
+    const shown = async () =>
+      (
+        await prisma.projectFileRef.findMany({ where: { projectId }, select: { storedFile: { select: { key: true } } } })
+      )
+        .map((ref) => ref.storedFile.key)
+        .sort();
+
+    await save(a);
+    expect(await shown()).toEqual([keyOf(a)]);
+
+    // A snapshot keeps showing A after the canvas moved on to B.
+    const snapshot = (await as(kim).post(`/api/projects/${projectId}/snapshots`).send({ name: 'Có A' }).expect(201)).body;
+    await save(b);
+    expect(await shown()).toEqual([keyOf(a), keyOf(b)].sort());
+
+    // A file still shown cannot be deleted: the foreign key refuses it.
+    const fileA = await prisma.storedFile.findUniqueOrThrow({ where: { key: keyOf(a) } });
+    await expect(prisma.storedFile.delete({ where: { id: fileA.id } })).rejects.toThrow();
+
+    // Restoring brings A back; deleting every version that showed A releases it.
+    await as(kim).post(`/api/projects/${projectId}/snapshots/${snapshot.id}/restore`).expect(200);
+    expect(await shown()).toEqual([keyOf(a), keyOf(b)].sort()); // B lives on in the backup of the restore
+    await save(b);
+    for (const version of (await as(kim).get(`/api/projects/${projectId}/snapshots`).expect(200)).body) {
+      await as(kim).delete(`/api/projects/${projectId}/snapshots/${version.id}`).expect(204);
+    }
+    expect(await shown()).toEqual([keyOf(b)]);
   });
 });

@@ -118,7 +118,7 @@ describe('StorageService', () => {
         { id: 'f-3', key: 'users/u-1/image/later.png' },
       ]);
       prisma.storedFile.updateMany = jest.fn();
-      prisma.storedFile.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.$executeRaw.mockResolvedValue(1); // DELETE of the row (and its refs)
       mockS3(service, async (command) => {
         const key = (command.input as { Key: string }).Key;
         if (key.endsWith('a.png')) return { ContentLength: 4242 };
@@ -134,14 +134,20 @@ describe('StorageService', () => {
         where: { id: 'f-1' },
         data: { confirmedAt: expect.any(Date), size: 4242 },
       });
-      expect(prisma.storedFile.deleteMany).toHaveBeenCalledWith({ where: { id: 'f-2', confirmedAt: null } });
+      // One statement drops the refs of a canvas saved before the upload finished, then the unconfirmed row.
+      expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+      const [sql, ...params] = prisma.$executeRaw.mock.calls[0];
+      expect(sql.join('?')).toMatch(
+        /DELETE FROM project_file_refs[\s\S]*DELETE FROM stored_files WHERE id = \?::uuid AND confirmed_at IS NULL/,
+      );
+      expect(params).toContain('f-2');
     });
 
     it('drops an empty object like a missing one and queues its key for deletion', async () => {
       const service = build();
       prisma.storedFile.findMany = jest.fn().mockResolvedValue([{ id: 'f-1', key: 'users/u-1/image/empty.png' }]);
       prisma.storedFile.updateMany = jest.fn();
-      prisma.storedFile.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.$executeRaw.mockResolvedValue(1); // DELETE of the row (and its refs)
       prisma.orphanedObject.upsert = jest.fn();
       mockS3(service, async () => ({ ContentLength: 0 }));
 

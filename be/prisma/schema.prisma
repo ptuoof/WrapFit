@@ -257,6 +257,7 @@ model PackagingProject {
   snapshots      ProjectSnapshot[]
   likes          ProjectLike[]
   files          StoredFile[]
+  fileRefs       ProjectFileRef[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -362,11 +363,27 @@ model StoredFile {
 
   user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  refs    ProjectFileRef[]
 
   @@index([userId])
   @@index([projectId])
   @@index([confirmedAt, createdAt])
   @@map("stored_files")
+}
+
+// Ảnh tải lên mà một dự án đang hiển thị (canvas của dự án hoặc của các mốc phiên bản). Bản remix hiển thị ảnh của
+// tác giả gốc: file chỉ được xóa khỏi bucket khi không còn dự án nào trỏ tới. Đồng bộ trong cùng transaction với mỗi lần
+// ghi canvas (projects/infrastructure/project-file-refs.ts). Xóa file còn được tham chiếu bị khóa ngoại chặn lại.
+model ProjectFileRef {
+  projectId    String @map("project_id") @db.Uuid
+  storedFileId String @map("stored_file_id") @db.Uuid
+
+  project    PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  storedFile StoredFile       @relation(fields: [storedFileId], references: [id], onDelete: NoAction)
+
+  @@id([projectId, storedFileId])
+  @@index([storedFileId])
+  @@map("project_file_refs")
 }
 
 // Object trên bucket không xóa được (lỗi S3) sau khi dòng DB đã bị xóa: StorageMaintenanceTask thử xóa lại.

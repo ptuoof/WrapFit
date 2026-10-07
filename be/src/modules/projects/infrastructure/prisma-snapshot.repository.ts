@@ -8,6 +8,7 @@ import type {
   SnapshotContent,
 } from '../application/ports/snapshot.repository.port';
 import type { ProjectDetail, SnapshotSummary } from '../domain/project.types';
+import { syncProjectFileRefs } from './project-file-refs';
 import { detailSelect, json, nullableJson, snapshotSummarySelect, toDetail, toSnapshotSummary } from './project.select';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     return this.prisma.projectSnapshot.count({ where: { projectId, isAutomatic: false } });
   }
 
+  /** A snapshot copies the current canvas: it shows no file the project does not show already (no ref change). */
   async create(projectId: string, snapshot: NewSnapshot): Promise<SnapshotSummary> {
     const row = await this.prisma.projectSnapshot.create({
       data: this.toData(projectId, snapshot),
@@ -44,8 +46,11 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
   }
 
   async delete(projectId: string, snapshotId: string): Promise<boolean> {
-    const { count } = await this.prisma.projectSnapshot.deleteMany({ where: { id: snapshotId, projectId } });
-    return count > 0;
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.projectSnapshot.deleteMany({ where: { id: snapshotId, projectId } });
+      if (count) await syncProjectFileRefs(tx, projectId); // the images only this version showed are released
+      return count > 0;
+    });
   }
 
   async restore(
@@ -54,12 +59,12 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     backup: NewSnapshot,
     fitCheck: FitCheckReport | null,
   ): Promise<{ project: ProjectDetail; backup: SnapshotSummary }> {
-    const [backupRow, projectRow] = await this.prisma.$transaction([
-      this.prisma.projectSnapshot.create({
+    const [backupRow, projectRow] = await this.prisma.$transaction(async (tx) => {
+      const backupRow = await tx.projectSnapshot.create({
         data: { ...this.toData(projectId, backup), isAutomatic: true },
         select: snapshotSummarySelect,
-      }),
-      this.prisma.packagingProject.update({
+      });
+      const projectRow = await tx.packagingProject.update({
         where: { id: projectId },
         data: {
           canvasState: json(toStoredCanvas(snapshot.canvasState)),
@@ -69,8 +74,10 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
           version: { increment: 1 }, // an editor still showing the old design must reload, not save over it
         },
         select: detailSelect,
-      }),
-    ]);
+      });
+      await syncProjectFileRefs(tx, projectId);
+      return [backupRow, projectRow] as const;
+    });
     return { project: toDetail(projectRow), backup: toSnapshotSummary(backupRow) };
   }
 

@@ -162,7 +162,7 @@ export class UsersService {
 
   async remove(id: string, actorId: string): Promise<void> {
     if (id === actorId) throw new BadRequestException('You cannot delete yourself');
-    const keys = await this.storage.listUserFiles(id);
+    const keys = await this.storage.releaseUserFiles(id);
     await this.prisma.user.delete({ where: { id } });
     await this.storage.deleteObjects(keys);
   }

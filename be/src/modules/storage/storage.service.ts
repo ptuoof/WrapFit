@@ -266,34 +266,36 @@ export class StorageService implements IProjectFiles {
 
   async detachSharedFiles(projectIds: string[]): Promise<void> {
     if (!projectIds.length) return;
-    // Only canvas assets are copied by duplicate / remix; QR codes, exports and thumbnails stay with their project.
+    // Indexed lookup in project_file_refs. A remix that starts showing a file after this statement makes the deletion
+    // of the projects fail on the foreign key instead of deleting a file it shows (the next run retries).
     await this.prisma.$executeRaw`
       UPDATE stored_files f SET project_id = NULL
-      WHERE f.project_id = ANY(${projectIds}::uuid[]) AND f.purpose IN ('LOGO', 'IMAGE')
-        AND (
-          EXISTS (SELECT 1 FROM packaging_projects p
-                  WHERE p.id <> ALL(${projectIds}::uuid[]) AND strpos(p.canvas_state::text, f.key) > 0)
-          OR EXISTS (SELECT 1 FROM project_snapshots s
-                     WHERE s.project_id <> ALL(${projectIds}::uuid[]) AND strpos(s.canvas_state::text, f.key) > 0)
-        )`;
+      WHERE f.project_id = ANY(${projectIds}::uuid[])
+        AND EXISTS (SELECT 1 FROM project_file_refs r
+                    WHERE r.stored_file_id = f.id AND r.project_id <> ALL(${projectIds}::uuid[]))`;
   }
 
   /**
-   * Keys of the objects to delete with a user: their uploads and the generated files of their projects, except the
-   * uploads that projects of other users still show (a remix copies the canvas with its image URLs). Read it before
-   * deleting the user: the file rows go away with them (ON DELETE CASCADE).
+   * Prepares the deletion of a user and returns the keys of the objects to delete afterwards: their uploads and the
+   * generated files of their projects. Uploads that projects of other users still show (remixes) are handed over to
+   * the owner of the oldest of those projects, file and quota included, so they survive the deletion.
    */
-  async listUserFiles(userId: string): Promise<string[]> {
+  async releaseUserFiles(userId: string): Promise<string[]> {
+    await this.prisma.$executeRaw`
+      UPDATE stored_files f SET user_id = heir.user_id, project_id = NULL
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, p.user_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE p.user_id <> ${userId}::uuid
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id
+        AND (f.user_id = ${userId}::uuid
+             OR f.project_id IN (SELECT id FROM packaging_projects WHERE user_id = ${userId}::uuid))`;
     const rows = await this.prisma.$queryRaw<{ key: string }[]>`
       SELECT f.key FROM stored_files f
       LEFT JOIN packaging_projects owner ON owner.id = f.project_id
-      WHERE (f.user_id = ${userId}::uuid OR owner.user_id = ${userId}::uuid)
-        AND NOT (f.purpose IN ('LOGO', 'IMAGE') AND (
-          EXISTS (SELECT 1 FROM packaging_projects p
-                  WHERE p.user_id <> ${userId}::uuid AND strpos(p.canvas_state::text, f.key) > 0)
-          OR EXISTS (SELECT 1 FROM project_snapshots s JOIN packaging_projects sp ON sp.id = s.project_id
-                     WHERE sp.user_id <> ${userId}::uuid AND strpos(s.canvas_state::text, f.key) > 0)
-        ))`;
+      WHERE f.user_id = ${userId}::uuid OR owner.user_id = ${userId}::uuid`;
     return rows.map((row) => row.key);
   }
 
@@ -344,7 +346,14 @@ export class StorageService implements IProjectFiles {
       if (size === undefined) continue; // storage unreachable: next run
       if (size === null || size === 0) {
         // An empty object is an upload that never completed (and would break `size > 0`): drop it like a missing one.
-        const { count } = await this.prisma.storedFile.deleteMany({ where: { id: file.id, confirmedAt: null } });
+        // A canvas saved before the upload finished may point at it: its refs go in the same statement.
+        const count = await this.prisma.$executeRaw`
+          WITH refs AS (
+            DELETE FROM project_file_refs r
+            USING stored_files f
+            WHERE r.stored_file_id = f.id AND f.id = ${file.id}::uuid AND f.confirmed_at IS NULL
+          )
+          DELETE FROM stored_files WHERE id = ${file.id}::uuid AND confirmed_at IS NULL`;
         result.dropped += count;
         if (count && size === 0) {
           await this.prisma.orphanedObject.upsert({ where: { key: file.key }, create: { key: file.key }, update: {} });

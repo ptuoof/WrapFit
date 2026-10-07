@@ -14,6 +14,7 @@ import type {
 } from '../application/ports/project.repository.port';
 import type { LifecycleState } from '../domain/project-lifecycle';
 import type { ProjectDetail, ProjectSummary } from '../domain/project.types';
+import { syncProjectFileRefs } from './project-file-refs';
 import { detailSelect, json, nullableJson, summarySelect, toDetail, toSummary } from './project.select';
 
 @Injectable()
@@ -92,24 +93,29 @@ export class PrismaProjectRepository implements IProjectRepository {
   }
 
   async create(project: NewProject): Promise<ProjectDetail> {
-    const row = await this.prisma.packagingProject.create({
-      data: {
-        userId: project.userId,
-        templateId: project.templateId,
-        formulaVersion: project.formulaVersion,
-        collectionId: project.collectionId,
-        title: project.title,
-        dimensions: json(project.dimensions),
-        materialSpec: json(project.materialSpec),
-        canvasState: json(toStoredCanvas(project.canvasState)),
-        fitcheckState: nullableJson(project.fitCheck),
-        fitcheckScore: project.fitCheck?.score ?? null,
-        forkedFromId: project.forkedFromId ?? null,
-        tags: project.tags,
-        occasion: project.occasion ?? null,
-        industry: project.industry ?? null,
-      },
-      select: detailSelect,
+    // A copy or a remix shows the images of its source: their refs keep the files alive.
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.packagingProject.create({
+        data: {
+          userId: project.userId,
+          templateId: project.templateId,
+          formulaVersion: project.formulaVersion,
+          collectionId: project.collectionId,
+          title: project.title,
+          dimensions: json(project.dimensions),
+          materialSpec: json(project.materialSpec),
+          canvasState: json(toStoredCanvas(project.canvasState)),
+          fitcheckState: nullableJson(project.fitCheck),
+          fitcheckScore: project.fitCheck?.score ?? null,
+          forkedFromId: project.forkedFromId ?? null,
+          tags: project.tags,
+          occasion: project.occasion ?? null,
+          industry: project.industry ?? null,
+        },
+        select: detailSelect,
+      });
+      await syncProjectFileRefs(tx, created.id);
+      return created;
     });
     return toDetail(row);
   }
@@ -129,9 +135,13 @@ export class PrismaProjectRepository implements IProjectRepository {
     expectedVersion: number,
   ): Promise<ProjectDetail | null> {
     // Compare-and-set on `version`: one statement, so two saves can never both win.
-    const { count } = await this.prisma.packagingProject.updateMany({
-      where: { id: projectId, version: expectedVersion },
-      data: { ...this.toData(changes), version: { increment: 1 } },
+    const count = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.packagingProject.updateMany({
+        where: { id: projectId, version: expectedVersion },
+        data: { ...this.toData(changes), version: { increment: 1 } },
+      });
+      if (result.count && changes.canvasState) await syncProjectFileRefs(tx, projectId);
+      return result.count;
     });
     return count ? this.findById(projectId) : null;
   }
