@@ -1,6 +1,7 @@
 # 🌐 THIẾT KẾ GIAO DIỆN LẬP TRÌNH ỨNG DỤNG (API DESIGN)
 
 > **Base URL (Local)**: `http://localhost:8080/api`  
+> **Hướng dẫn tích hợp cho Frontend** (luồng, mã lỗi, kiểu dữ liệu, chỗ FE đang lệch): [`11_FE_INTEGRATION_GUIDE.md`](11_FE_INTEGRATION_GUIDE.md).  
 > **Tài liệu tương tác (Swagger)**: `http://localhost:8080/api/docs` — luôn khớp với code đang chạy.  
 > **Toàn bộ danh sách endpoint theo kế hoạch** (kèm Controller, quyền truy cập, Milestone): [`07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md`, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).
 
