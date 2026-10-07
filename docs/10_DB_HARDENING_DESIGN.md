@@ -20,7 +20,19 @@
 5. **Không retry khi xung đột khóa ngoại** lúc xóa dự án: cửa sổ race chỉ vài mili giây; cron dọn thùng rác chạy lại
    hôm sau, xóa tay nhận lỗi và thử lại.
 6. **Frontend chưa sửa** (đang thiết kế lại): chưa có trang `/verify-email`, `/forgot-password`, `/reset-password`.
-7. **Chưa chọn nhà cung cấp SMTP**: local dùng Mailpit; `docker-compose.prod.yml` bắt buộc `SMTP_HOST` + `MAIL_FROM`.
+7. **Email production: Resend qua SMTP, gửi từ `mail.wrapfit.vn`** (quyết định 2026-10-07). Local vẫn dùng Mailpit;
+   `docker-compose.prod.yml` bắt buộc `SMTP_HOST` + `MAIL_FROM`.
+   - Lý do: gói miễn phí (3.000 mail/tháng, tối đa 100/ngày) đủ cho MVP/pilot; Resend tự chặn gửi lại địa chỉ bị
+     bounce / báo spam, còn Amazon SES bắt buộc tự xử lý bounce qua SNS và xin thoát sandbox.
+   - Chuyển sang Amazon SES ($0.10 / 1.000 mail) khi vượt khoảng 3.000 mail/tháng hoặc chi phí đáng kể: chỉ đổi
+     biến `SMTP_*`, không sửa code. Theo dõi giới hạn 100 mail/ngày khi chạy quảng cáo (vượt thì mail ngừng gửi).
+   - Gửi từ subdomain `mail.wrapfit.vn`, không gửi từ domain gốc: uy tín gửi mail không ảnh hưởng domain chính.
+   - DNS (giá trị chính xác lấy trong dashboard Resend): SPF (TXT + MX cho bounce) trên `mail.wrapfit.vn`,
+     DKIM `resend._domainkey.mail.wrapfit.vn`, DMARC `_dmarc.wrapfit.vn` = `v=DMARC1; p=none; rua=mailto:dmarc@wrapfit.vn`,
+     nâng lên `p=quarantine` sau 2–4 tuần không lỗi.
+   - Cấu hình: `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`, `SMTP_USER=resend`,
+     `SMTP_PASS=<API key chỉ có quyền gửi>`, `MAIL_FROM=WrapFit <no-reply@mail.wrapfit.vn>`.
+   - Điều kiện: nhóm sở hữu domain `wrapfit.vn` (cần xác nhận trước khi cấu hình DNS).
 > Nền: xây tiếp trên các thay đổi chưa commit của migration `20261007090000_reliability_fixes`
 > (`refresh_tokens.replaced_by_id`, `packaging_projects.version`, `stored_files.confirmed_at`, `orphaned_objects`,
 > `StorageMaintenanceTask`, `AppLogger`, `runWithRequestId`).
