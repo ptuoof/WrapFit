@@ -93,6 +93,20 @@ services:
       - wrapfit-network
 
   # ===================================================
+  # 2c. Mailpit: catches every email of local development (verify email, reset password)
+  #    SMTP on 1025 for the worker, web inbox on http://localhost:8025. Nothing is delivered to real mailboxes.
+  # ===================================================
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: wrapfit-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    networks:
+      - wrapfit-network
+
+  # ===================================================
   # 3. WrapFit Backend REST API (NestJS 11 + Prisma)
   # ===================================================
   backend:
@@ -185,6 +199,14 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
       REDIS_URL: redis://redis:6379
       EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
+      # Email (verify email, reset password): Mailpit above by default; set to the provider's SMTP in production
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-WrapFit <no-reply@wrapfit.local>}
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}

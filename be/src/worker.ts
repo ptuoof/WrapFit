@@ -6,6 +6,7 @@ import { createAppLogger } from './common/logging/app-logger';
 import { queueRootModule } from './common/queue.module';
 import { validateEnv } from './config/env.validation';
 import { ExportWorkerModule } from './modules/export/export.module';
+import { MailWorkerModule } from './modules/mail/mail.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -21,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
     StorageModule,
     queueRootModule('worker'),
     ExportWorkerModule,
+    MailWorkerModule,
   ],
 })
 export class WorkerModule {}
@@ -30,7 +32,7 @@ async function bootstrap() {
     logger: createAppLogger(),
   });
   app.enableShutdownHooks(); // finishes the running jobs on SIGTERM
-  new Logger('Worker').log('WrapFit worker started: queue "export"');
+  new Logger('Worker').log('WrapFit worker started: queues "export", "mail"');
 }
 
 if (require.main === module) bootstrap();
