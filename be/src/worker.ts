@@ -2,6 +2,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { createAppLogger } from './common/logging/app-logger';
 import { queueRootModule } from './common/queue.module';
 import { validateEnv } from './config/env.validation';
 import { ExportWorkerModule } from './modules/export/export.module';
@@ -25,7 +26,9 @@ import { PrismaModule } from './prisma/prisma.module';
 export class WorkerModule {}
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(WorkerModule);
+  const app = await NestFactory.createApplicationContext(WorkerModule, {
+    logger: createAppLogger(),
+  });
   app.enableShutdownHooks(); // finishes the running jobs on SIGTERM
   new Logger('Worker').log('WrapFit worker started: queue "export"');
 }

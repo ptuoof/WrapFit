@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { SocketIoAdapter } from './common/adapters/socket-io.adapter';
+import { requestIdMiddleware } from './common/context/request-context';
 import { parseCorsOrigins } from './common/utils/cors.util';
 import { AppConfigService } from './config/app-config.type';
 
@@ -13,6 +14,8 @@ export function setupApp(app: INestApplication): void {
   const origins = parseCorsOrigins(config.get('CORS_ORIGINS', { infer: true }));
   const swaggerEnabled = config.get('SWAGGER_ENABLED', { infer: true }) === 'true';
 
+  // First: everything after it (logs, errors, queued jobs) knows the request id.
+  app.use(requestIdMiddleware);
   app.use(
     helmet(
       swaggerEnabled

@@ -130,6 +130,10 @@ export class EnvironmentVariables {
   @Min(1000)
   AI_TIMEOUT_MS: number = 30000;
 
+  /** `json` = one JSON object per log line (log collectors), `text` = readable. Empty = json in production. */
+  @IsIn(['', 'json', 'text'])
+  LOG_FORMAT: string = '';
+
   /** `true` behind a reverse proxy (Caddy in production): rate limits and sessions use the client IP. */
   @IsIn(['true', 'false'])
   TRUST_PROXY: string = 'false';

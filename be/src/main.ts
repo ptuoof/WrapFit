@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { setupApp } from './app.setup';
+import { createAppLogger } from './common/logging/app-logger';
 import { AppConfigService } from './config/app-config.type';
 import { setupSwagger } from './swagger.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: createAppLogger(),
+  });
   setupApp(app);
   setupSwagger(app);
 

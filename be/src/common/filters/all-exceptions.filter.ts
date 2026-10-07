@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
+import { currentRequestId } from '../context/request-context';
 
 interface NormalizedError {
   status: number;
@@ -56,6 +57,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error,
       message,
       path: request.url,
+      // Quoted by users in bug reports: finds the matching log lines.
+      requestId: currentRequestId(),
       timestamp: new Date().toISOString(),
     });
   }
