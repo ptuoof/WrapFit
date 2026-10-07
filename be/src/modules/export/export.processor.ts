@@ -7,6 +7,7 @@ import { Job } from 'bullmq';
 import { runWithRequestId } from '../../common/context/request-context';
 import { AppConfigService } from '../../config/app-config.type';
 import { PrismaService } from '../../prisma/prisma.service';
+import { pruneAutomaticSnapshots } from '../projects/infrastructure/snapshot-retention';
 import { toClientCanvas } from '../storage/asset-keys';
 import { StorageService } from '../storage/storage.service';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
@@ -115,13 +116,13 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     if (!stored) throw new Error('File storage is not configured');
 
     const completedAt = new Date();
-    await this.prisma.$transaction([
-      this.prisma.exportJob.update({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.exportJob.update({
         where: { id: exportJobId },
         data: { status: 'COMPLETED', storageKey, completedAt },
-      }),
-      // UC-07: every print export leaves a version the user can come back to.
-      this.prisma.projectSnapshot.create({
+      });
+      // UC-07: every print export leaves a version the user can come back to (stored canvas, keys included).
+      await tx.projectSnapshot.create({
         data: {
           projectId: project.id,
           name: `Bản xuất in ${job.fileType} ${completedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
@@ -129,8 +130,9 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
           dimensions: project.dimensions as object,
           isAutomatic: true,
         },
-      }),
-    ]);
+      });
+      await pruneAutomaticSnapshots(tx, project.id);
+    });
     this.events.emit(EXPORT_COMPLETED, { exportJobId, projectId: project.id, userId: project.userId });
     this.logger.log(
       `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,

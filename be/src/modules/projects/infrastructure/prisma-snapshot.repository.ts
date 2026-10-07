@@ -9,6 +9,7 @@ import type {
 } from '../application/ports/snapshot.repository.port';
 import type { ProjectDetail, SnapshotSummary } from '../domain/project.types';
 import { syncProjectFileRefs } from './project-file-refs';
+import { pruneAutomaticSnapshots } from './snapshot-retention';
 import { detailSelect, json, nullableJson, snapshotSummarySelect, toDetail, toSnapshotSummary } from './project.select';
 
 @Injectable()
@@ -76,6 +77,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
         select: detailSelect,
       });
       await syncProjectFileRefs(tx, projectId);
+      await pruneAutomaticSnapshots(tx, projectId); // the backup is an automatic snapshot
       return [backupRow, projectRow] as const;
     });
     return { project: toDetail(projectRow), backup: toSnapshotSummary(backupRow) };

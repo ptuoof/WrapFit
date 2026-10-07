@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { setupApp } from '../src/app.setup';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { MAX_SNAPSHOTS_PER_PROJECT } from '../src/modules/projects/application/snapshots.service';
+import { MAX_AUTOMATIC_SNAPSHOTS } from '../src/modules/projects/infrastructure/snapshot-retention';
 import { FitCheckBackfillTask } from '../src/modules/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../src/modules/projects/presentation/trash-purge.task';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -596,5 +597,16 @@ describe('Projects API (e2e)', () => {
       expect(await prisma.projectSnapshot.count({ where: { projectId: expired } })).toBe(0);
       expect(await prisma.packagingProject.findUnique({ where: { id: recent } })).not.toBeNull();
     });
+  });
+
+  it('keeps the newest automatic snapshots only, never touching manual ones', async () => {
+    const id = (await as(carol).post('/api/projects').send(newProject({ title: 'Nhiều lần xuất' })).expect(201)).body.id;
+    const manual = (await as(carol).post(`/api/projects/${id}/snapshots`).send({ name: 'Thủ công' }).expect(201)).body;
+    // Every restore saves the current state first as an automatic snapshot.
+    for (let i = 0; i < MAX_AUTOMATIC_SNAPSHOTS + 3; i++) {
+      await as(carol).post(`/api/projects/${id}/snapshots/${manual.id}/restore`).expect(200);
+    }
+    expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: true } })).toBe(MAX_AUTOMATIC_SNAPSHOTS);
+    expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: false } })).toBe(1);
   });
 });

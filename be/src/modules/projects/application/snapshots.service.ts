@@ -8,7 +8,10 @@ import { IProjectFiles, PROJECT_FILES } from './ports/project-files.port';
 import { ISnapshotRepository, SNAPSHOT_REPOSITORY } from './ports/snapshot.repository.port';
 import { ProjectsService } from './projects.service';
 
-/** Manual save points per project. Automatic snapshots (export, restore backups) are not counted against it. */
+/**
+ * Manual save points per project. Automatic snapshots (export, restore backups) are not counted against it: the newest
+ * MAX_AUTOMATIC_SNAPSHOTS of them are kept (infrastructure/snapshot-retention.ts).
+ */
 export const MAX_SNAPSHOTS_PER_PROJECT = 50;
 
 /** Uploads a version preview may use. */
