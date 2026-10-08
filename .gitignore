@@ -69,3 +69,4 @@ index.html
 
 # Stitch visual parity output (fe/scripts/stitch/visual-parity.mjs)
 .visual-parity/
+.claude/
