@@ -14,7 +14,7 @@ import {
   Info,
 } from "lucide-react";
 import { BoxDimensions, FitCheckReport } from "@wrapfit/shared";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { GoiMascot } from "@/components/mascot/GoiMascot";
 
 interface GiftPreset {
@@ -122,7 +122,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   };
 
   const applyPreset = (p: GiftPreset) => {
-    tactileAudio.playPaperSnap();
+    
     onDimensionsChange(p.dims);
   };
 
@@ -319,7 +319,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   <div
                     key={mat.id}
                     onClick={() => {
-                      tactileAudio.playSquishyTap();
+                      
                       onMaterialChange(mat.id);
                       onDimensionsChange({
                         ...dimensions,
@@ -414,7 +414,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             onBack();
           }}
           className="w-full sm:w-auto px-6 py-2.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold text-xs transition flex items-center justify-center gap-2"
@@ -426,7 +426,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playPaperSnap();
+            
             onNext();
           }}
           className="w-full sm:w-auto px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95"

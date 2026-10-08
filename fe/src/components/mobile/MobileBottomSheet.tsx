@@ -17,7 +17,7 @@ import {
 import { BoxDimensions, FitCheckReport } from "@wrapfit/shared";
 import { DimensionControls } from "../ui/DimensionControls";
 import { FitCheckDrawer } from "../fitcheck/FitCheckDrawer";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 interface MobileBottomSheetProps {
   dimensions: BoxDimensions;
@@ -50,7 +50,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   const viewToggleRef = useRef<HTMLDivElement>(null);
 
   const toggleOpen = () => {
-    tactileAudio.playSquishyTap();
+    
     const nextOpen = !isOpen;
     setIsOpen(nextOpen);
 
@@ -64,7 +64,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   };
 
   const handleSwitchView = (targetView: "2d" | "3d") => {
-    tactileAudio.playSquishyTap();
+    
     onToggleView(targetView);
 
     if (viewToggleRef.current) {
@@ -139,7 +139,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  tactileAudio.playSquishyTap();
+                  
                   setActiveTab("dimensions");
                 }}
                 className={`flex-1 py-1.5 rounded-squircle text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
@@ -154,7 +154,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  tactileAudio.playSquishyTap();
+                  
                   setActiveTab("fitcheck");
                 }}
                 className={`flex-1 py-1.5 rounded-squircle text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
@@ -192,7 +192,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
                     onChange={(e) => {
                       const v = Number(e.target.value);
                       onFoldProgressChange(v);
-                      tactileAudio.playPaperSlide(v);
+                      
                     }}
                     className="w-full cursor-pointer"
                   />
@@ -254,7 +254,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
           <button
             type="button"
             onClick={() => {
-              tactileAudio.playSquishyTap();
+              
               onExport();
             }}
             className="min-w-[48px] h-10 px-4 rounded-squircle bg-vibrant-cobalt hover:bg-vibrant-cobalt-dark text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-cobalt-glow transition active:scale-95"

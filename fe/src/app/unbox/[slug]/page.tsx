@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { InteractiveFoldingBox3D } from "@/components/three/InteractiveFoldingBox3D";
 import { GoiMascot } from "@/components/mascot/GoiMascot";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { apiClient, PublicUnboxingData } from "@/lib/apiClient";
 
 export default function VirtualUnboxingPage({
@@ -114,13 +114,13 @@ export default function VirtualUnboxingPage({
 
   const handleOpenBox = () => {
     if (isOpened) return;
-    tactileAudio.playUnboxPop();
+    
     setIsOpened(true);
     fireConfetti();
   };
 
   const handleCopyVoucher = () => {
-    tactileAudio.playSquishyTap();
+    
     navigator.clipboard.writeText("WRAPFIT-GIFT-2026");
     setCopiedVoucher(true);
     setTimeout(() => setCopiedVoucher(false), 2500);
@@ -155,7 +155,7 @@ export default function VirtualUnboxingPage({
           <button
             type="button"
             onClick={() => {
-              tactileAudio.playSquishyTap();
+              
               setIsOpened(false);
             }}
             className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 text-stone-200"

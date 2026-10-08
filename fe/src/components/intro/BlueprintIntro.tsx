@@ -5,7 +5,7 @@ import { animate, stagger } from "animejs";
 import { Sparkles, ArrowRight, SkipForward, Layers } from "lucide-react";
 import { InteractiveFoldingBox3D } from "../three/InteractiveFoldingBox3D";
 import { GoiMascot } from "../mascot/GoiMascot";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 interface BlueprintIntroProps {
   onComplete: () => void;
@@ -18,7 +18,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSkip = () => {
-    tactileAudio.playSquishyTap();
+    
     if (typeof window !== "undefined") {
       sessionStorage.setItem("wrapfit_intro_seen", "true");
     }
@@ -29,7 +29,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
     // 1. Vector Blueprint Stroke Animation using Anime.js
     if (!svgRef.current) return;
 
-    tactileAudio.playCreaseSnap();
+    
     const paths = svgRef.current.querySelectorAll("path, line, rect");
     const pathElements = Array.from(paths) as SVGGeometryElement[];
     pathElements.forEach((pathEl) => {
@@ -52,7 +52,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
         // Transition to 3D folding origami phase
         setTimeout(() => {
           setPhase("folding_3d");
-          tactileAudio.playPaperTuck();
+          
 
           const obj = { val: 0.1 };
           animate(obj, {
@@ -63,7 +63,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
               setFoldProgress(obj.val);
             },
             onComplete: () => {
-              tactileAudio.playSuccessChime();
+              
             },
           });
         }, 500);

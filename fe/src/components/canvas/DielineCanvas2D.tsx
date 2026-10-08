@@ -21,7 +21,7 @@ import {
   Info,
 } from "lucide-react";
 import { measurePackagingText } from "@/lib/pretext/textLayout";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 interface DielineCanvas2DProps {
   dieline: DielineGeometry;
@@ -109,7 +109,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   ) => {
     e.stopPropagation();
     e.preventDefault();
-    tactileAudio.playPaperSlide(0.15);
+    
 
     if (onSelectElement) onSelectElement(el.id);
 
@@ -196,7 +196,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // Pointer Up -> Snap & Finish Drag
   const handleSvgPointerUp = () => {
     if (dragState) {
-      tactileAudio.playPaperSnap();
+      
       const el = elements.find((item) => item.id === dragState.elementId);
       if (el && onSelectPanel) {
         onSelectPanel(el.panelId);
@@ -207,7 +207,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Zoom handlers
   const handleZoom = (delta: number) => {
-    tactileAudio.playSquishyTap();
+    
     if (onScaleChange) {
       const next = Math.min(2.5, Math.max(0.4, Number((scale + delta).toFixed(2))));
       onScaleChange(next);
@@ -215,14 +215,14 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   };
 
   const handleResetZoom = () => {
-    tactileAudio.playSquishyTap();
+    
     if (onScaleChange) onScaleChange(1.0);
   };
 
   // Rotate Element
   const handleRotate = (angleDelta: number) => {
     if (!selectedEl || !onElementsChange) return;
-    tactileAudio.playSquishyTap();
+    
     const updated = elements.map((el) =>
       el.id === selectedEl.id
         ? { ...el, rotation: (el.rotation + angleDelta) % 360 }
@@ -234,7 +234,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // Resize Element via Button
   const handleResize = (multiplier: number) => {
     if (!selectedEl || !onElementsChange) return;
-    tactileAudio.playPaperSlide(0.5);
+    
     const updated = elements.map((el) => {
       if (el.id !== selectedEl.id) return el;
       return {
@@ -249,7 +249,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // Delete Element
   const handleDeleteElement = () => {
     if (!selectedEl || !onElementsChange) return;
-    tactileAudio.playSquishyTap();
+    
     onElementsChange(elements.filter((el) => el.id !== selectedEl.id));
     if (onSelectElement) onSelectElement(null);
   };
@@ -257,7 +257,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // Nudge Move
   const handleMove = (dx: number, dy: number) => {
     if (!selectedEl || !onElementsChange) return;
-    tactileAudio.playPaperSlide(0.2);
+    
     const updated = elements.map((el) => {
       if (el.id !== selectedEl.id) return el;
       return {
@@ -272,7 +272,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // Add new text element with Pretext calculation
   const handleAddText = () => {
     if (!newTextValue.trim() || !onElementsChange) return;
-    tactileAudio.playPaperTuck();
+    
 
     const targetPanel = dieline.panels.find((p) => p.id === activePanelId) || dieline.panels[0];
 
@@ -330,7 +330,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             setShowAddTextModal(true);
           }}
           className="px-3.5 py-1.5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile flex items-center gap-1.5 transition"
@@ -616,7 +616,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 key={panel.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  tactileAudio.playSquishyTap();
+                  
                   if (onSelectPanel) onSelectPanel(panel.id);
                 }}
                 className="cursor-pointer group"

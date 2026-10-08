@@ -15,7 +15,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 export type StudioToolId =
   | "select"
@@ -74,7 +74,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
               key={t.id}
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 onSelectTool(t.id as StudioToolId);
               }}
               className={`relative group w-11 h-11 rounded-2xl flex flex-col items-center justify-center transition-all ${
@@ -107,7 +107,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
       <button
         type="button"
         onClick={() => {
-          tactileAudio.playSquishyTap();
+          
           onToggleRulers();
         }}
         className={`w-11 h-11 rounded-2xl flex items-center justify-center transition ${
@@ -126,7 +126,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
           type="button"
           disabled={!canUndo}
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             if (onUndo) onUndo();
           }}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-500 hover:text-stone-900 hover:bg-stone-100 disabled:opacity-30 disabled:hover:bg-transparent transition"
@@ -139,7 +139,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
           type="button"
           disabled={!canRedo}
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             if (onRedo) onRedo();
           }}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-500 hover:text-stone-900 hover:bg-stone-100 disabled:opacity-30 disabled:hover:bg-transparent transition"

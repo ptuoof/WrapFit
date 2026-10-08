@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { Sparkles, Eye, RotateCw } from "lucide-react";
 
 export type BoxMaterialTheme = "kraft" | "ivory" | "forest" | "gold_foil";
@@ -76,7 +76,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
     for (const m of milestones) {
       if ((prev < m && curr >= m) || (prev > m && curr <= m)) {
-        tactileAudio.playCreaseSnap();
+        
         break;
       }
     }
@@ -604,7 +604,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       if (intersects.length > 0) {
         const hitMesh = intersects[0].object as THREE.Mesh;
         const name = hitMesh.name;
-        tactileAudio.playPaperTuck();
+        
         setInteractiveOpenState((prev) => !prev);
         if (onFlapClick) onFlapClick(name);
       }
@@ -733,7 +733,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playPaperTuck();
+            
             setInteractiveOpenState((prev) => !prev);
           }}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition border shadow-tactile flex items-center gap-1.5 ${

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { BoxDimensions, FitCheckReport } from "@wrapfit/shared";
 import { GoiMascot, MascotPose } from "../mascot/GoiMascot";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 export interface GiftPreset {
   id: string;
@@ -130,9 +130,9 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
     e.stopPropagation();
     const nextMuted = !isAudioMuted;
     setIsAudioMuted(nextMuted);
-    tactileAudio.setMuted(nextMuted);
+    
     if (!nextMuted) {
-      tactileAudio.playSquishyTap();
+      
     }
   };
 
@@ -156,7 +156,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
 
   // Spring animation when expanding/collapsing using Anime.js
   const toggleExpanded = () => {
-    tactileAudio.playSquishyTap();
+    
     const nextState = !isExpanded;
     setIsExpanded(nextState);
 
@@ -177,7 +177,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
 
   // Apply gift preset
   const handleSelectPreset = (preset: GiftPreset) => {
-    tactileAudio.playCreaseSnap();
+    
     setPose("folding");
     setHeadline(`Đã tối ưu cho ${preset.name}!`);
     setMessage(
@@ -194,7 +194,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
     if (e) e.preventDefault();
     if (!userQuery.trim()) return;
 
-    tactileAudio.playSquishyTap();
+    
     const q = userQuery.toLowerCase();
     setUserQuery("");
 
@@ -211,7 +211,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
     } else if (q.includes("sửa") || q.includes("fitcheck") || q.includes("lỗi")) {
       if (onAutoFixFitCheck) {
         onAutoFixFitCheck();
-        tactileAudio.playSuccessChime();
+        
         setPose("celebration");
         setHeadline("Đã tự động căn chỉnh!");
         setMessage("Đã thụt lề an toàn 3mm và mở rộng bleed 2mm cho toàn bộ bản vẽ.");
@@ -319,7 +319,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                     type="button"
                     onClick={() => {
                       onAutoFixFitCheck();
-                      tactileAudio.playSuccessChime();
+                      
                       setPose("celebration");
                       setHeadline("Đã tự động sửa lỗi!");
                       setMessage(

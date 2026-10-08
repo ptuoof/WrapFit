@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Check, Sparkles, RefreshCw } from "lucide-react";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { BoxMaterialTheme } from "@/components/three/InteractiveFoldingBox3D";
 
 export interface ColorPaletteFrame {
@@ -97,7 +97,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             const randomIndex = Math.floor(Math.random() * CURATED_COLOR_FRAMES.length);
             onSelectPalette(CURATED_COLOR_FRAMES[randomIndex]);
           }}
@@ -117,7 +117,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
               key={palette.id}
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 onSelectPalette(palette);
               }}
               className={`group p-2 rounded-2xl border text-left transition flex flex-col gap-1.5 ${

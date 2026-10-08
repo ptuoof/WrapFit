@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
 import { InteractiveFoldingBox3D } from "../three/InteractiveFoldingBox3D";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { GoiMascot } from "@/components/mascot/GoiMascot";
 
 export type EnvironmentType =
@@ -97,7 +97,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
 
   const handleFoldChange = (val: number) => {
     if (Math.abs(val - foldProgress) > 0.08) {
-      tactileAudio.playPaperSlide(val);
+      
     }
     setFoldProgress(val);
     if (val < 0.9) {
@@ -106,7 +106,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
   };
 
   const handleToggleLid = () => {
-    tactileAudio.playUnboxPop();
+    
     const next = !isLidOpen;
     setIsLidOpen(next);
     if (next) {
@@ -137,7 +137,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <button
             type="button"
             onClick={() => {
-              tactileAudio.playSquishyTap();
+              
               onBack();
             }}
             className="px-4 py-2 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold transition flex items-center gap-1.5"
@@ -149,7 +149,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <button
             type="button"
             onClick={() => {
-              tactileAudio.playSquishyTap();
+              
               onOpenExportModal();
             }}
             className="px-5 py-2.5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition flex items-center gap-2 hover:scale-105 active:scale-95"
@@ -267,7 +267,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
                     key={item.id}
                     type="button"
                     onClick={() => {
-                      tactileAudio.playSquishyTap();
+                      
                       setSelectedEnv(item.id);
                     }}
                     className={`w-full p-3 rounded-squircle text-left border transition-all flex items-center justify-between ${
@@ -318,7 +318,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
             <button
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 if (onOpenQrModal) onOpenQrModal();
               }}
               className="w-full py-2 rounded-squircle bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs transition flex items-center justify-center gap-1.5"

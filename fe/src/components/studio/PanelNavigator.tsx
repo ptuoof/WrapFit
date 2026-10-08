@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Layers, Check, Focus, MoveHorizontal, Square } from "lucide-react";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { DielineGeometry } from "@wrapfit/shared";
 
 interface PanelNavigatorProps {
@@ -30,7 +30,7 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({
       <button
         type="button"
         onClick={() => {
-          tactileAudio.playSquishyTap();
+          
           onSelectPanel("all");
         }}
         className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
@@ -49,7 +49,7 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({
             key={panel.id}
             type="button"
             onClick={() => {
-              tactileAudio.playPaperTuck();
+              
               onSelectPanel(panel.id);
             }}
             className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${

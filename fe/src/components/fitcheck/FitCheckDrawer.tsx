@@ -11,7 +11,7 @@ import {
   Info,
 } from "lucide-react";
 import { FitCheckReport } from "@wrapfit/shared";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 interface FitCheckDrawerProps {
   report: FitCheckReport;
@@ -25,7 +25,7 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
   className = "",
 }) => {
   const handleAutoFixClick = () => {
-    tactileAudio.playSuccessChime();
+    
     if (onAutoFix) onAutoFix();
   };
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Check, RefreshCw } from "lucide-react";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 export interface FontPresetCard {
   id: string;
@@ -73,7 +73,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             const r = Math.floor(Math.random() * CURATED_FONT_PRESETS.length);
             onSelectFont(CURATED_FONT_PRESETS[r]);
           }}
@@ -93,7 +93,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
               key={font.id}
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 onSelectFont(font);
               }}
               className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between min-h-[68px] ${

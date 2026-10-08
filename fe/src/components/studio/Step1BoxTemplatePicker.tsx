@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Sparkles, Check, ArrowRight, ShieldCheck, Layers, Gift, Feather } from "lucide-react";
 import { BoxStructureType } from "@wrapfit/shared";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 export interface BoxStructureOption {
   id: BoxStructureType;
@@ -123,7 +123,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             <div
               key={item.id}
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 onSelectStructure(item.id);
               }}
               className={`rounded-squircle-lg border-2 p-5 flex flex-col justify-between transition-all cursor-pointer relative bg-white ${
@@ -230,7 +230,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
         <button
           type="button"
           onClick={() => {
-            tactileAudio.playSquishyTap();
+            
             onNext();
           }}
           className="w-full sm:w-auto px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95"

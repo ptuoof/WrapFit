@@ -63,7 +63,6 @@ import { Step2DimensionAndMaterial } from "@/components/studio/Step2DimensionAnd
 import { Step4Model3DWithEnvironments } from "@/components/studio/Step4Model3DWithEnvironments";
 import { apiClient, ApiError, ExportJobStatus, SnapshotDto } from "@/lib/apiClient";
 import { materialSpecFor, materialThemeOf } from "@/lib/projectMaterial";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
 
 export default function PackagingStudioPage({ params }: { params: { id: string } }) {
   // Stepper State: Step 1 (Template) -> Step 2 (Dimensions) -> Step 3 (2D Studio) -> Step 4 (3D Environments)
@@ -278,8 +277,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
 
   // 1-Click Auto-Fix Safe Margin & Bleed Breaches
   const handleAutoFix = useCallback(() => {
-    tactileAudio.playPaperSnap();
-    const updated = elements.map((el) => {
+        const updated = elements.map((el) => {
       let nx = el.x;
       let ny = el.y;
       if (nx < 3.5) nx = 4.0;
@@ -292,7 +290,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
   // Add Element from Sticker Bank or Logo Upload
   const handleAddElement = useCallback(
     (newEl: CanvasElement) => {
-      tactileAudio.playPaperTuck();
+      
       setElements((prev) => [...prev, newEl]);
       setSelectedElementId(newEl.id);
     },
@@ -329,7 +327,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
 
   // Handle Snapshot Creation
   const handleCreateSnapshot = async () => {
-    tactileAudio.playSquishyTap();
+    
     try {
       const snap = await apiClient.createSnapshot(params.id, {
         name: `Bản lưu ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`,
@@ -342,8 +340,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
 
   // Start Vector Print Export
   const handleStartExport = async (format: "pdf" | "svg" | "png") => {
-    tactileAudio.playPaperSnap();
-    setIsExporting(true);
+        setIsExporting(true);
     try {
       const exportType = format === "svg" ? "SVG" : "PDF";
       const res = await apiClient.requestExport(params.id, exportType);
@@ -357,7 +354,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
             clearInterval(pollTimer);
             setIsExporting(false);
             if (status.status === "COMPLETED") {
-              tactileAudio.playUnboxingPop();
+              
             }
           }
         } catch {
@@ -379,7 +376,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              onClick={() => tactileAudio.playSquishyTap()}
+              onClick={() => {}}
               className="w-8 h-8 rounded-full border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition"
               title="Quay lại Dashboard"
             >
@@ -415,7 +412,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                   key={s.step}
                   type="button"
                   onClick={() => {
-                    tactileAudio.playSquishyTap();
+                    
                     setCurrentStep(s.step as any);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
@@ -459,7 +456,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
             <button
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 if (currentStep !== 3) setCurrentStep(3);
                 setActiveInspectorTab("fitcheck");
               }}
@@ -473,7 +470,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
             <button
               type="button"
               onClick={() => {
-                tactileAudio.playSquishyTap();
+                
                 setShowExportModal(true);
               }}
               className="px-4 py-2 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition flex items-center gap-1.5 hover:scale-105 active:scale-95"
@@ -524,7 +521,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                 <button
                   type="button"
                   onClick={() => {
-                    tactileAudio.playSquishyTap();
+                    
                     setCurrentStep(2);
                   }}
                   className="px-3.5 py-1.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-600 text-xs font-semibold transition"
@@ -534,8 +531,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                 <button
                   type="button"
                   onClick={() => {
-                    tactileAudio.playPaperSnap();
-                    setCurrentStep(4);
+                                        setCurrentStep(4);
                   }}
                   className="px-4 py-1.5 rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-xs font-semibold shadow-tactile flex items-center gap-1.5 transition hover:scale-105 active:scale-95"
                 >
@@ -565,8 +561,8 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                   }}
                   showRulers={showRulers}
                   onToggleRulers={() => setShowRulers(!showRulers)}
-                  onUndo={() => tactileAudio.playSquishyTap()}
-                  onRedo={() => tactileAudio.playSquishyTap()}
+                  onUndo={() => {}}
+                  onRedo={() => {}}
                 />
                 <input
                   id="logo-upload-hidden"
@@ -609,7 +605,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                       key={tab.id}
                       type="button"
                       onClick={() => {
-                        tactileAudio.playSquishyTap();
+                        
                         setActiveInspectorTab(tab.id as any);
                       }}
                       className={`flex-1 py-1.5 rounded-squircle text-center transition ${
@@ -671,8 +667,7 @@ export default function PackagingStudioPage({ params }: { params: { id: string }
                             key={pat.id}
                             type="button"
                             onClick={() => {
-                              tactileAudio.playPaperSnap();
-                              setBackgroundPatternSvg(
+                                                            setBackgroundPatternSvg(
                                 backgroundPatternSvg === pat.id ? null : pat.id
                               );
                             }}

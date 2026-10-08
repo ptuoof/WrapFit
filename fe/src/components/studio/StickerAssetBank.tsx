@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Sparkles, QrCode, Tag, Award, Heart, Check, X, ShieldAlert, Gift } from "lucide-react";
 import { CanvasElement } from "@wrapfit/shared";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 import { GoiMascot, MascotPose } from "@/components/mascot/GoiMascot";
 
 export interface StickerAssetItem {
@@ -178,7 +178,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
   );
 
   const handleApplySticker = (item: StickerAssetItem) => {
-    tactileAudio.playPaperTuck();
+    
 
     const newElement: CanvasElement = {
       id: `sticker_${Date.now()}`,
@@ -238,7 +238,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
             key={tab.id}
             type="button"
             onClick={() => {
-              tactileAudio.playSquishyTap();
+              
               setActiveCategory(tab.id as any);
             }}
             className={`px-2.5 py-1 rounded-full whitespace-nowrap transition font-medium ${

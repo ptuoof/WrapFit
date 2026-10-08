@@ -3,7 +3,7 @@
 import React from "react";
 import { BoxDimensions } from "@wrapfit/shared";
 import { Sliders, Ruler, Sparkles } from "lucide-react";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
 
 interface DimensionControlsProps {
   dimensions: BoxDimensions;
@@ -17,7 +17,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
   className = "",
 }) => {
   const updateDim = (key: keyof BoxDimensions, val: number) => {
-    tactileAudio.playPaperSlide(val / 300);
+    
     onChange({
       ...dimensions,
       [key]: Math.max(10, Number(val) || 10),
@@ -25,7 +25,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
   };
 
   const handleGsmChange = (gsm: number, t: number) => {
-    tactileAudio.playSquishyTap();
+    
     onChange({
       ...dimensions,
       paperThickness: t,
