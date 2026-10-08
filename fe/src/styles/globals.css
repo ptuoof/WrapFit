@@ -1,3 +1,6 @@
+/* Stitch fonts, screen roots and per-screen styles. Must precede Tailwind, as in the Stitch exports. */
+@import "./stitch/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

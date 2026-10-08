@@ -1,0 +1,462 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Playfair+Display:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary":"#ffffff","on-secondary-fixed-variant":"#304c40","error":"#ba1a1a","on-tertiary-fixed":"#241a00","inverse-primary":"#b4c5ff","secondary-fixed-dim":"#aecebe","surface-container-low":"#faf2ee","secondary-fixed":"#caead9","tertiary-fixed":"#ffe088","primary-container":"#2563eb","surface-bright":"#fff8f5","background":"#fff8f5","tertiary":"#735c00","surface-container-highest":"#e9e1dd","on-primary-fixed-variant":"#003ea8","surface-container":"#f4ece8","primary-fixed":"#dbe1ff","surface":"#fff8f5","primary-fixed-dim":"#b4c5ff","on-surface":"#1e1b19","on-background":"#1e1b19","outline":"#737686","primary":"#004ac6","on-primary-container":"#eeefff","on-tertiary-fixed-variant":"#574500","on-error":"#ffffff","surface-dim":"#e0d8d5","on-primary-fixed":"#00174b","on-primary":"#ffffff","on-secondary-container":"#4e6a5d","surface-container-lowest":"#ffffff","outline-variant":"#c3c6d7","on-secondary-fixed":"#032016","surface-container-high":"#eee7e3","secondary":"#486458","on-secondary":"#ffffff","on-surface-variant":"#434655","on-error-container":"#93000a","inverse-on-surface":"#f7efeb","surface-variant":"#e9e1dd","inverse-surface":"#33302d","on-tertiary-container":"#4e3d00","surface-tint":"#0053db","error-container":"#ffdad6","tertiary-container":"#cca72f","secondary-container":"#caead9","tertiary-fixed-dim":"#e9c349","brand-forest":"#133020"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin-mobile":"1rem","space-md":"1rem","space-sm":"0.5rem","gutter-sm":"1rem",margin:"2rem",gutter:"1.5rem","space-xs":"0.25rem","space-xl":"2.5rem","gutter-lg":"2rem","space-lg":"1.5rem"},fontFamily:{"cad-dimension":["JetBrains Mono"],"body-md":["Plus Jakarta Sans"],"display-hero-mobile":["Playfair Display"],"headline-lg":["Playfair Display"],"display-hero":["Playfair Display"],"headline-md":["Playfair Display"],"headline-lg-mobile":["Playfair Display"],"body-lg":["Plus Jakarta Sans"],"label-ui":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"cad-spec-micro":["JetBrains Mono"]},fontSize:{"cad-dimension":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"500"}],"body-md":["14px",{lineHeight:"22px",fontWeight:"400"}],"display-hero-mobile":["32px",{lineHeight:"40px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-lg":["36px",{lineHeight:"44px",letterSpacing:"-0.015em",fontWeight:"500"}],"display-hero":["48px",{lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"600"}],"headline-md":["24px",{lineHeight:"32px",fontWeight:"500"}],"headline-lg-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"500"}],"body-lg":["16px",{lineHeight:"26px",fontWeight:"400"}],"label-ui":["13px",{lineHeight:"16px",letterSpacing:"0.01em",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"headline-sm":["18px",{lineHeight:"26px",fontWeight:"600"}],"cad-spec-micro":["10px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"400"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container h-screen overflow-hidden flex flex-col justify-between"><main class="h-screen w-full flex flex-col justify-between px-space-lg py-space-md overflow-hidden bg-surface relative">
+<!-- Ambient background glow without borders -->
+<div class="absolute top-0 left-1/4 w-[500px] h-[300px] bg-primary-fixed/20 rounded-full blur-3xl pointer-events-none -z-0"></div>
+<div class="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-secondary-fixed/20 rounded-full blur-3xl pointer-events-none -z-0"></div>
+<!-- Top Floating Nav Dock -->
+<header class="relative z-10 w-full flex items-center justify-between gap-space-md shrink-0">
+<!-- Brand Logo & Identity -->
+<div class="flex items-center gap-space-md">
+<a class="flex items-center gap-space-xs group" href="#">
+<span class="flex items-center justify-center w-9 h-9 rounded-2xl bg-on-surface text-surface font-headline-sm text-[16px] font-bold shadow-sm transition-transform group-hover:scale-95">W</span>
+<span class="font-label-ui text-label-ui font-bold tracking-tight text-on-surface uppercase">WrapFit</span>
+</a>
+<span class="font-cad-dimension text-cad-dimension text-outline hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+        Cloud Vault Active
+      </span>
+</div>
+<!-- Centered Minimal Filter & Search Pills -->
+<div class="flex items-center gap-space-xs p-1 bg-surface-container-low/90 backdrop-blur-xl rounded-full shadow-sm">
+<button class="px-4 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-label-ui text-label-ui font-semibold shadow-xs transition-all" type="button">
+        Tất Cả (28)
+      </button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-ui text-label-ui transition-colors" type="button">
+        Hộp Quà (12)
+      </button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-ui text-label-ui transition-colors" type="button">
+        Bao Bì Mỹ Phẩm (8)
+      </button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-ui text-label-ui transition-colors hidden md:block" type="button">
+        File In (5)
+      </button>
+<div class="h-4 w-px bg-surface-container-highest mx-1 hidden sm:block"></div>
+<div class="relative hidden sm:flex items-center pr-1">
+<span class="material-symbols-outlined text-[18px] text-outline ml-2 mr-1">search</span>
+<input class="bg-transparent text-body-sm font-body-md text-on-surface placeholder:text-outline w-28 focus:w-44 focus:outline-none transition-all py-1" placeholder="Tìm kiếm..." type="text">
+<kbd class="text-cad-spec-micro text-outline px-1.5 py-0.5 rounded bg-surface-container-high">⌘K</kbd>
+</div>
+</div>
+<!-- Right Quick Controls -->
+<div class="flex items-center gap-space-sm">
+<div class="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-low text-cad-dimension text-cad-dimension text-on-surface-variant shadow-xs">
+<span class="material-symbols-outlined text-[16px] text-primary">cloud_done</span>
+<span class="">3.2 / 10 GB</span>
+<div class="w-10 h-1 bg-surface-container-highest rounded-full overflow-hidden ml-1">
+<div class="w-1/3 h-full bg-primary-container rounded-full"></div>
+</div>
+</div>
+<button class="w-9 h-9 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<img alt="Profile" class="w-9 h-9 rounded-full object-cover shadow-xs ring-2 ring-surface cursor-pointer" src="https://lh3.googleusercontent.com/aida/AEtjO1X6oJ4ACXAVlPDN9o1BlL3Y2QdLN2edWtzKaZxLzcPEaBpd36fVEJ4oADSHwrVyezM8dSyUQa56UPitqwftKOxBtBwVoibUFbC592IIKHk8ByOCNN31Ft4QUzPJqke7G0ZD4AxfAaySWaYA3Gdr4RUsjxH1P7FKOscixxSkqSY2vqhNgy8FxiihqeNaXDD67PlLgrxEggJz-AjYgpB2uINOcteLAPp8d5Iup5ZztwpLxkhAoVZrpxic5IcwVUfy5GOAAGngitQpBQs">
+</div>
+</header>
+<!-- Floating Brand Kit Bar (Simplified Pill Strip) -->
+<div class="relative z-10 w-full flex items-center justify-between py-1.5 px-space-md rounded-2xl bg-surface-container-low/70 backdrop-blur-md shadow-xs shrink-0 my-1">
+<div class="flex items-center gap-space-md">
+<span class="font-label-ui text-label-ui font-semibold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary-container text-[18px]">verified</span>
+        The Botanical Artisan
+      </span>
+<div class="h-4 w-px bg-surface-container-highest hidden sm:block"></div>
+<!-- Swatches -->
+<div class="flex items-center gap-1.5">
+<div class="w-5 h-5 rounded-full bg-[#E58F65] shadow-xs ring-1 ring-surface"></div>
+<div class="w-5 h-5 rounded-full bg-[#2A4736] shadow-xs ring-1 ring-surface"></div>
+<div class="w-5 h-5 rounded-full bg-[#E7D7C1] shadow-xs ring-1 ring-surface"></div>
+<div class="w-5 h-5 rounded-full bg-[#8E7DBE] shadow-xs ring-1 ring-surface"></div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-cad-dimension text-cad-dimension hidden md:inline-flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[14px] text-secondary">layers</span> Cotton 350 GSM
+      </span>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-cad-dimension text-cad-dimension hidden lg:inline-flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[14px] text-tertiary">texture</span> Mỹ Thuật Kẹp Bông
+      </span>
+<button class="text-body-sm font-label-ui text-label-ui text-primary-container font-semibold hover:underline flex items-center gap-0.5 ml-2" type="button">
+<span class="">Brand Kit</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Main View Area (Container toggling between Grid View and Split Detail View inspired by reference) -->
+<div class="relative z-10 w-full flex-1 min-h-0 py-1 flex items-stretch overflow-hidden">
+<!-- 1. CAROUSEL / OVERVIEW VIEW -->
+<div class="w-full h-full flex items-stretch group/carousel transition-all duration-500 ease-out" id="gallery-carousel-view">
+<!-- Floating Navigation Arrows Left & Right -->
+<button class="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-xl shadow-lg border-0 flex items-center justify-center text-on-surface hover:scale-105 active:scale-95 transition-all opacity-80 hover:opacity-100 cursor-pointer" id="carousel-prev-btn" onclick="document.getElementById('project-carousel').scrollBy({left: -380, behavior: 'smooth'})">
+<span class="material-symbols-outlined text-[22px]">chevron_left</span>
+</button>
+<button class="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-xl shadow-lg border-0 flex items-center justify-center text-on-surface hover:scale-105 active:scale-95 transition-all opacity-80 hover:opacity-100 cursor-pointer" id="carousel-next-btn" onclick="document.getElementById('project-carousel').scrollBy({left: 380, behavior: 'smooth'})">
+<span class="material-symbols-outlined text-[22px]">chevron_right</span>
+</button>
+<!-- Scrollable Cards Row -->
+<div class="w-full h-full flex gap-space-md overflow-x-auto scroll-smooth py-1 px-1 min-h-0 items-stretch" id="project-carousel">
+<!-- Card 1 -->
+<article class="group relative flex-none w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] bg-surface-container-lowest rounded-3xl p-3 shadow-[0_12px_32px_-6px_rgba(26,54,43,0.06)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden border border-transparent hover:border-surface-container-highest" onclick="openProjectDetail(0)">
+<div class="relative w-full flex-1 rounded-2xl bg-surface-container-low overflow-hidden min-h-[140px]">
+<img alt="Âm Dương Nam Châm" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTMoKr2_3HLh0ARaxWmirMivEkZs2brmL1RFcnALAoomRnDav5hSANXKEwnn1PNPLPOvAfKjC_DD0Xi7EhHGP7RbV2n382sXE_So4kuQyzBPWDdm_Uu26p72OTKU0JLLYwZAxht67EVyfVAOS1BK3mOjFNC05VJ_366HLiGozPHjuxMtB-6eHMw2RsnfAoXK_q7cK2PyyHfhXvCuGerb9Y2xf2KZ7oZfKBx7HdCEiJVJ5XGDHScAeCWA">
+<div class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-secondary font-cad-spec-micro text-cad-spec-micro font-medium flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> 100/100 Pass
+            </div>
+<div class="absolute inset-0 bg-inverse-surface/25 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
+<span class="px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-ui text-label-ui font-semibold flex items-center gap-1.5 shadow-md scale-95 group-hover:scale-100 transition-transform">
+<span class="material-symbols-outlined text-[18px] text-primary">arrow_forward</span> Xem Chi Tiết
+              </span>
+</div>
+</div>
+<div class="pt-2.5 px-1.5 flex items-center justify-between shrink-0">
+<div class="truncate pr-2">
+<h3 class="font-label-ui text-label-ui font-semibold text-on-surface truncate group-hover:text-primary transition-colors">Âm Dương Nam Châm Luxury</h3>
+<p class="font-cad-dimension text-cad-dimension text-outline">220 × 150 × 80 mm</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-cad-spec-micro text-cad-spec-micro text-on-surface-variant shrink-0">Greyboard</span>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="group relative flex-none w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] bg-surface-container-lowest rounded-3xl p-3 shadow-[0_12px_32px_-6px_rgba(26,54,43,0.06)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden border border-transparent hover:border-surface-container-highest" onclick="openProjectDetail(1)">
+<div class="relative w-full flex-1 rounded-2xl bg-surface-container-low overflow-hidden min-h-[140px]">
+<img alt="Hộp Bao Diêm Ngăn Kéo" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2HJqElXCLIKcz8jSNaJL4s_GNmfL02M6rDXzQdapFMTE3p43bAVgHX5dIz2aOgDaDDxfNAohwnPKyGDkalZKMHBobhYWAZ7tJ4LD5APWzlOTAAtQe9-4Uz3gqhxUoJtbsr5b2Db802NY39hK9WmzDh6QjnZ0uOV-qf51gbulsESsARfRtA8F-QP9kA3uYgZgryCDdlC5Fq5MKF193A-EGi1Z_F5OmzYSJoDdwjc8OqFJc75zVdh-WiQ">
+<div class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-tertiary font-cad-spec-micro text-cad-spec-micro font-medium flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">content_cut</span> Chỉnh dao bế
+            </div>
+<div class="absolute inset-0 bg-inverse-surface/25 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
+<span class="px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-ui text-label-ui font-semibold flex items-center gap-1.5 shadow-md scale-95 group-hover:scale-100 transition-transform">
+<span class="material-symbols-outlined text-[18px] text-primary">arrow_forward</span> Xem Chi Tiết
+              </span>
+</div>
+</div>
+<div class="pt-2.5 px-1.5 flex items-center justify-between shrink-0">
+<div class="truncate pr-2">
+<h3 class="font-label-ui text-label-ui font-semibold text-on-surface truncate group-hover:text-primary transition-colors">Bao Diêm Ngăn Kéo (Drawer)</h3>
+<p class="font-cad-dimension text-cad-dimension text-outline">180 × 110 × 45 mm</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-cad-spec-micro text-cad-spec-micro text-on-surface-variant shrink-0">Kraft 300g</span>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="group relative flex-none w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] bg-surface-container-lowest rounded-3xl p-3 shadow-[0_12px_32px_-6px_rgba(26,54,43,0.06)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden border border-transparent hover:border-surface-container-highest" onclick="openProjectDetail(2)">
+<div class="relative w-full flex-1 rounded-2xl bg-surface-container-low overflow-hidden min-h-[140px]">
+<img alt="Túi Đứng Kraft Khóa Zip" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv0OX7nlcoDJen55XGz7Frk4DLmJUuYfeCkWElrWuuxh0_fp3hOALWeiZt5vcEALaWYvWrAASoIn-MkyOdoM4yH-cfP-DXZIANkgxgpMg6dFdeAnmG31Iwfta2po_T777Z0iAbYGxqHF8oHmnGfEwIJ0cwxpmkFsv6rC8mHSo3u7umBfKHjqjtXFYQvr-ahXHnsfdiGtnQ9NuoT3AwcRT4s3LN1kPP6Cw27keaJMXcWDUvVIgEenpgUw">
+<div class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-primary font-cad-spec-micro text-cad-spec-micro font-medium flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">layers</span> Soft-Touch
+            </div>
+<div class="absolute inset-0 bg-inverse-surface/25 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
+<span class="px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-ui text-label-ui font-semibold flex items-center gap-1.5 shadow-md scale-95 group-hover:scale-100 transition-transform">
+<span class="material-symbols-outlined text-[18px] text-primary">arrow_forward</span> Xem Chi Tiết
+              </span>
+</div>
+</div>
+<div class="pt-2.5 px-1.5 flex items-center justify-between shrink-0">
+<div class="truncate pr-2">
+<h3 class="font-label-ui text-label-ui font-semibold text-on-surface truncate group-hover:text-primary transition-colors">Túi Đứng Kraft Khóa Zip</h3>
+<p class="font-cad-dimension text-cad-dimension text-outline">375 × 202 mm</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-cad-spec-micro text-cad-spec-micro text-on-surface-variant shrink-0">3 Lớp Màng</span>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="group relative flex-none w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] bg-surface-container-lowest rounded-3xl p-3 shadow-[0_12px_32px_-6px_rgba(26,54,43,0.06)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden border border-transparent hover:border-surface-container-highest" onclick="openProjectDetail(3)">
+<div class="relative w-full flex-1 rounded-2xl bg-surface-container-low overflow-hidden min-h-[140px]">
+<img alt="Hộp Gối Uốn Cong" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFn09XDziyAdkKWFT-5dnYPar1NMkvkpiV2uH0PBDQAqgCKBtDLrfAhxyv21AK1EJQh1wycUxoXKrVwk8LgNCEg1fiuWrUSUfz_JUMA13slUWuEXxPkj-9cL71EkS_4bvRO9atDupR_JoTwHjwNu6qbvKbPNoVD2aCB18d5mmCSotytL1IOHDxIuarWFn5kl_ff0uXxZCfqy3TKbZvFh2p0OW2Y5O8QO3KeJMtxpf8ygvnQby0EkZMiA">
+<div class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-secondary font-cad-spec-micro text-cad-spec-micro font-medium flex items-center gap-1 shadow-xs">
+<span class="material-symbols-outlined text-[12px]">eco</span> Khóa Không Keo
+            </div>
+<div class="absolute inset-0 bg-inverse-surface/25 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
+<span class="px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-ui text-label-ui font-semibold flex items-center gap-1.5 shadow-md scale-95 group-hover:scale-100 transition-transform">
+<span class="material-symbols-outlined text-[18px] text-primary">arrow_forward</span> Xem Chi Tiết
+              </span>
+</div>
+</div>
+<div class="pt-2.5 px-1.5 flex items-center justify-between shrink-0">
+<div class="truncate pr-2">
+<h3 class="font-label-ui text-label-ui font-semibold text-on-surface truncate group-hover:text-primary transition-colors">Hộp Gối Uốn Cong (Pillow)</h3>
+<p class="font-cad-dimension text-cad-dimension text-outline">160 × 100 × 35 mm</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-cad-spec-micro text-cad-spec-micro text-on-surface-variant shrink-0">Kraft 280g</span>
+</div>
+</article>
+</div>
+</div>
+<!-- 2. EXPANDED MINIMALIST DETAIL VIEW (Clean Product Details & Specifications Table List inspired by Images 2 & 3) -->
+<div class="hidden absolute inset-0 w-full h-full bg-surface-container-lowest rounded-3xl shadow-[0_20px_50px_rgba(26,54,43,0.08)] overflow-hidden flex flex-row items-stretch border border-outline-variant/30 z-30 transition-all duration-500 ease-out" id="project-detail-view">
+<!-- LEFT HERO IMAGE CARD: Full height packaging visualization -->
+<div class="relative w-[38%] md:w-[36%] lg:w-[34%] h-full shrink-0 bg-surface-container-low overflow-hidden group">
+<img alt="Project Hero" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" id="detail-hero-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTMoKr2_3HLh0ARaxWmirMivEkZs2brmL1RFcnALAoomRnDav5hSANXKEwnn1PNPLPOvAfKjC_DD0Xi7EhHGP7RbV2n382sXE_So4kuQyzBPWDdm_Uu26p72OTKU0JLLYwZAxht67EVyfVAOS1BK3mOjFNC05VJ_366HLiGozPHjuxMtB-6eHMw2RsnfAoXK_q7cK2PyyHfhXvCuGerb9Y2xf2KZ7oZfKBx7HdCEiJVJ5XGDHScAeCWA">
+<!-- Badges over image -->
+<div class="absolute top-4 left-4 flex flex-col gap-1.5">
+<span class="px-3 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-secondary font-cad-spec-micro text-cad-spec-micro font-semibold shadow-sm flex items-center gap-1" id="detail-hero-badge">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> 100/100 Pass
+          </span>
+<span class="px-3 py-1 rounded-full bg-inverse-surface/80 text-inverse-on-surface backdrop-blur-md font-cad-spec-micro text-cad-spec-micro font-medium shadow-sm" id="detail-hero-cat">
+            Hộp Nam Châm Nắp Gập
+          </span>
+</div>
+<!-- Switchers at bottom of image -->
+<div class="absolute bottom-4 left-4 right-4 flex items-center justify-between p-2 rounded-2xl bg-surface-container-lowest/80 backdrop-blur-md shadow-md">
+<button class="w-8 h-8 rounded-xl bg-surface hover:bg-surface-container flex items-center justify-center text-on-surface transition-colors cursor-pointer" onclick="prevProject()" title="Dự án trước" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+<span class="font-cad-dimension text-cad-dimension text-outline font-medium" id="detail-project-counter">01 / 04</span>
+<button class="w-8 h-8 rounded-xl bg-surface hover:bg-surface-container flex items-center justify-center text-on-surface transition-colors cursor-pointer" onclick="nextProject()" title="Dự án kế tiếp" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- RIGHT CONTENT PANEL: Product Details & Specifications Key-Value Table Card & Single Action Button -->
+<div class="flex-1 h-full bg-surface-container-lowest flex flex-col justify-between p-5 md:p-6 lg:p-7 relative overflow-hidden">
+<!-- Close / Return Button -->
+<button class="absolute top-4 right-5 group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-all cursor-pointer shadow-xs z-10" onclick="closeProjectDetail()" type="button">
+<span class="font-label-ui text-[12px] font-semibold">Thu gọn</span>
+<span class="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">close</span>
+</button>
+<!-- Scrollable / Neat Specifications Table Container -->
+<div class="w-full max-w-2xl flex-1 flex flex-col justify-center pr-2">
+<!-- Main Project Headline -->
+<div class="mb-3">
+<h1 class="font-headline-md text-[22px] lg:text-[26px] font-bold text-on-surface tracking-tight leading-tight mb-1" id="detail-title">
+            Âm Dương Nam Châm Luxury
+          </h1>
+<p class="font-body-sm text-[13px] text-on-surface-variant line-clamp-2" id="detail-description">
+            Khuôn hộp cứng cao cấp nắp gập liền đáy tích hợp cặp nam châm vĩnh cửu âm bên trong. Được tùy biến theo tiêu chuẩn bao bì quà tặng sang trọng, gia cố cấn rãnh chính xác 0.5mm cho máy bế định hình tự động.
+          </p>
+</div>
+<!-- Clean Specifications Card inspired by Image 3 -->
+<div class="w-full bg-surface-container-lowest border border-outline-variant/40 rounded-3xl p-4 lg:p-5 shadow-[0_8px_24px_rgba(0,0,0,0.03)] backdrop-blur-sm">
+<!-- Table Header with icon -->
+<div class="flex items-center gap-2 pb-3 border-b border-surface-container-highest">
+<span class="material-symbols-outlined text-primary text-[20px]">table_rows</span>
+<h2 class="font-label-ui text-label-ui font-bold text-on-surface tracking-tight">
+              Thông Số Kỹ Thuật &amp; Chi Tiết Bao Bì
+            </h2>
+</div>
+<!-- Clean Key-Value Table List with subtle dividers -->
+<div class="divide-y divide-surface-container-highest/70 text-body-sm text-[13px]">
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Mã tiêu chuẩn</span>
+<span class="text-on-surface font-semibold text-right" id="spec-standard">ECMA / FEFCO Caliper Accurate</span>
+</div>
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Kích thước phủ bì</span>
+<span class="text-on-surface font-semibold text-right font-cad-dimension" id="spec-dims">220 × 150 × 80 mm (Dung sai gân cấn ±0.5mm)</span>
+</div>
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Kết cấu hộp</span>
+<span class="text-on-surface font-semibold text-right" id="spec-structure">Nắp gập liền đáy tích hợp cặp nam châm vĩnh cửu âm</span>
+</div>
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Chất liệu giấy</span>
+<span class="text-on-surface font-semibold text-right" id="spec-material">Greyboard 1200g bồi giấy mỹ thuật Cotton 150g</span>
+</div>
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Xử lý bề mặt</span>
+<span class="text-on-surface font-semibold text-right" id="spec-coating">Cán mờ Soft-Touch &amp; Ép kim nhũ vàng 24K</span>
+</div>
+<div class="py-2.5 flex items-start justify-between gap-4">
+<span class="text-on-surface-variant font-medium shrink-0 w-36">Trạng thái kiểm định</span>
+<span class="text-secondary font-semibold text-right flex items-center justify-end gap-1" id="spec-pass">
+<span class="material-symbols-outlined text-[15px]">check_circle</span> 100/100 Pass (FitCheck™ Auto-Tolerance)
+                </span>
+</div>
+<div class="py-2 flex items-start justify-between gap-4 text-cad-spec-micro text-outline">
+<span class="font-medium shrink-0 w-36">Ngày tạo &amp; Lịch sử</span>
+<span class="text-right" id="spec-history">10/10/2026 • Chỉnh sửa gần nhất: Hôm nay, 14:20</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Single Action Button Footer: ONLY 1 ACTION BUTTON ("Tiếp tục chỉnh sửa") -->
+<div class="w-full max-w-2xl pt-3 flex items-center justify-between gap-4">
+<button class="w-full py-3.5 px-6 rounded-full bg-[#133020] hover:bg-[#0c2015] active:scale-[0.99] text-white font-label-ui text-label-ui font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer group" onclick="alert('Đang mở dự án ' + currentProjectData().name + ' trong môi trường WrapFit CAD Studio...')">
+<span>Tiếp tục chỉnh sửa</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Floating Action Dock (Apple Minimal dock bar) -->
+<footer class="relative z-10 w-full flex items-center justify-between p-2 rounded-2xl bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_12px_32px_-6px_rgba(26,54,43,0.08)] shrink-0">
+<!-- Mascot Bé Gói AI micro assistant -->
+<div class="flex items-center gap-space-sm pl-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center shrink-0 overflow-hidden shadow-xs cursor-pointer hover:rotate-6 transition-transform">
+<img alt="Bé Gói WrapFit" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VdrWO3W5_MV0PrIXYrxNITSALb-kCmX1fUn1TJsk76_YuIcG835mZV0kGj-1tPeaQ53gWLPuwLipFgnPws1fvIUeGKRabm-xGmeM3b2OwogysxDZ6vciXRc6eWcpJG9VT8nHVHVzz2uQdQ1key47s7zl2e1o--EgQWPGogvUOriYlBkgFn1iQllDvF5oysAe7v5JIVa9-bR-kLo3dV_j0_JDTD8c7MS5_U9RjQe340pbklv6MXkZMkYDNI">
+</div>
+<div class="hidden sm:flex flex-col">
+<span class="font-label-ui text-label-ui font-bold text-on-surface flex items-center gap-1">
+          Bé Gói AI
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</span>
+<span class="font-cad-dimension text-cad-dimension text-outline truncate max-w-xs md:max-w-md" id="dock-helper-text">Dung sai nếp cấn 0.5mm &amp; mép dán 15mm đều chuẩn.</span>
+</div>
+</div>
+<!-- Quick Tools & Main CTA -->
+<div class="flex items-center gap-2">
+<button class="px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-ui text-label-ui transition-colors hidden sm:flex items-center gap-1.5 shadow-xs" onclick="toggleDetailPreview()" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span id="toggle-view-btn-text">Xem Dạng Tối Giản</span>
+</button>
+<button class="px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-ui text-label-ui transition-colors hidden md:flex items-center gap-1.5 shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+        Auto-FitCheck
+      </button>
+<button class="inline-flex items-center gap-2 px-space-md py-2.5 bg-primary-container text-on-primary font-label-ui text-label-ui font-semibold rounded-xl shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 active:scale-95 whitespace-nowrap" onclick="alert('Đang mở trình tạo mẫu bao bì khuôn hộp mới...')" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+        Tạo Dự Án Hộp Mới
+      </button>
+</div>
+</footer>
+</main>
+<script>
+// Project Data Store with Complete Detailed Specifications
+const projectsData = [
+  {
+    name: "Âm Dương Nam Châm Luxury",
+    category: "Hộp Nam Châm Nắp Gập",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCTMoKr2_3HLh0ARaxWmirMivEkZs2brmL1RFcnALAoomRnDav5hSANXKEwnn1PNPLPOvAfKjC_DD0Xi7EhHGP7RbV2n382sXE_So4kuQyzBPWDdm_Uu26p72OTKU0JLLYwZAxht67EVyfVAOS1BK3mOjFNC05VJ_366HLiGozPHjuxMtB-6eHMw2RsnfAoXK_q7cK2PyyHfhXvCuGerb9Y2xf2KZ7oZfKBx7HdCEiJVJ5XGDHScAeCWA",
+    standard: "ECMA / FEFCO Caliper Accurate",
+    dims: "220 × 150 × 80 mm (Dung sai gân cấn ±0.5mm)",
+    structure: "Nắp gập liền đáy tích hợp cặp nam châm vĩnh cửu âm",
+    material: "Greyboard 1200g bồi giấy mỹ thuật Cotton 150g",
+    coating: "Cán mờ Soft-Touch & Ép kim nhũ vàng 24K",
+    passRate: "100/100 Pass (FitCheck™ Auto-Tolerance)",
+    history: "10/10/2026 • Chỉnh sửa gần nhất: Hôm nay, 14:20",
+    description: "Khuôn hộp cứng cao cấp nắp gập liền đáy tích hợp cặp nam châm vĩnh cửu âm bên trong. Được tùy biến theo tiêu chuẩn bao bì quà tặng sang trọng, gia cố cấn rãnh chính xác 0.5mm cho máy bế định hình tự động.",
+    tolerance: "± 0.5 mm"
+  },
+  {
+    name: "Bao Diêm Ngăn Kéo (Drawer)",
+    category: "Hộp Trượt Kéo Tiện Ích",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA2HJqElXCLIKcz8jSNaJL4s_GNmfL02M6rDXzQdapFMTE3p43bAVgHX5dIz2aOgDaDDxfNAohwnPKyGDkalZKMHBobhYWAZ7tJ4LD5APWzlOTAAtQe9-4Uz3gqhxUoJtbsr5b2Db802NY39hK9WmzDh6QjnZ0uOV-qf51gbulsESsARfRtA8F-QP9kA3uYgZgryCDdlC5Fq5MKF193A-EGi1Z_F5OmzYSJoDdwjc8OqFJc75zVdh-WiQ",
+    standard: "FEFCO 0501 Drawer Slip Case",
+    dims: "180 × 110 × 45 mm (Bù cấn rãnh trượt 1.2mm)",
+    structure: "Khay trượt 2 đầu có dây ruy-băng kéo ngầm",
+    material: "Kraft Nhật 300gsm mộc mạc đanh sợi",
+    coating: "In Offset 1 màu đen đậu nành & Cấn gân chuẩn",
+    passRate: "Chỉnh dao bế 96% (FitCheck™ Flagged)",
+    history: "08/10/2026 • Chỉnh sửa gần nhất: Hôm nay, 11:05",
+    description: "Thiết kế dạng bao diêm trượt kéo hai đầu thuận tiện, sử dụng chất liệu Kraft Nhật đanh xơ với khả năng kháng ẩm tốt. Đã tính bù nếp cấn 1.2mm ở mép trượt vỏ bao ngoài.",
+    tolerance: "± 0.5 mm"
+  },
+  {
+    name: "Túi Đứng Kraft Khóa Zip",
+    category: "Bao Bì Mỹ Phẩm & Trà",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCv0OX7nlcoDJen55XGz7Frk4DLmJUuYfeCkWElrWuuxh0_fp3hOALWeiZt5vcEALaWYvWrAASoIn-MkyOdoM4yH-cfP-DXZIANkgxgpMg6dFdeAnmG31Iwfta2po_T777Z0iAbYGxqHF8oHmnGfEwIJ0cwxpmkFsv6rC8mHSo3u7umBfKHjqjtXFYQvr-ahXHnsfdiGtnQ9NuoT3AwcRT4s3LN1kPP6Cw27keaJMXcWDUvVIgEenpgUw",
+    standard: "FDA & ISO 22000 Barrier Spec",
+    dims: "375 × 202 mm (Đáy oval bung nở 60mm)",
+    structure: "Túi đáy đứng zipper nhiệt hàn 3 biên cản khí",
+    material: "Màng ghép 3 lớp tráng bạc Kraft/AL/PE",
+    coating: "Phủ Soft-Touch mờ mịn ch��ng ẩm & Van thở",
+    passRate: "100/100 Pass (FitCheck™ Auto-Tolerance)",
+    history: "05/10/2026 • Chỉnh sửa gần nhất: Hôm qua, 18:45",
+    description: "Túi zipper đáy đứng oval chịu lực, cấu trúc 3 lớp bảo quản tối ưu cho dòng sản phẩm mỹ phẩm organic và thảo mộc khô. Khóa zip nhiệt hàn kín tiêu chuẩn xuất khẩu.",
+    tolerance: "± 0.2 mm"
+  },
+  {
+    name: "Hộp Gối Uốn Cong (Pillow)",
+    category: "Hộp Quà Tự Nhiên Không Keo",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAFn09XDziyAdkKWFT-5dnYPar1NMkvkpiV2uH0PBDQAqgCKBtDLrfAhxyv21AK1EJQh1wycUxoXKrVwk8LgNCEg1fiuWrUSUfz_JUMA13slUWuEXxPkj-9cL71EkS_4bvRO9atDupR_JoTwHjwNu6qbvKbPNoVD2aCB18d5mmCSotytL1IOHDxIuarWFn5kl_ff0uXxZCfqy3TKbZvFh2p0OW2Y5O8QO3KeJMtxpf8ygvnQby0EkZMiA",
+    standard: "ECMA Curve Flap Zero-Glue",
+    dims: "160 × 100 × 35 mm (Bán kính cong R50)",
+    structure: "Khóa ngàm gấp hai đầu uốn cong không dùng keo",
+    material: "Kraft Nâu 280g tái chế 100% Eco-grade",
+    coating: "Dập nổi logo chìm & Đường cấn cơ học",
+    passRate: "100/100 Pass (FitCheck™ Auto-Tolerance)",
+    history: "01/10/2026 • Chỉnh sửa gần nhất: 03/10/2026",
+    description: "Đường cấn cong elip mềm mại khép miệng bằng ng��m gập cơ học không cần keo dán. Tiết kiệm 40% thời gian đóng gói và thân thiện 100% với môi trường.",
+    tolerance: "± 0.4 mm"
+  }
+];
+
+let currentIdx = 0;
+let isDetailOpen = false;
+
+function currentProjectData() {
+  return projectsData[currentIdx];
+}
+
+function updateDetailContent(idx) {
+  currentIdx = idx;
+  const item = projectsData[currentIdx];
+  if (!item) return;
+
+  document.getElementById('detail-hero-img').src = item.image;
+  document.getElementById('detail-hero-cat').textContent = item.category;
+  document.getElementById('detail-hero-badge').innerHTML = '<span class="material-symbols-outlined text-[13px]">check_circle</span> ' + item.passRate.split(' ')[0] + ' ' + (item.passRate.split(' ')[1] || '');
+  
+  document.getElementById('detail-title').textContent = item.name;
+  document.getElementById('detail-description').textContent = item.description;
+  
+  // Table Key-Values
+  document.getElementById('spec-standard').textContent = item.standard;
+  document.getElementById('spec-dims').textContent = item.dims;
+  document.getElementById('spec-structure').textContent = item.structure;
+  document.getElementById('spec-material').textContent = item.material;
+  document.getElementById('spec-coating').textContent = item.coating;
+  document.getElementById('spec-pass').innerHTML = '<span class="material-symbols-outlined text-[15px]">check_circle</span> ' + item.passRate;
+  document.getElementById('spec-history').textContent = item.history;
+
+  document.getElementById('detail-project-counter').textContent = `0${currentIdx + 1} / 0${projectsData.length}`;
+  document.getElementById('dock-helper-text').textContent = `${item.name}: Dung sai ${item.tolerance} & ${item.coating}.`;
+}
+
+function openProjectDetail(index = 0) {
+  updateDetailContent(index);
+  const carousel = document.getElementById('gallery-carousel-view');
+  const detail = document.getElementById('project-detail-view');
+  const toggleBtnText = document.getElementById('toggle-view-btn-text');
+
+  carousel.classList.add('opacity-0', 'pointer-events-none');
+  setTimeout(() => {
+    carousel.classList.add('hidden');
+    detail.classList.remove('hidden');
+    detail.classList.add('flex');
+    isDetailOpen = true;
+    if (toggleBtnText) toggleBtnText.textContent = "Xem Dạng Lưới";
+  }, 200);
+}
+
+function closeProjectDetail() {
+  const carousel = document.getElementById('gallery-carousel-view');
+  const detail = document.getElementById('project-detail-view');
+  const toggleBtnText = document.getElementById('toggle-view-btn-text');
+
+  detail.classList.add('hidden');
+  detail.classList.remove('flex');
+  carousel.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+  isDetailOpen = false;
+  if (toggleBtnText) toggleBtnText.textContent = "Xem Dạng Tối Giản";
+}
+
+function toggleDetailPreview() {
+  if (isDetailOpen) {
+    closeProjectDetail();
+  } else {
+    openProjectDetail(currentIdx);
+  }
+}
+
+function prevProject() {
+  let prev = currentIdx - 1;
+  if (prev < 0) prev = projectsData.length - 1;
+  updateDetailContent(prev);
+}
+
+function nextProject() {
+  let next = currentIdx + 1;
+  if (next >= projectsData.length) next = 0;
+  updateDetailContent(next);
+}
+
+// Keyboard shortcuts for minimal design navigation (Left/Right to switch, Esc to close)
+window.addEventListener('keydown', (e) => {
+  if (isDetailOpen) {
+    if (e.key === 'Escape') closeProjectDetail();
+    if (e.key === 'ArrowLeft') prevProject();
+    if (e.key === 'ArrowRight') nextProject();
+  }
+});
+</script>
+</body></html>

@@ -1,0 +1,744 @@
+<!DOCTYPE html><html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>WrapFit® Precision Studio - Interactive 3D Workbench</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              ivory: '#FAF8F5',
+              dark: '#121517',
+              accent: '#133020',
+              gold: '#cbb06d',
+              border: 'rgba(0, 0, 0, 0.08)'
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'SF Mono', 'ui-monospace', 'Menlo', 'monospace'],
+            sans: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'sans-serif'],
+            serif: ['Playfair Display', 'Georgia', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Typography styles -->
+<style data-purpose="typography">
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+<!-- Spatial UI & Glassmorphism styles -->
+<style data-purpose="spatial-ui">
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 16px 40px -8px rgba(28, 25, 23, 0.06), 0 2px 6px -1px rgba(28, 25, 23, 0.04);
+    }
+
+    .pulse-dot {
+      animation: techPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes techPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .35; transform: scale(0.85); }
+    }
+  </style>
+<!-- Three.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-[#FAF8F5] text-[#1e1b19] antialiased relative">
+<!-- BEGIN: ThreeJsSceneContainer -->
+<!-- 3D Interactive Workbench scene filling 100vw and 100vh with centered camera, smooth continuous folds, and precision mat -->
+<div class="absolute inset-0 w-full h-full bg-[#FAF8F5] z-0 cursor-grab active:cursor-grabbing overflow-hidden" id="webgl-canvas-container">
+<canvas class="w-full h-full block" id="three-canvas" width="1600" height="160" style="width: 1280px; height: 128px;"></canvas>
+</div>
+<!-- END: ThreeJsSceneContainer -->
+<!-- BEGIN: FloatingCenterCTA -->
+<!-- Floating frosted-glass center button seamlessly blending into the background -->
+<main class="absolute inset-0 z-10 flex flex-col items-center justify-end pb-28 sm:pb-32 pointer-events-none" data-purpose="primary-conversion">
+<div class="pointer-events-auto text-center flex flex-col items-center group">
+<!-- Spatial Start Button -->
+<a class="glass-panel relative flex items-center gap-3.5 px-6 py-3 rounded-full hover:scale-105 active:scale-95 transition-all duration-300 group-hover:border-neutral-300 group-hover:shadow-xl" data-purpose="experience-launch-trigger" href="#launch-studio" id="btn-launch-studio">
+<span class="flex h-2.5 w-2.5 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+</span>
+<span class="text-sm font-medium tracking-tight text-neutral-900 group-hover:text-black">
+          Bắt đầu trải nghiệm →
+        </span>
+<span class="text-[11px] font-mono-tech text-neutral-600 bg-neutral-200/60 group-hover:bg-neutral-900 group-hover:text-white px-2.5 py-0.5 rounded-full transition-colors">
+          3D Studio
+        </span>
+</a>
+<!-- Subtitle description -->
+<p class="mt-2.5 text-xs text-neutral-500 font-mono-tech tracking-wide transition-opacity duration-300">
+        Khảo sát mô hình dieline CAD, dụng cụ gia công và vật mẫu chuẩn xác
+      </p>
+</div>
+</main>
+<!-- END: FloatingCenterCTA -->
+<!-- BEGIN: BottomStageSwitcherDock -->
+<!-- 3-stage interactive packaging step selector dock -->
+<footer class="absolute bottom-6 inset-x-0 z-20 flex justify-center px-4 pointer-events-none" data-purpose="controller-dock">
+<div class="pointer-events-auto flex items-center p-1.5 rounded-full glass-panel border border-white/80 shadow-2xl space-x-1 sm:space-x-2">
+<!-- Stage 1 Button -->
+<button class="stage-button active flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono-tech transition-all duration-200 bg-[#121517] text-white shadow-sm" data-stage="1" data-view="kit" id="stage-tab-1" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-white opacity-90"></span>
+<span>[Kit] Phôi CAD &amp; Khung Dao</span>
+</button>
+<!-- Stage 2 Button -->
+<button class="stage-button flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono-tech transition-all duration-200 text-neutral-700 hover:text-black hover:bg-black/5" data-stage="2" data-view="fold" id="stage-tab-2" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+<span>[Drive] Nếp Gấp Mô Phỏng</span>
+</button>
+<!-- Stage 3 Button -->
+<button class="stage-button flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono-tech transition-all duration-200 text-neutral-700 hover:text-black hover:bg-black/5" data-stage="3" data-view="studio" id="stage-tab-3" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+<span>[Studio] Đóng Gói Thành Phẩm</span>
+</button>
+</div>
+</footer>
+<!-- END: BottomStageSwitcherDock -->
+<!-- BEGIN: ThreeJsWorkbenchImplementation -->
+<script data-purpose="threejs-workbench-setup">
+    (function initThreeWorkbench() {
+      const canvas = document.getElementById('three-canvas');
+      if (!canvas || typeof THREE === 'undefined') return;
+
+      // Renderer with high precision and pixel ratio
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      renderer.setPixelRatio(pixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      if (renderer.outputEncoding) {
+        renderer.outputEncoding = THREE.sRGBEncoding;
+      }
+
+      // Scene with soft warm alabaster / ivory studio atmosphere
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xFAF8F5);
+
+      // Camera setup: Centered and looking directly at origin (0, 0, 0)
+      const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+      let targetCamX = 0, targetCamY = 24, targetCamZ = 38;
+      camera.position.set(targetCamX, targetCamY, targetCamZ);
+      camera.lookAt(0, 0, 0);
+
+      // Workbench group precisely centered
+      const workbenchGroup = new THREE.Group();
+      workbenchGroup.position.set(0, 0, 0);
+      scene.add(workbenchGroup);
+
+      // Balanced Lighting
+      const ambientLight = new THREE.AmbientLight(0xfff8f0, 0.95);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfffdf6, 1.35);
+      dirLight.position.set(16, 32, 22);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.near = 1;
+      dirLight.shadow.camera.far = 100;
+      dirLight.shadow.camera.left = -22;
+      dirLight.shadow.camera.right = 22;
+      dirLight.shadow.camera.top = 22;
+      dirLight.shadow.camera.bottom = -22;
+      dirLight.shadow.bias = -0.0004;
+      dirLight.shadow.radius = 2.5;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0xd9e7ff, 0.5);
+      fillLight.position.set(-20, 16, -14);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.PointLight(0xffeacc, 0.4, 60);
+      rimLight.position.set(0, 12, -18);
+      scene.add(rimLight);
+
+      // Studio soft floor shadow
+      const shadowPlaneGeo = new THREE.PlaneGeometry(120, 120);
+      const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.11 });
+      const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.position.y = -0.02;
+      shadowPlane.receiveShadow = true;
+      workbenchGroup.add(shadowPlane);
+
+      // --- 1. Crisp Procedural High-Res Cutting Mat ---
+      const matCanvas = document.createElement('canvas');
+      matCanvas.width = 2048;
+      matCanvas.height = 2048;
+      const ctx = matCanvas.getContext('2d');
+
+      // Deep studio emerald workbench
+      ctx.fillStyle = '#1e342a';
+      ctx.fillRect(0, 0, 2048, 2048);
+
+      // Ultra fine grid (16px)
+      ctx.strokeStyle = 'rgba(48, 82, 67, 0.55)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 2048; i += 32) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0); ctx.lineTo(i, 2048); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i); ctx.lineTo(2048, i); ctx.stroke();
+      }
+
+      // Major metric grid (128px)
+      ctx.strokeStyle = 'rgba(84, 138, 114, 0.7)';
+      ctx.lineWidth = 2.5;
+      for (let i = 0; i <= 2048; i += 128) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0); ctx.lineTo(i, 2048); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i); ctx.lineTo(2048, i); ctx.stroke();
+      }
+
+      // Diagonal angle guidelines
+      ctx.strokeStyle = 'rgba(102, 160, 134, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(200, 200); ctx.lineTo(1848, 1848);
+      ctx.moveTo(1848, 200); ctx.lineTo(200, 1848);
+      ctx.stroke();
+
+      // Precision CAD typography on cutting mat
+      ctx.font = '600 28px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(132, 192, 164, 0.85)';
+      ctx.fillText('WRAPFIT® PRECISION CUTTING MAT  •  FEFCO-400 CAD BENCH', 120, 130);
+      ctx.font = '500 24px "JetBrains Mono", monospace';
+      ctx.fillText('SCALE 1:1 METRIC DIELINE SPECIFICATION', 120, 1940);
+      ctx.fillText('ISO 216 / DIN A3+ [450 × 320 mm]', 1460, 1940);
+
+      // Ruler graduation markings on mat edges
+      ctx.fillStyle = 'rgba(132, 192, 164, 0.65)';
+      for (let x = 128; x <= 1920; x += 32) {
+        const h = (x % 128 === 0) ? 24 : 12;
+        ctx.fillRect(x - 1, 40, 2, h);
+        ctx.fillRect(x - 1, 2008 - h, 2, h);
+      }
+
+      const matTexture = new THREE.CanvasTexture(matCanvas);
+      matTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      matTexture.generateMipmaps = true;
+
+      const matGeo = new THREE.BoxGeometry(34, 0.4, 23);
+      const matEdgeMat = new THREE.MeshStandardMaterial({ color: 0x15251e, roughness: 0.8 });
+      const matTopMat = new THREE.MeshStandardMaterial({
+        map: matTexture,
+        roughness: 0.48,
+        metalness: 0.05
+      });
+      const matMaterials = [matEdgeMat, matEdgeMat, matTopMat, matEdgeMat, matEdgeMat, matEdgeMat];
+      const cuttingMat = new THREE.Mesh(matGeo, matMaterials);
+      cuttingMat.position.set(0, 0, 0);
+      cuttingMat.receiveShadow = true;
+      workbenchGroup.add(cuttingMat);
+
+      // --- 2. Parametric Dynamic Folding Box (Continuous Hierarchical Hinges) ---
+      // Kraft material with realistic micro-roughness
+      const kraftMat = new THREE.MeshStandardMaterial({
+        color: 0xdfcbaf,
+        roughness: 0.78,
+        metalness: 0.04
+      });
+
+      const creaseMat = new THREE.MeshStandardMaterial({
+        color: 0xd4bf9f,
+        roughness: 0.82
+      });
+
+      // Box Dimensions: 10 width, 6 height, 7 depth
+      const W = 10;
+      const H = 5.6;
+      const D = 7;
+      const TH = 0.12;
+
+      // Master folding rig centered directly at origin
+      const foldRig = new THREE.Group();
+      foldRig.position.set(0, 0.2 + TH / 2, 0);
+      workbenchGroup.add(foldRig);
+
+      // Base bottom floor
+      const basePanel = new THREE.Mesh(new THREE.BoxGeometry(W, TH, D), kraftMat);
+      basePanel.castShadow = true;
+      basePanel.receiveShadow = true;
+      foldRig.add(basePanel);
+
+      // Subtle cyan/magenta dieline guide lines on base
+      const dielineCutMat = new THREE.LineBasicMaterial({ color: 0x00bcd4, linewidth: 1.5, transparent: true, opacity: 0.65 });
+      const dielineCreaseMat = new THREE.LineBasicMaterial({ color: 0xe91e63, linewidth: 1.5, transparent: true, opacity: 0.65 });
+      
+      const dielineWire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(new THREE.BoxGeometry(W, TH + 0.01, D)),
+        dielineCreaseMat
+      );
+      basePanel.add(dielineWire);
+
+      // HINGE LEFT (Rotates around Z-axis at x = -W/2)
+      const hingeLeft = new THREE.Group();
+      hingeLeft.position.set(-W / 2, 0, 0);
+      foldRig.add(hingeLeft);
+
+      const panelLeft = new THREE.Mesh(new THREE.BoxGeometry(H, TH, D), creaseMat);
+      panelLeft.position.set(-H / 2, 0, 0);
+      panelLeft.castShadow = true;
+      panelLeft.receiveShadow = true;
+      hingeLeft.add(panelLeft);
+
+      // Sub-flap left dust-flap
+      const hingeLeftSub = new THREE.Group();
+      hingeLeftSub.position.set(-H, 0, 0);
+      hingeLeft.add(hingeLeftSub);
+      const flapLeftSub = new THREE.Mesh(new THREE.BoxGeometry(1.6, TH * 0.9, D * 0.85), creaseMat);
+      flapLeftSub.position.set(-0.8, 0, 0);
+      flapLeftSub.castShadow = true;
+      hingeLeftSub.add(flapLeftSub);
+
+      // HINGE RIGHT (Rotates around Z-axis at x = W/2)
+      const hingeRight = new THREE.Group();
+      hingeRight.position.set(W / 2, 0, 0);
+      foldRig.add(hingeRight);
+
+      const panelRight = new THREE.Mesh(new THREE.BoxGeometry(H, TH, D), creaseMat);
+      panelRight.position.set(H / 2, 0, 0);
+      panelRight.castShadow = true;
+      panelRight.receiveShadow = true;
+      hingeRight.add(panelRight);
+
+      const hingeRightSub = new THREE.Group();
+      hingeRightSub.position.set(H, 0, 0);
+      hingeRight.add(hingeRightSub);
+      const flapRightSub = new THREE.Mesh(new THREE.BoxGeometry(1.6, TH * 0.9, D * 0.85), creaseMat);
+      flapRightSub.position.set(0.8, 0, 0);
+      flapRightSub.castShadow = true;
+      hingeRightSub.add(flapRightSub);
+
+      // HINGE FRONT (Rotates around X-axis at z = D/2)
+      const hingeFront = new THREE.Group();
+      hingeFront.position.set(0, 0, D / 2);
+      foldRig.add(hingeFront);
+
+      const panelFront = new THREE.Mesh(new THREE.BoxGeometry(W, TH, H), creaseMat);
+      panelFront.position.set(0, 0, H / 2);
+      panelFront.castShadow = true;
+      panelFront.receiveShadow = true;
+      hingeFront.add(panelFront);
+
+      // HINGE BACK & TOP LID (Rotates around X-axis at z = -D/2)
+      const hingeBack = new THREE.Group();
+      hingeBack.position.set(0, 0, -D / 2);
+      foldRig.add(hingeBack);
+
+      const panelBack = new THREE.Mesh(new THREE.BoxGeometry(W, TH, H), creaseMat);
+      panelBack.position.set(0, 0, -H / 2);
+      panelBack.castShadow = true;
+      panelBack.receiveShadow = true;
+      hingeBack.add(panelBack);
+
+      // LID HINGE attached to top of back panel
+      const hingeLid = new THREE.Group();
+      hingeLid.position.set(0, 0, -H);
+      hingeBack.add(hingeLid);
+
+      const panelLid = new THREE.Mesh(new THREE.BoxGeometry(W, TH, D), kraftMat);
+      panelLid.position.set(0, 0, -D / 2);
+      panelLid.castShadow = true;
+      panelLid.receiveShadow = true;
+      hingeLid.add(panelLid);
+
+      // Top Lid Tuck Flap
+      const hingeTuck = new THREE.Group();
+      hingeTuck.position.set(0, 0, -D);
+      hingeLid.add(hingeTuck);
+
+      const panelTuck = new THREE.Mesh(new THREE.BoxGeometry(W * 0.96, TH * 0.9, 1.8), creaseMat);
+      panelTuck.position.set(0, 0, -0.9);
+      panelTuck.castShadow = true;
+      hingeTuck.add(panelTuck);
+
+      // --- 3. Stage 3 Luxury Matte Packaging Finish with Embossed Gold Stamp ---
+      const luxuryMat = new THREE.MeshStandardMaterial({
+        color: 0x15181a,
+        roughness: 0.28,
+        metalness: 0.15
+      });
+
+      // Gold Foil Stamp Texture
+      const goldCanvas = document.createElement('canvas');
+      goldCanvas.width = 512;
+      goldCanvas.height = 512;
+      const gctx = goldCanvas.getContext('2d');
+      gctx.fillStyle = '#222';
+      gctx.fillRect(0, 0, 512, 512);
+      gctx.strokeStyle = '#dfc17b';
+      gctx.lineWidth = 6;
+      gctx.strokeRect(40, 40, 432, 432);
+      gctx.fillStyle = '#edd18d';
+      gctx.font = 'bold 36px "Playfair Display", serif';
+      gctx.textAlign = 'center';
+      gctx.fillText('WRAPFIT®', 256, 230);
+      gctx.font = '500 18px "JetBrains Mono", monospace';
+      gctx.fillText('PRECISION ATELIER', 256, 280);
+      gctx.fillText('N° 03 / 500', 256, 320);
+
+      const goldTexture = new THREE.CanvasTexture(goldCanvas);
+
+      // Belly Band Sleeve for Stage 3
+      const sleeveGeo = new THREE.BoxGeometry(W + 0.18, H + 0.18, 3.8);
+      const sleeveMat = new THREE.MeshStandardMaterial({
+        color: 0xd4ba78,
+        metalness: 0.85,
+        roughness: 0.28,
+        bumpMap: goldTexture,
+        bumpScale: 0.05
+      });
+      const sleeveMesh = new THREE.Mesh(sleeveGeo, sleeveMat);
+      sleeveMesh.position.set(0, H / 2, 0);
+      sleeveMesh.castShadow = true;
+      sleeveMesh.visible = false;
+      foldRig.add(sleeveMesh);
+
+      // --- 4. High-Fidelity Workbench Craft Tools ---
+      // Metal materials
+      const stainlessSteelMat = new THREE.MeshStandardMaterial({
+        color: 0xdadada,
+        metalness: 0.95,
+        roughness: 0.2
+      });
+
+      const brassMat = new THREE.MeshStandardMaterial({
+        color: 0xcca74a,
+        metalness: 0.9,
+        roughness: 0.25
+      });
+
+      // Precision Stainless Steel Ruler (with procedural tick lines)
+      const rulerGeo = new THREE.BoxGeometry(24, 0.08, 2.0);
+      const ruler = new THREE.Mesh(rulerGeo, stainlessSteelMat);
+      ruler.position.set(-1.5, 0.24, 9.4);
+      ruler.rotation.y = 0.035;
+      ruler.castShadow = true;
+      workbenchGroup.add(ruler);
+
+      // Ergonomic Aluminum Precision Scalpel Knife
+      const knifeHandleGeo = new THREE.CylinderGeometry(0.35, 0.42, 11, 24);
+      const knifeHandle = new THREE.Mesh(knifeHandleGeo, stainlessSteelMat);
+      knifeHandle.rotation.z = Math.PI / 2.3;
+      knifeHandle.rotation.y = -0.3;
+      knifeHandle.position.set(13.5, 0.35, -2);
+      knifeHandle.castShadow = true;
+      workbenchGroup.add(knifeHandle);
+
+      const knifeBladeGeo = new THREE.ConeGeometry(0.45, 2.2, 4);
+      const knifeBlade = new THREE.Mesh(knifeBladeGeo, brassMat);
+      knifeBlade.position.set(8.8, 0.35, 0.2);
+      knifeBlade.rotation.z = Math.PI / 2.1;
+      knifeBlade.rotation.y = -Math.PI / 4;
+      knifeBlade.castShadow = true;
+      workbenchGroup.add(knifeBlade);
+
+      // Satin Paint Can
+      const paintCanGeo = new THREE.CylinderGeometry(1.6, 1.6, 3.2, 32);
+      const paintCanMat = new THREE.MeshStandardMaterial({
+        color: 0x1f2326,
+        roughness: 0.3,
+        metalness: 0.7
+      });
+      const paintCan = new THREE.Mesh(paintCanGeo, paintCanMat);
+      paintCan.position.set(-13.8, 1.6, -5.2);
+      paintCan.castShadow = true;
+      workbenchGroup.add(paintCan);
+
+      const lidRimGeo = new THREE.TorusGeometry(1.5, 0.12, 16, 32);
+      const lidRim = new THREE.Mesh(lidRimGeo, brassMat);
+      lidRim.rotation.x = Math.PI / 2;
+      lidRim.position.set(-13.8, 3.2, -5.2);
+      workbenchGroup.add(lidRim);
+
+      // --- 5. Continuous Parametric Folding Animation System ---
+      // foldProgress: 0.0 (Stage 1: completely flat dieline) -> 0.5 (Stage 2: halfway folded walls) -> 1.0 (Stage 3: fully closed & finished)
+      let currentFoldProgress = 0.0;
+      let targetFoldProgress = 0.0;
+      let currentStage = 1;
+
+      function updateHinges(p) {
+        // Stage 1 -> 2: Side walls fold up from 0 to 90 degrees (Math.PI / 2)
+        // Stage 2 -> 3: Top lid closes and tuck flap locks in
+        const wallProgress = Math.min(Math.max(p * 2, 0), 1); // 0 to 1 as p goes 0 to 0.5
+        const lidProgress = Math.min(Math.max((p - 0.5) * 2, 0), 1);  // 0 to 1 as p goes 0.5 to 1.0
+
+        // Smooth cubic easing
+        const easeWall = wallProgress * wallProgress * (3 - 2 * wallProgress);
+        const easeLid = lidProgress * lidProgress * (3 - 2 * lidProgress);
+
+        const targetWallAngle = (Math.PI / 2) * easeWall;
+
+        // Fold left and right panels up
+        hingeLeft.rotation.z = -targetWallAngle;
+        hingeRight.rotation.z = targetWallAngle;
+
+        // Sub dust-flaps fold inwards
+        hingeLeftSub.rotation.z = -targetWallAngle * 0.9;
+        hingeRightSub.rotation.z = targetWallAngle * 0.9;
+
+        // Fold front and back panels up
+        hingeFront.rotation.x = -targetWallAngle;
+        hingeBack.rotation.x = targetWallAngle;
+
+        // Top lid folds over the top
+        const targetLidAngle = (Math.PI / 2) * easeLid;
+        hingeLid.rotation.x = targetLidAngle;
+
+        // Tuck flap folds downwards into slot
+        const targetTuckAngle = (Math.PI / 2) * easeLid;
+        hingeTuck.rotation.x = targetTuckAngle;
+
+        // Dynamic transition to luxury materials in stage 3
+        if (p > 0.7) {
+          const tMat = (p - 0.7) / 0.3;
+          sleeveMesh.visible = true;
+          sleeveMesh.scale.set(1, 1, Math.min(1, tMat * 1.05));
+          dielineWire.visible = false;
+        } else {
+          sleeveMesh.visible = false;
+          dielineWire.visible = true;
+        }
+
+        // Color interpolation for craft paper to crisp finish
+        if (p > 0.85) {
+          basePanel.material = luxuryMat;
+          panelLeft.material = luxuryMat;
+          panelRight.material = luxuryMat;
+          panelFront.material = luxuryMat;
+          panelBack.material = luxuryMat;
+          panelLid.material = luxuryMat;
+        } else {
+          basePanel.material = kraftMat;
+          panelLeft.material = creaseMat;
+          panelRight.material = creaseMat;
+          panelFront.material = creaseMat;
+          panelBack.material = creaseMat;
+          panelLid.material = kraftMat;
+        }
+      }
+
+      // Smooth Orbit Drag Controls with Inertia
+      let isDragging = false;
+      let prevMouseX = 0;
+      let prevMouseY = 0;
+      let targetRotationY = 0;
+      let targetRotationX = 0;
+      let currentRotationY = 0;
+      let currentRotationX = 0;
+
+      window.addEventListener('mousedown', (e) => {
+        if (e.target.closest('header, main, footer, button, a')) return;
+        isDragging = true;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - prevMouseX;
+        const deltaY = e.clientY - prevMouseY;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+
+        targetRotationY += deltaX * 0.007;
+        targetRotationX += deltaY * 0.005;
+        targetRotationX = Math.max(-0.45, Math.min(0.75, targetRotationX));
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      // Touch orbit support
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1 && !e.target.closest('header, main, footer, button, a')) {
+          isDragging = true;
+          prevMouseX = e.touches[0].clientX;
+          prevMouseY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const deltaX = e.touches[0].clientX - prevMouseX;
+        const deltaY = e.touches[0].clientY - prevMouseY;
+        prevMouseX = e.touches[0].clientX;
+        prevMouseY = e.touches[0].clientY;
+
+        targetRotationY += deltaX * 0.008;
+        targetRotationX += deltaY * 0.006;
+        targetRotationX = Math.max(-0.45, Math.min(0.75, targetRotationX));
+      }, { passive: true });
+
+      window.addEventListener('touchend', () => { isDragging = false; });
+
+      // Global API to trigger stage transitions seamlessly
+      window.setWorkbenchStage = function(stageNum) {
+        currentStage = stageNum;
+        if (stageNum === 1) {
+          targetFoldProgress = 0.0;
+          targetRotationY = 0.0;
+          targetRotationX = 0.0;
+        } else if (stageNum === 2) {
+          targetFoldProgress = 0.52;
+          targetRotationY = Math.PI * 0.18;
+          targetRotationX = 0.15;
+        } else if (stageNum === 3) {
+          targetFoldProgress = 1.0;
+          targetRotationY = Math.PI * 0.32;
+          targetRotationX = 0.12;
+        }
+      };
+
+      window.setWorkbenchCameraView = function(viewType) {
+        if (viewType === 'kit') {
+          targetRotationX = 0;
+          targetRotationY = 0;
+        } else if (viewType === 'fold') {
+          targetRotationX = 0.15;
+          targetRotationY = 0.22;
+        } else if (viewType === 'studio') {
+          targetRotationX = 0.12;
+          targetRotationY = 0.45;
+        }
+      };
+
+      // Responsive Resize Handler with Crisp Resolution
+      function onWindowResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        camera.lookAt(0, 0, 0);
+        renderer.setSize(width, height);
+      }
+      window.addEventListener('resize', onWindowResize);
+
+      // Render Loop
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        // Smooth Lerp for Continuous Folding Progress
+        currentFoldProgress += (targetFoldProgress - currentFoldProgress) * 0.065;
+        updateHinges(currentFoldProgress);
+
+        // Responsive Damped Orbit Rotation
+        currentRotationY += (targetRotationY - currentRotationY) * 0.085;
+        currentRotationX += (targetRotationX - currentRotationX) * 0.085;
+
+        workbenchGroup.rotation.y = currentRotationY;
+        workbenchGroup.rotation.x = currentRotationX;
+
+        // Subtle organic float in Stage 3
+        if (currentFoldProgress > 0.9) {
+          const t = clock.getElapsedTime() * 1.6;
+          foldRig.position.y = (0.2 + TH / 2) + Math.sin(t) * 0.14;
+        } else {
+          foldRig.position.y += ((0.2 + TH / 2) - foldRig.position.y) * 0.1;
+        }
+
+        // Camera consistently stays framed on center target (0, 0, 0)
+        camera.lookAt(0, 0, 0);
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    })();
+  </script>
+<!-- END: ThreeJsWorkbenchImplementation -->
+<!-- BEGIN: InteractiveHandlersScript -->
+<!-- JavaScript glue bridging Stage buttons to smooth folding progression -->
+<script data-purpose="dock-stage-interaction">
+    document.addEventListener('DOMContentLoaded', () => {
+      let activeIndex = 1;
+      const stageButtons = document.querySelectorAll('.stage-button');
+      const launchBtn = document.getElementById('btn-launch-studio');
+
+      function updateButtonStates(targetIndex) {
+        activeIndex = targetIndex;
+        stageButtons.forEach((btn) => {
+          const stage = parseInt(btn.getAttribute('data-stage'), 10);
+          const dot = btn.querySelector('span:first-child');
+          
+          if (stage === activeIndex) {
+            btn.className = 'stage-button active flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono-tech transition-all duration-200 bg-[#121517] text-white shadow-sm';
+            if (dot) {
+              dot.className = 'w-1.5 h-1.5 rounded-full bg-white opacity-90';
+            }
+          } else {
+            btn.className = 'stage-button flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono-tech transition-all duration-200 text-neutral-700 hover:text-black hover:bg-black/5';
+            if (dot) {
+              dot.className = 'w-1.5 h-1.5 rounded-full bg-neutral-400';
+            }
+          }
+        });
+      }
+
+      function switchStage(stageNum, viewType) {
+        if (typeof window.setWorkbenchStage === 'function') {
+          window.setWorkbenchStage(stageNum);
+        }
+        if (typeof window.setWorkbenchCameraView === 'function' && viewType) {
+          window.setWorkbenchCameraView(viewType);
+        }
+        updateButtonStates(stageNum);
+      }
+
+      stageButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const stage = parseInt(btn.getAttribute('data-stage'), 10);
+          const view = btn.getAttribute('data-view');
+          switchStage(stage, view);
+        });
+      });
+
+      // Keyboard numerical shortcuts (1, 2, 3)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === '1') switchStage(1, 'kit');
+        else if (e.key === '2') switchStage(2, 'fold');
+        else if (e.key === '3') switchStage(3, 'studio');
+      });
+
+      // Launch Experience trigger transitions smoothly to Stage 3
+      if (launchBtn) {
+        launchBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          switchStage(3, 'studio');
+          launchBtn.classList.add('scale-95');
+          setTimeout(() => {
+            launchBtn.classList.remove('scale-95');
+          }, 200);
+        });
+      }
+    });
+  </script>
+<!-- END: InteractiveHandlersScript -->
+</body></html>

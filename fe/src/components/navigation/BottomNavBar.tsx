@@ -5,19 +5,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, FolderHeart, Box, Sparkles } from "lucide-react";
 import { GoiMascot } from "../mascot/GoiMascot";
-import { tactileAudio } from "@/lib/audio/tactileAudio";
+
+import { STITCH_ROUTES } from "@/features/stitch/routes.generated";
 import { triggerSquishyClick } from "@/lib/animation/animeUtils";
 
 export const BottomNavBar: React.FC = () => {
   const pathname = usePathname();
 
   const handleTabClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
-    tactileAudio.playSquishyTap();
+    
     if (typeof window !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(15);
     }
     triggerSquishyClick(e.currentTarget);
   };
+
+  // Stitch screens ship their own docks and bottom bars.
+  if (STITCH_ROUTES.includes(pathname)) return null;
 
   const isHome = pathname === "/";
   const isDashboard = pathname.startsWith("/dashboard");

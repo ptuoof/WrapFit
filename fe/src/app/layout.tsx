@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   variable: "--font-jetbrains",
   display: "swap",
   weight: ["400", "500", "700"],

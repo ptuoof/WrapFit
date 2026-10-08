@@ -1,0 +1,710 @@
+<!DOCTYPE html><html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="web_standard" name="shell-type">
+<title>WrapFit Studio - Thư Viện Vật Liệu PBR</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e5ded9; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #d0c7c0; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: #133020;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "forest": "#133020",
+            "forest-light": "#1e4730",
+            "surface-brand": "#fff8f5",
+            "card-bg": "rgba(255, 255, 255, 0.75)",
+            "on-surface": "#1e1b19",
+            "cad-dim": "#737686",
+            "gold-accent": "#d4af37"
+          },
+          fontFamily: {
+            "display-hero": ["Playfair Display", "serif"],
+            "headline-lg": ["Playfair Display", "serif"],
+            "headline-md": ["Playfair Display", "serif"],
+            "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-md": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "label-ui": ["Plus Jakarta Sans", "sans-serif"],
+            "cad-dimension": ["JetBrains Mono", "monospace"],
+            "cad-spec-micro": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#fbf7f4] font-body-md text-[#1e1b19] antialiased min-h-screen selection:bg-amber-100 flex flex-col">
+<!-- Top Apple Floating Header Navigation -->
+<header class="fixed top-3.5 inset-x-0 z-50 flex justify-center px-4">
+<div class="h-12 w-full max-w-7xl px-4 py-2 flex items-center justify-between rounded-full bg-white/80 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-stone-200/60">
+<!-- Logo Bé Gói / WrapFit -->
+<div class="flex items-center gap-3 pl-1">
+<a class="flex items-center gap-2.5 group" href="#">
+<span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#133020] text-white font-headline-sm text-[13px] font-semibold tracking-wider group-hover:scale-105 transition-transform">W</span>
+<span class="font-label-ui text-[13px] font-bold text-[#1e1b19] tracking-widest uppercase">WrapFit</span>
+</a>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-1 p-1 bg-stone-100/70 rounded-full border border-stone-200/50">
+<a aria-current="page" class="px-4 py-1 transition-all bg-white text-stone-900 rounded-full font-label-ui text-[12px] font-semibold shadow-xs" href="#">Materials</a>
+<a class="px-3.5 py-1 text-stone-600 font-label-ui text-[12px] transition-colors hover:text-stone-900" href="#">Unboxing AR</a>
+<a class="px-3.5 py-1 text-stone-600 font-label-ui text-[12px] transition-colors hover:text-stone-900" href="#">CAD Die-cut</a>
+<a class="px-3.5 py-1 text-stone-600 font-label-ui text-[12px] transition-colors hover:text-stone-900" href="#">Pricing</a>
+</nav>
+<!-- Engine Status & Profile -->
+<div class="flex items-center gap-3 pr-1">
+<div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 font-cad-dimension text-[11px] font-medium border border-emerald-200/60">
+<span class="w-1.5 h-1.5 rounded-full bg-[#133020] animate-pulse"></span>
+<span>PBR v4.2 Active</span>
+</div>
+<img alt="User profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-xs" src="https://lh3.googleusercontent.com/aida/AEtjO1X6oJ4ACXAVlPDN9o1BlL3Y2QdLN2edWtzKaZxLzcPEaBpd36fVEJ4oADSHwrVyezM8dSyUQa56UPitqwftKOxBtBwVoibUFbC592IIKHk8ByOCNN31Ft4QUzPJqke7G0ZD4AxfAaySWaYA3Gdr4RUsjxH1P7FKOscixxSkqSY2vqhNgy8FxiihqeNaXDD67PlLgrxEggJz-AjYgpB2uINOcteLAPp8d5Iup5ZztwpLxkhAoVZrpxic5IcwVUfy5GOAAGngitQpBQs">
+</div>
+</div>
+</header>
+<!-- Main Content Layout (Carvia-Style 3-Column Luxury Dashboard) -->
+<main class="relative z-10 w-full pt-16 pb-6 px-3 sm:px-5 lg:px-6 max-w-[1560px] mx-auto flex-1 flex flex-col gap-4">
+<!-- Compact Top Header Bar -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 backdrop-blur-xl border border-stone-200/60 rounded-2xl px-5 py-3 shadow-xs">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-xl bg-[#133020] text-white flex items-center justify-center font-bold text-sm shadow-xs">PBR</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-headline-sm text-lg lg:text-xl font-bold text-stone-900 tracking-tight">Thư Viện Vật Liệu Cao Cấp</h1>
+<span class="font-cad-dimension text-[11px] font-semibold tracking-wider uppercase text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">PBR Matrix</span>
+</div>
+<p class="font-body-sm text-stone-500 text-[12px]">Bản đồ vân chất liệu quang học chuẩn bao bì in ấn cao cấp.</p>
+</div>
+</div>
+<!-- Quick Metrics Inline Badges -->
+<div class="flex items-center gap-2 font-cad-dimension text-[11px]">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/60 font-semibold shadow-2xs">
+<span class="material-symbols-outlined text-[15px] text-amber-700">layers</span>
+<span>48 Mẫu Khả Dụng</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/60 font-semibold shadow-2xs">
+<span class="material-symbols-outlined text-[15px] text-emerald-700">verified</span>
+<span>99.8% Chuẩn Phản Quang</span>
+</div>
+<div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-stone-200/60 font-semibold shadow-2xs">
+<span class="material-symbols-outlined text-[15px]">eco</span>
+<span>FSC 100% Eco</span>
+</div>
+</div>
+</div>
+<!-- 3-COLUMN UNIFIED BALANCED GRID -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1">
+<!-- CỘT 1: BỘ LỌC TINH GỌN (3 COLS) -->
+<aside class="lg:col-span-3 bg-white/80 backdrop-blur-2xl rounded-3xl p-4 border border-stone-200/70 shadow-xs flex flex-col justify-between gap-3">
+<div class="flex flex-col gap-3.5">
+<!-- Title & Reset -->
+<div class="flex items-center justify-between pb-2 border-b border-stone-100">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[#133020] text-[18px]">tune</span>
+<h2 class="font-headline-sm text-[14px] font-bold text-stone-900">Bộ Lọc Tuyển Chọn</h2>
+</div>
+<button class="text-[11px] font-medium text-stone-500 hover:text-stone-900 transition-colors" id="resetFiltersBtn">Đặt lại</button>
+</div>
+<!-- Compact Search Pill -->
+<div class="relative flex items-center bg-stone-100/80 border border-stone-200/60 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-[#133020]/20 focus-within:bg-white transition-all">
+<span class="material-symbols-outlined text-[16px] text-stone-400 mr-2">search</span>
+<input class="bg-transparent border-none text-[12px] text-stone-800 placeholder-stone-400 focus:outline-none w-full p-0" id="searchInput" placeholder="Tìm kiếm vật liệu, mã..." type="text">
+<kbd class="font-cad-dimension text-[9px] text-stone-400 bg-white px-1.5 py-0.5 rounded border border-stone-200">⌘K</kbd>
+</div>
+<!-- Segmented Finish Pills -->
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">Phân Loại Hoàn Thiện</label>
+<div class="grid grid-cols-2 gap-1 p-1 bg-stone-100/90 rounded-xl border border-stone-200/50">
+<button class="finish-pill active-pill py-1.5 px-2 rounded-lg text-[11px] font-semibold text-stone-900 bg-white shadow-2xs transition-all text-center" data-category="all">Tất Cả</button>
+<button class="finish-pill py-1.5 px-2 rounded-lg text-[11px] font-medium text-stone-500 hover:text-stone-900 transition-all text-center" data-category="foil">Kim Loại / Foil</button>
+<button class="finish-pill py-1.5 px-2 rounded-lg text-[11px] font-medium text-stone-500 hover:text-stone-900 transition-all text-center" data-category="effect">Hiệu Ứng Bề Mặt</button>
+<button class="finish-pill py-1.5 px-2 rounded-lg text-[11px] font-medium text-stone-500 hover:text-stone-900 transition-all text-center" data-category="cad">Giấy CAD</button>
+</div>
+</div>
+<!-- GSM Slider -->
+<div class="bg-stone-50/70 p-3 rounded-2xl border border-stone-200/60">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Định Lượng Phôi Giấy</span>
+<span class="font-cad-dimension text-[11px] font-bold text-[#133020] bg-white px-2 py-0.5 rounded shadow-2xs" id="gsmValue">180 - 450 gsm</span>
+</div>
+<input class="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-[#133020]" id="gsmSlider" max="600" min="180" step="10" type="range" value="450">
+<div class="flex justify-between font-cad-dimension text-[9px] text-stone-400 mt-1">
+<span>180 gsm</span>
+<span>350 gsm</span>
+<span>600 gsm</span>
+</div>
+</div>
+<!-- Surface Finish Tags -->
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">Bề Mặt Hoàn Thiện (Shader)</label>
+<div class="flex flex-wrap gap-1.5 text-[11px]">
+<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200/60 font-medium cursor-pointer hover:bg-emerald-100/50">Gương Gloss</span>
+<span class="px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 border border-stone-200 font-medium cursor-pointer hover:bg-stone-200">Mờ Satin</span>
+<span class="px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 border border-stone-200 font-medium cursor-pointer hover:bg-stone-200">Nhám Sand</span>
+<span class="px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 border border-stone-200 font-medium cursor-pointer hover:bg-stone-200">Dập Nổi 3D</span>
+</div>
+</div>
+<!-- Nhà Cung Ứng Chuẩn PBR -->
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">Nhà Cung Ứng Đối Tác</label>
+<div class="space-y-1.5 text-[12px]">
+<label class="flex items-center justify-between p-2 rounded-xl bg-stone-50/80 border border-stone-200/40 cursor-pointer text-stone-700 hover:text-stone-900 hover:bg-stone-100">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded border-stone-300 text-[#133020] focus:ring-[#133020] h-3.5 w-3.5" type="checkbox">
+<span class="font-medium text-[11px]">Kurz PBR Đức</span>
+</div>
+<span class="font-cad-dimension text-[10px] text-stone-400 font-bold">18 mẫu</span>
+</label>
+<label class="flex items-center justify-between p-2 rounded-xl bg-stone-50/80 border border-stone-200/40 cursor-pointer text-stone-700 hover:text-stone-900 hover:bg-stone-100">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded border-stone-300 text-[#133020] focus:ring-[#133020] h-3.5 w-3.5" type="checkbox">
+<span class="font-medium text-[11px]">FSC Recycled Organic</span>
+</div>
+<span class="font-cad-dimension text-[10px] text-stone-400 font-bold">14 mẫu</span>
+</label>
+<label class="flex items-center justify-between p-2 rounded-xl bg-stone-50/80 border border-stone-200/40 cursor-pointer text-stone-700 hover:text-stone-900 hover:bg-stone-100">
+<div class="flex items-center gap-2">
+<input class="rounded border-stone-300 text-[#133020] focus:ring-[#133020] h-3.5 w-3.5" type="checkbox">
+<span class="font-medium text-[11px]">Fedrigoni Specialty</span>
+</div>
+<span class="font-cad-dimension text-[10px] text-stone-400 font-bold">9 mẫu</span>
+</label>
+</div>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-center gap-2 text-amber-900 text-[11px]">
+<span class="material-symbols-outlined text-[16px] text-amber-700">info</span>
+<span>Shader tự động đồng bộ thời gian thực với Render Engine CAD.</span>
+</div>
+</aside>
+<!-- CỘT 2: LƯỚI CARD VẬT LIỆU 3D PBR (6 COLS) -->
+<section class="lg:col-span-6 flex flex-col gap-3">
+<!-- Sub-header bar -->
+<div class="bg-white/80 backdrop-blur-2xl rounded-2xl px-4 py-2.5 border border-stone-200/70 shadow-xs flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#133020]"></span>
+<span class="text-[13px] font-bold text-stone-900">Danh Mục Vân Mẫu PBR</span>
+<span class="font-cad-dimension text-[11px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full font-medium">Hiển thị 8 / 48</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-medium text-stone-400">Xem dạng:</span>
+<div class="flex items-center p-0.5 bg-stone-100 rounded-lg border border-stone-200/60">
+<button class="p-1 rounded bg-white text-stone-800 shadow-2xs" title="Lưới"><span class="material-symbols-outlined text-[15px] block">grid_view</span></button>
+<button class="p-1 rounded text-stone-400 hover:text-stone-700" title="Danh sách"><span class="material-symbols-outlined text-[15px] block">view_list</span></button>
+</div>
+</div>
+</div>
+<!-- Grid 8 cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1" id="materialsGrid">
+<!-- CARD 1 -->
+<div class="material-card active-card group relative bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] ring-2 ring-[#d4af37] cursor-pointer flex flex-col justify-between" data-badge="24K Luxury Kurz" data-cat="foil" data-code="#FOIL-01-GOLD" data-die="Vector 100% K Overprint" data-gradient="radial-gradient(circle at 32% 28%, #fff8dc 0%, #fde047 24%, #eab308 50%, #a16207 80%, #451a03 100%)" data-id="mat-1" data-name="Ép Kim Vàng 24K Luxury" data-paper="Ivory 300g / Bristol 350g" data-rating="5.0" data-reviews="42 bản vẽ" data-spec="Dày +0.03 mm • Phản quang 99%" data-temp="135°C (Khuôn Đồng)" data-thickness="0.12 mm">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">24K Luxury</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-amber-200/40 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(180,120,20,0.32)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 32% 28%, #fff8dc 0%, #fde047 24%, #eab308 50%, #a16207 80%, #451a03 100%);">
+<div class="absolute top-1.5 left-2 w-7 h-3.5 rounded-full bg-white/80 blur-[1.5px] -rotate-30"></div>
+<div class="absolute bottom-2 right-2.5 w-6 h-6 rounded-full bg-amber-300/40 blur-sm"></div>
+<div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent mix-blend-overlay"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">5.0</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#FOIL-01</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Ép Kim Vàng 24K</h3>
+<p class="text-[10px] text-stone-500">Phản quang gương kim hoàn</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-[#133020] bg-stone-100 px-1.5 py-0.5 rounded">PBR Kurz</span>
+</div>
+</div>
+<!-- CARD 2 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="Hologram Security" data-cat="foil" data-code="#HOLO-04-PRISM" data-die="Vector 100% K" data-gradient="radial-gradient(circle at 35% 25%, #ffffff 0%, #d8b4fe 22%, #67e8f9 48%, #f472b6 74%, #475569 100%)" data-id="mat-2" data-name="Foil Bạc Ánh Xà Cừ (Hologram)" data-paper="Couche 300g / Metallized" data-rating="4.9" data-reviews="29 bản vẽ" data-spec="Dày +0.04 mm • Đa phổ 7 màu" data-temp="125°C - 130°C" data-thickness="0.14 mm">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">Hologram Prism</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-cyan-200/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(100,100,180,0.22)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 25%, #ffffff 0%, #d8b4fe 22%, #67e8f9 48%, #f472b6 74%, #475569 100%);">
+<div class="absolute inset-0 bg-gradient-to-tr from-cyan-400 via-fuchsia-300 to-amber-200 opacity-60 mix-blend-color-dodge"></div>
+<div class="absolute top-1.5 left-2 w-7 h-3 rounded-full bg-white/90 blur-[1.5px] -rotate-25"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.9</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#HOLO-04</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Foil Bạc Xà Cừ</h3>
+<p class="text-[10px] text-stone-500">Khúc xạ đa phổ bảo an</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">Prism 7-Col</span>
+</div>
+</div>
+<!-- CARD 3 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="Rose Gold Satin" data-cat="foil" data-code="#ROSE-02-SATIN" data-die="Vector sắc nét" data-gradient="radial-gradient(circle at 35% 25%, #fff1f2 0%, #fda4af 25%, #e11d48 55%, #881337 85%, #4c0519 100%)" data-id="mat-3" data-name="Đồng Đỏ Rose Gold (Metallic)" data-paper="Mỹ thuật đen / Kraft nâu" data-rating="4.8" data-reviews="38 bản vẽ" data-spec="Dày +0.03 mm • Ánh kim đồng hồng" data-temp="130°C" data-thickness="0.11 mm">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200">Rose Gold</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-rose-200/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(180,80,70,0.25)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 25%, #fff1f2 0%, #fda4af 25%, #e11d48 55%, #881337 85%, #4c0519 100%);">
+<div class="absolute top-1.5 left-2 w-7 h-3 rounded-full bg-white/85 blur-[1.5px] -rotate-25"></div>
+<div class="absolute bottom-2 right-2.5 w-6 h-6 rounded-full bg-rose-300/40 blur-sm"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.8</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#ROSE-02</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Đồng Đỏ Rose Gold</h3>
+<p class="text-[10px] text-stone-500">Ánh kim đồng hồng satin</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">Metallic</span>
+</div>
+</div>
+<!-- CARD 4 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="Deep Copper Die" data-cat="effect" data-code="#DEB-02-DEPTH" data-die="File âm bản đúc khuôn" data-gradient="radial-gradient(circle at 35% 30%, #f5f5f4 0%, #e7e5e4 40%, #a8a29e 75%, #57534e 100%)" data-id="mat-4" data-name="Dập Chìm Deboss 3D" data-paper="Giấy sợi Cotton / Bìa cứng 2mm" data-rating="4.9" data-reviews="51 bản vẽ" data-spec="Độ sâu -0.65 mm • Khắc nhiệt khuôn đồng" data-temp="140°C - 150°C" data-thickness="Độ sâu 0.65 mm">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-stone-100 text-stone-800 border border-stone-300">Deboss 3D</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-stone-300/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 30%, #f5f5f4 0%, #e7e5e4 40%, #a8a29e 75%, #57534e 100%);">
+<div class="absolute inset-3 rounded-full border border-stone-400/50 shadow-inner bg-stone-300/30"></div>
+<div class="absolute top-1.5 left-2 w-6 h-2.5 rounded-full bg-white/70 blur-[1.5px] -rotate-25"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.9</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#DEB-02</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Dập Chìm Deboss 3D</h3>
+<p class="text-[10px] text-stone-500">Khắc khuôn đồng chiều sâu</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">Depth 3D</span>
+</div>
+</div>
+<!-- CARD 5 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="99 GU Mirror Gloss" data-cat="effect" data-code="#UV-08-MIRROR" data-die="Film tráng bóng định vị" data-gradient="radial-gradient(circle at 35% 25%, #ffffff 0%, #cbd5e1 28%, #475569 65%, #0f172a 100%)" data-id="mat-5" data-name="Spot UV Định Hình Bóng" data-paper="Mọi bề mặt màng mờ" data-rating="4.7" data-reviews="64 bản vẽ" data-spec="Độ nổi +1.20 mm • Độ bóng gương 99 GU" data-temp="Sấy tia cực tím UV" data-thickness="1.20 mm Polymer">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">Spot UV Gloss</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-slate-300/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(15,23,42,0.25)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 25%, #ffffff 0%, #cbd5e1 28%, #475569 65%, #0f172a 100%);">
+<div class="absolute inset-2 rounded-full border border-white/40 bg-white/5"></div>
+<div class="absolute top-1.5 left-2 w-6 h-2.5 rounded-full bg-white blur-[1px] -rotate-25"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.7</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#UV-08</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Spot UV Định Hình</h3>
+<p class="text-[10px] text-stone-500">Vec-ni nổi polymer 99 GU</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">High Gloss</span>
+</div>
+</div>
+<!-- CARD 6 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="Velvet Touch Anti-scratch" data-cat="effect" data-code="#SFT-05-MATTE" data-die="Cán phủ tràn viền" data-gradient="radial-gradient(circle at 35% 30%, #e2e8f0 0%, #94a3b8 35%, #334155 70%, #0f172a 100%)" data-id="mat-6" data-name="Màng Mờ Soft-touch (Velvet)" data-paper="Giấy Ivory, Couche, Bristol" data-rating="5.0" data-reviews="56 bản vẽ" data-spec="Màng nhiệt 22 micron • Siêu mịn tay" data-temp="105°C Ép nhiệt cán màng" data-thickness="22 micron">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">Velvet Touch</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-emerald-100/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(20,40,30,0.18)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 30%, #e2e8f0 0%, #94a3b8 35%, #334155 70%, #0f172a 100%);">
+<div class="absolute top-2 left-2.5 w-8 h-4 rounded-full bg-white/30 blur-[3px] -rotate-20"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">5.0</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#SFT-05</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Màng Mờ Soft-touch</h3>
+<p class="text-[10px] text-stone-500">Cảm giác nhung lụa chống trầy</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">Soft-touch</span>
+</div>
+</div>
+<!-- CARD 7 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="350 GSM • FBB Board" data-cat="cad" data-code="#BST-35-WHITE" data-die="Bế cấn nếp gấp 0.8mm" data-gradient="radial-gradient(circle at 35% 30%, #ffffff 0%, #ebe7e0 45%, #c9c3ba 80%, #9e978d 100%)" data-id="mat-7" data-name="Giấy Bristol Mịn FBB 350gsm" data-paper="Folding Box Board (FBB)" data-rating="4.8" data-reviews="73 bản vẽ" data-spec="Định lượng 350 GSM • Caliper 0.42 mm" data-temp="In Offset UV 6 màu" data-thickness="0.42 mm Caliper">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">350 GSM • FBB</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-slate-200/40 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(100,116,139,0.18)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ebe7e0 45%, #c9c3ba 80%, #9e978d 100%);">
+<div class="absolute top-1.5 left-2 w-6 h-3 rounded-full bg-white/70 blur-[1.5px] -rotate-20"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.8</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#BST-35</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Bristol Mịn FBB</h3>
+<p class="text-[10px] text-stone-500">Mặt láng 2 lớp tráng phủ</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">FBB 350g</span>
+</div>
+</div>
+<!-- CARD 8 -->
+<div class="material-card group relative bg-white/80 hover:bg-white rounded-2xl p-3.5 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-stone-200/70 cursor-pointer flex flex-col justify-between" data-badge="280 GSM • FSC Organic" data-cat="cad" data-code="#KRF-28-ECO" data-die="Dao bế xén gân tự nhiên" data-gradient="radial-gradient(circle at 35% 30%, #d4a373 0%, #b07d4b 45%, #6f4e2f 85%, #462c16 100%)" data-id="mat-8" data-name="Giấy Kraft Eco Nâu Mộc FSC" data-paper="Sợi xenluloza tái sinh 100%" data-rating="4.9" data-reviews="88 bản vẽ" data-spec="Định lượng 280 GSM • Caliper 0.38 mm" data-temp="In Flexo / Kéo Lụa Nước" data-thickness="0.38 mm Caliper">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">280 GSM • FSC</span>
+<button class="favorite-btn w-6 h-6 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-stone-50" title="Yêu thích">
+<span class="material-symbols-outlined text-[16px]">favorite</span>
+</button>
+</div>
+<div class="relative w-full h-28 flex items-center justify-center my-0.5">
+<div class="absolute w-24 h-24 rounded-full bg-amber-200/30 blur-lg group-hover:scale-110 transition-transform"></div>
+<div class="relative w-20 h-20 rounded-full shadow-[0_12px_28px_rgba(70,44,22,0.22)] group-hover:scale-105 transition-all overflow-hidden" style="background: radial-gradient(circle at 35% 30%, #d4a373 0%, #b07d4b 45%, #6f4e2f 85%, #462c16 100%);">
+<div class="absolute inset-0 opacity-30 mix-blend-overlay bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:4px_4px]"></div>
+<div class="absolute top-1.5 left-2 w-6 h-2.5 rounded-full bg-white/25 blur-[2px] -rotate-25"></div>
+</div>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1">
+<span class="text-amber-500 text-[11px]">★</span>
+<span class="text-[11px] font-bold text-stone-800">4.9</span>
+<span class="text-[10px] text-stone-400 font-cad-dimension">#KRF-28</span>
+</div>
+<h3 class="font-headline-sm text-[13px] font-bold text-stone-900 group-hover:text-[#133020] transition-colors leading-snug">Giấy Kraft Nâu Mộc</h3>
+<p class="text-[10px] text-stone-500">Sợi hữu cơ tái chế cao cấp</p>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded">Eco Kraft</span>
+</div>
+</div>
+</div>
+</section>
+<!-- CỘT 3: SPEC INSPECTOR (3 COLS) -->
+<aside class="lg:col-span-3 bg-white/90 backdrop-blur-2xl rounded-3xl p-4 border border-stone-200/70 shadow-xs flex flex-col justify-between gap-3">
+<div class="flex flex-col gap-3">
+<!-- Inspector Header -->
+<div class="flex items-center justify-between pb-2 border-b border-stone-100">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-[#133020]">deployed_code</span>
+<span class="font-headline-sm text-[13px] font-bold text-stone-900">Spec Inspector</span>
+</div>
+<span class="font-cad-dimension text-[10px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">PBR v4.2</span>
+</div>
+<!-- Hero 3D Sphere Preview -->
+<div class="relative w-full h-36 rounded-2xl bg-gradient-to-b from-stone-50 to-stone-100/60 flex items-center justify-center overflow-hidden border border-stone-200/50">
+<div class="absolute w-28 h-28 rounded-full bg-amber-200/40 blur-xl" id="inspectorBackGlow"></div>
+<div class="relative w-24 h-24 rounded-full shadow-[0_16px_36px_rgba(180,120,20,0.35)] transition-all duration-500 overflow-hidden" id="inspectorSphere" style="background: radial-gradient(circle at 32% 28%, #fff8dc 0%, #fde047 24%, #eab308 50%, #a16207 80%, #451a03 100%);">
+<div class="absolute top-2 left-2.5 w-8 h-4 rounded-full bg-white/80 blur-[2px] -rotate-30"></div>
+<div class="absolute bottom-2 right-3 w-7 h-7 rounded-full bg-amber-300/40 blur-md"></div>
+</div>
+<span class="absolute top-2 left-2 text-[9px] font-cad-dimension font-semibold px-2 py-0.5 rounded-full bg-white/85 backdrop-blur-md text-stone-700 shadow-2xs">
+Ready 3D
+</span>
+<span class="absolute bottom-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#133020] text-white shadow-2xs" id="inspectorBadgePill">
+Đang Chọn
+</span>
+</div>
+<!-- Name & Specs Tag -->
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-[15px] font-bold text-stone-900 leading-tight" id="panelName">Ép Kim Vàng 24K Luxury</h3>
+</div>
+<div class="flex items-center justify-between mt-1">
+<div class="flex items-center gap-1.5">
+<span class="text-amber-500 text-[12px]">★</span>
+<span class="text-[11px] font-bold text-stone-800" id="panelRating">5.0</span>
+<span class="text-[10px] text-stone-400" id="panelReviews">(42 bản vẽ)</span>
+</div>
+<span class="font-cad-dimension text-[10px] font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded" id="panelCode">#FOIL-01-GOLD</span>
+</div>
+</div>
+<!-- Packaging Box Simulation Frame -->
+<div>
+<div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+<span>Mô Phỏng Hộp Quà</span>
+<span class="text-emerald-700 flex items-center gap-1 text-[9px] font-cad-dimension">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+Live Shader
+</span>
+</div>
+<div class="relative w-full h-20 rounded-xl bg-stone-900 overflow-hidden border border-stone-800 shadow-inner flex items-center justify-center p-2.5 group">
+<div class="absolute inset-0 opacity-20 bg-[linear-gradient(45deg,#222_25%,transparent_25%),linear-gradient(-45deg,#222_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#222_75%),linear-gradient(-45deg,transparent_75%,#222_75%)] [background-size:12px_12px]"></div>
+<div class="relative z-10 w-full h-full border border-stone-600/60 rounded-lg bg-stone-800/80 backdrop-blur-sm p-1.5 flex flex-col justify-between">
+<div class="flex justify-between items-center text-[9px] text-stone-400 font-cad-dimension">
+<span>DIE-LINE: LID</span>
+<span>RAYTRACING: ON</span>
+</div>
+<div class="flex items-center justify-center">
+<span class="font-headline-lg text-base text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 font-bold tracking-widest drop-shadow-[0_2px_8px_rgba(234,179,8,0.5)]">
+WRAPFIT LUXE
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CAD Spec Compact Matrix -->
+<div class="grid grid-cols-2 gap-2 text-[11px] bg-stone-50/90 p-2.5 rounded-xl border border-stone-200/60">
+<div>
+<div class="text-[9px] uppercase font-semibold text-stone-400">Độ dày hoàn thiện</div>
+<div class="font-cad-dimension text-[11px] font-bold text-stone-800" id="specThickness">0.12 mm</div>
+</div>
+<div>
+<div class="text-[9px] uppercase font-semibold text-stone-400">Nhiệt độ ép khuôn</div>
+<div class="font-cad-dimension text-[11px] font-bold text-stone-800" id="specTemp">135°C (Đồng)</div>
+</div>
+<div class="col-span-2 pt-1 border-t border-stone-200/50">
+<div class="text-[9px] uppercase font-semibold text-stone-400">Phôi giấy tương thích</div>
+<div class="font-body-sm text-[11px] font-semibold text-stone-800" id="specPaper">Ivory 300g / Bristol 350g</div>
+</div>
+<div class="col-span-2 pt-1 border-t border-stone-200/50">
+<div class="text-[9px] uppercase font-semibold text-stone-400">Chuẩn file dao bế</div>
+<div class="font-cad-dimension text-[10px] font-medium text-stone-600" id="specDie">Vector 100% K Overprint</div>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-2 pt-1">
+<button class="w-full h-11 px-3 rounded-xl bg-[#133020] hover:bg-[#1a442c] active:scale-98 text-white font-label-ui text-[12px] font-semibold transition-all flex items-center justify-center gap-2 shadow-sm" id="apply3dBtn">
+<span class="material-symbols-outlined text-[17px]">view_in_ar</span>
+<span>Áp Dụng Vào Bản Vẽ 3D</span>
+</button>
+<button class="w-full h-9 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-label-ui text-[11px] font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs" id="customizeShaderBtn">
+<span class="material-symbols-outlined text-[15px]">tune</span>
+<span>Tùy Biến Độ Nhám / Shader</span>
+</button>
+</div>
+</aside>
+</div>
+<!-- Toast Notification Popup -->
+<div class="fixed bottom-6 right-6 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-stone-900/95 text-white backdrop-blur-xl shadow-xl border border-white/10" id="toastNotification">
+<span class="material-symbols-outlined text-amber-400 text-[19px]">verified</span>
+<span class="font-body-sm text-[13px] font-medium" id="toastMessage">Đã cập nhật bảng thông số vật liệu</span>
+</div>
+</main>
+<!-- Interactive Logic for Filtering & Inspector Sync -->
+<script>
+    // State
+    let activeCardId = "mat-1";
+
+    const searchInput = document.getElementById('searchInput');
+    const finishPills = document.querySelectorAll('.finish-pill');
+    const materialCards = document.querySelectorAll('.material-card');
+    const gsmSlider = document.getElementById('gsmSlider');
+    const gsmValue = document.getElementById('gsmValue');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+
+    // Inspector Elements
+    const panelName = document.getElementById('panelName');
+    const panelRating = document.getElementById('panelRating');
+    const panelReviews = document.getElementById('panelReviews');
+    const panelCode = document.getElementById('panelCode');
+    const specThickness = document.getElementById('specThickness');
+    const specTemp = document.getElementById('specTemp');
+    const specPaper = document.getElementById('specPaper');
+    const specDie = document.getElementById('specDie');
+    const inspectorSphere = document.getElementById('inspectorSphere');
+
+    // Toast
+    const toast = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+
+    function triggerToast(text) {
+      if (!toast || !toastMessage) return;
+      toastMessage.textContent = text;
+      toast.classList.remove('opacity-0', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2400);
+    }
+
+    // Material Selection
+    function selectMaterial(card) {
+      materialCards.forEach(c => {
+        c.classList.remove('ring-2', 'ring-[#d4af37]', 'active-card', 'bg-white');
+        c.classList.add('bg-white/80');
+      });
+      card.classList.add('ring-2', 'ring-[#d4af37]', 'active-card', 'bg-white');
+      card.classList.remove('bg-white/80');
+
+      // Populate Inspector
+      panelName.textContent = card.dataset.name || "Vật Liệu Mẫu";
+      panelRating.textContent = card.dataset.rating || "5.0";
+      panelReviews.textContent = `(${card.dataset.reviews || '40 bản vẽ'})`;
+      panelCode.textContent = card.dataset.code || "#FOIL-PBR";
+      specThickness.textContent = card.dataset.thickness || "0.12 mm";
+      specTemp.textContent = card.dataset.temp || "130°C";
+      specPaper.textContent = card.dataset.paper || "Ivory / Bristol";
+      specDie.textContent = card.dataset.die || "Vector Overprint";
+
+      if (card.dataset.gradient) {
+        inspectorSphere.style.background = card.dataset.gradient;
+      }
+
+      triggerToast(`Đã chọn: ${card.dataset.name}`);
+    }
+
+    materialCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.favorite-btn')) {
+          e.stopPropagation();
+          const favIcon = e.target.closest('.favorite-btn').querySelector('.material-symbols-outlined');
+          const isFilled = favIcon.style.fontVariationSettings?.includes("'FILL' 1");
+          if (isFilled) {
+            favIcon.style.fontVariationSettings = "'FILL' 0";
+            e.target.closest('.favorite-btn').classList.remove('text-red-500');
+            e.target.closest('.favorite-btn').classList.add('text-stone-300');
+            triggerToast('Đã bỏ khỏi danh sách yêu thích');
+          } else {
+            favIcon.style.fontVariationSettings = "'FILL' 1";
+            e.target.closest('.favorite-btn').classList.add('text-red-500');
+            e.target.closest('.favorite-btn').classList.remove('text-stone-300');
+            triggerToast('Đã lưu vào bộ sưu tập mẫu');
+          }
+          return;
+        }
+        selectMaterial(card);
+      });
+    });
+
+    // Category Filter Pills
+    finishPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        finishPills.forEach(p => {
+          p.classList.remove('bg-white', 'text-stone-900', 'shadow-2xs');
+          p.classList.add('text-stone-500');
+        });
+        pill.classList.add('bg-white', 'text-stone-900', 'shadow-2xs');
+        pill.classList.remove('text-stone-500');
+
+        const cat = pill.dataset.category;
+        materialCards.forEach(card => {
+          if (cat === 'all' || card.dataset.cat === cat) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // GSM Slider
+    gsmSlider?.addEventListener('input', (e) => {
+      gsmValue.textContent = `180 - ${e.target.value} gsm`;
+    });
+
+    // Search filter
+    searchInput?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      materialCards.forEach(card => {
+        const text = (card.dataset.name + " " + card.dataset.code + " " + card.dataset.spec).toLowerCase();
+        if (text.includes(q)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+
+    // Keyboard shortcut Cmd/Ctrl + K
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput?.focus();
+      }
+    });
+
+    // Reset Filters
+    resetFiltersBtn?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      if (gsmSlider) {
+        gsmSlider.value = 450;
+        gsmValue.textContent = '180 - 450 gsm';
+      }
+      finishPills[0]?.click();
+      materialCards.forEach(card => card.style.display = 'flex');
+      triggerToast('Đã đặt lại toàn bộ bộ lọc');
+    });
+
+    // Inspector Action Buttons
+    document.getElementById('apply3dBtn')?.addEventListener('click', () => {
+      triggerToast(`Đang nạp ${panelName.textContent} vào không gian WrapFit 3D Studio...`);
+    });
+
+    document.getElementById('customizeShaderBtn')?.addEventListener('click', () => {
+      triggerToast('Mở bảng điều chỉnh thông số Shader PBR (Roughness, Metallic, Anisotropy)...');
+    });
+
+    document.getElementById('closeInspectorBtn')?.addEventListener('click', () => {
+      triggerToast('Đã thu gọn bảng chi tiết vật liệu.');
+    });
+  </script>
+</body></html>
