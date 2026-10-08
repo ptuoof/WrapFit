@@ -54,10 +54,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ### 👤 IT 1: Frontend Lead & 2D/3D Packaging Studio
 - **Trọng tâm**: Trải nghiệm thị giác, tương tác kéo thả 2D và mô phỏng 3D thời gian thực.
 - **Thư mục làm việc độc quyền**:
-  - `fe/src/components/canvas/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
-  - `fe/src/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
-  - `fe/src/app/editor/[id]/`: Trang phòng thu thiết kế (Studio workspace).
-  - `fe/src/app/page.tsx`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
+  - `fe/src/features/studio/components/canvas/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
+  - `fe/src/features/studio/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
+  - `fe/src/views/editor/studio/`: Trang phòng thu thiết kế (Studio workspace, route `/editor/[id]`).
+  - `fe/src/views/home/`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
 - **Agent Skills hỗ trợ**: `packaging-threejs-fold`, `wrapfit-design-system`, `scroll-storytelling`.
 - **Nhánh Git**: `feature/it1-editor-3d`
 

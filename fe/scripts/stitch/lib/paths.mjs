@@ -11,7 +11,8 @@ export const OVERRIDES_FILE = path.join(STITCH_DIR, 'overrides.json');
 export const ASSET_INDEX_FILE = path.join(STITCH_DIR, 'assets.json');
 
 export const APP_DIR = path.join(FE_ROOT, 'src/app');
-export const STYLES_DIR = path.join(FE_ROOT, 'src/styles/stitch');
+export const VIEWS_DIR = path.join(FE_ROOT, 'src/views');
+export const STYLES_DIR = path.join(FE_ROOT, 'src/assets/styles/stitch');
 export const SCREEN_STYLES_DIR = path.join(STYLES_DIR, 'screens');
 export const FEATURE_DIR = path.join(FE_ROOT, 'src/features/stitch');
 export const BEHAVIOR_DIR = path.join(FEATURE_DIR, 'behaviors');
@@ -29,4 +30,14 @@ export const generatedBanner = (source) =>
 export function pageFileFor(route) {
   if (route === 'not-found') return path.join(APP_DIR, 'not-found.tsx');
   return path.join(APP_DIR, route.replace(/^\//, ''), 'page.tsx');
+}
+
+/** `/admin/revenue` → `admin/revenue`; `/` → `home`; `not-found` → `not-found`. Path of the screen under `src/views`. */
+export function viewPathFor(route) {
+  return route.replace(/^\//, '') || 'home';
+}
+
+/** `/admin/revenue` → `src/views/admin/revenue/index.tsx`. */
+export function viewFileFor(route) {
+  return path.join(VIEWS_DIR, viewPathFor(route), 'index.tsx');
 }

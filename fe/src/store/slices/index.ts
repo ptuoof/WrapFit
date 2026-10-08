@@ -1,0 +1,2 @@
+/** Global store slices. */
+export {};

@@ -236,7 +236,7 @@ d:\FPT_FALL2026\EXE101\
    - Chạy được ở cả Client-side (Trình duyệt) lẫn Server-side (Node.js).
 2. **`fe/` (Frontend)**:
    - Import types, công thức toán và quy tắc FitCheck từ `@wrapfit/shared`.
-   - Giao tiếp với `be/` qua HTTP API Client (`fe/src/lib/apiClient.ts`).
+   - Giao tiếp với `be/` qua HTTP API Client (`fe/src/api/`, trên HTTP client `fe/src/services/api/`).
 3. **`be/` (Backend)**:
    - Import types, contracts và exporter engine từ `@wrapfit/shared`.
    - Phụ thuộc vào Prisma ORM, CSDL PostgreSQL, Redis và Cloud S3.

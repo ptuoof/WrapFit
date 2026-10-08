@@ -4,8 +4,9 @@
  *
  * Reads the exported screens in `stitch/source/` (listed in `stitch/screens.json`) and
  * writes, for every screen with status "converted":
- *   src/app/<route>/page.tsx                    Server Component with the screen markup
- *   src/styles/stitch/screens/<slug>.css        scoped <style> blocks + token variables
+ *   src/views/<route>/index.tsx                 Server Component with the screen markup
+ *   src/app/<route>/page.tsx                    route metadata + the view above
+ *   src/assets/styles/stitch/screens/<slug>.css scoped <style> blocks + token variables
  *   src/features/stitch/behaviors/<slug>.ts     the screen's scripts and inline handlers
  * plus the shared indexes (styles, behavior registry, theme tokens, route list).
  *
@@ -18,7 +19,7 @@ import { buildBehaviorModule } from './lib/behavior.mjs';
 import { buildScreenCss } from './lib/css.mjs';
 import { vendorFonts } from './lib/fonts.mjs';
 import { bodyToJsx, rootProps } from './lib/jsx.mjs';
-import { buildPageModule } from './lib/page.mjs';
+import { buildPageModule, buildViewModule } from './lib/page.mjs';
 import {
   BEHAVIOR_DIR,
   FEATURE_DIR,
@@ -27,6 +28,7 @@ import {
   STYLES_DIR,
   generatedBanner,
   pageFileFor,
+  viewFileFor,
 } from './lib/paths.mjs';
 import { loadScreen, readManifest, readOverrides } from './lib/source.mjs';
 import { buildTokenTheme } from './lib/tokens.mjs';
@@ -88,9 +90,10 @@ async function main() {
     );
 
     write(
-      pageFileFor(screen.route),
-      buildPageModule(screen, { jsx, rootProps: rootProps(screen.bodyAttributes, screen.slug), usesLink, hasBehavior, banner }),
+      viewFileFor(screen.route),
+      buildViewModule(screen, { jsx, rootProps: rootProps(screen.bodyAttributes, screen.slug), usesLink, hasBehavior, banner }),
     );
+    write(pageFileFor(screen.route), buildPageModule(screen, { banner }));
 
     const summary = `${screen.slug.padEnd(28)} handlers=${String(handlers.length).padStart(2)} scripts=${screen.inlineScripts.length}`;
     console.log(warnings.length ? `${summary}  ⚠ ${warnings.join('; ')}` : summary);

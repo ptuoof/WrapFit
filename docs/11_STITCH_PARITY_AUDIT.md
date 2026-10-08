@@ -48,8 +48,9 @@ fe/
 │   └── lib/                        source, assets, fonts, tokens, css, jsx, behavior, page
 ├── public/stitch/{img,fonts}/      ảnh và font tự host
 └── src/
-    ├── app/<route>/page.tsx                    GENERATED — Server Component
-    ├── styles/stitch/
+    ├── views/<route>/index.tsx                 GENERATED — Server Component chứa markup của screen
+    ├── app/<route>/page.tsx                    GENERATED — metadata của route + import view ở trên
+    ├── assets/styles/stitch/
     │   ├── index.css                           GENERATED — import trước Tailwind
     │   ├── fonts.css                           GENERATED — @font-face + .material-symbols-outlined
     │   ├── base.css                            viết tay — reset cho root [data-stitch]
@@ -69,12 +70,12 @@ fe/
 
 Quy tắc: không sửa file có banner `AUTO-GENERATED`. Muốn đổi, sửa `stitch/source`, `stitch/overrides.json` hoặc `scripts/stitch`, rồi chạy `npm run stitch:sync`.
 
-### 3.1. Trang (`src/app/**/page.tsx`)
+### 3.1. Trang (`src/views/**/index.tsx` + `src/app/**/page.tsx`)
 - `<body>` của Stitch thành `<div data-stitch="<slug>">` mang nguyên class và style của body.
 - Giữ khoảng trắng giữa các phần tử inline (JSX mặc định sẽ nuốt), sửa hoa/thường tag SVG filter, thuộc tính số (`tabIndex={0}`), form state không kiểm soát (`defaultValue`, `defaultChecked`).
 - `on*="..."` → `data-st-on="click:3"`; code chuyển vào behavior module.
 - `<a href="#">` có nhãn trong `overrides.links` → `next/link` tới route thật (76 nhãn). Các link còn `href="#"` (khoảng 17, vd. "Xem Tất Cả", "Quên mật khẩu?", "Điều khoản") chưa có trang đích.
-- Có `export const metadata` lấy từ tiêu đề screen.
+- `src/app/<route>/page.tsx` chỉ có `export const metadata` lấy từ tiêu đề screen và re-export view.
 
 ### 3.2. Token theo screen
 Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--st-c-primary`, `--st-r-lg`, `--st-ff-sans`…):

@@ -362,9 +362,9 @@ GET|POST /api/collections       · GET|PATCH|DELETE /api/collections/:id   (colo
 - Brand Kit được **thay cả bộ**: trường bỏ trống bị xóa. `avatarUrl: null` xóa ảnh đại diện (cả ảnh Google).
 - Thư mục: tối đa 100; xóa thư mục giữ lại dự án. Đưa dự án vào / ra: `PATCH /api/projects/:id { collectionId }`.
 
-## 13. Những chỗ `apiClient.ts` hiện tại lệch backend
+## 13. Những chỗ `apiClient` hiện tại lệch backend
 
-Danh sách sửa khi dựng lại FE (file [`fe/src/lib/apiClient.ts`](../fe/src/lib/apiClient.ts)):
+Danh sách sửa khi dựng lại FE (các module trong [`fe/src/api/`](../fe/src/api/), kiểu dữ liệu ở [`fe/src/types/api/`](../fe/src/types/api/index.ts)):
 
 | Chỗ lệch | Hiện tại | Đúng theo backend |
 |---|---|---|
