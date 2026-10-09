@@ -2,7 +2,7 @@
 
 > **Dự án**: WrapFit Platform (Nền tảng Thiết kế & Đóng gói Bao bì Quà tặng Thông minh)  
 > **Khóa học**: EXE101 — Trải nghiệm Khởi nghiệp Đổi mới Sáng tạo (FPT University)  
-> **Mô hình kiến trúc**: **Modular Monorepo (Next.js 14 App Router + Pure Domain Core + Node.js/Prisma BaaS)**  
+> **Mô hình kiến trúc**: **Modular Monorepo — npm workspaces (Next.js 14 App Router + Pure Domain Core `@wrapfit/shared` + NestJS 11 API & Worker)**  
 > **Quy chuẩn thiết kế**: Clean Architecture, Domain-Driven Design (DDD) & Separation of Concerns (SoC)
 
 ---
@@ -215,8 +215,26 @@ d:\FPT_FALL2026\EXE101\
    - Import types, công thức toán và quy tắc FitCheck từ `@wrapfit/shared`.
    - Giao tiếp với `be/` qua HTTP API Client (`fe/src/api/`, trên HTTP client `fe/src/services/api/`).
 3. **`be/` (Backend)**:
-   - Import types, contracts và exporter engine từ `@wrapfit/shared`.
-   - Phụ thuộc vào Prisma ORM, CSDL PostgreSQL, Redis và Cloud S3.
+   - Import types, công thức dieline và FitCheck từ `@wrapfit/shared` (DTO `implements` các interface của shared).
+   - Phụ thuộc vào Prisma ORM, CSDL PostgreSQL, Redis (BullMQ) và Cloud S3 / R2.
+
+### 3.1. Ranh giới bên trong `be/src/`
+
+Backend theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure). Phụ thuộc cũng đi một chiều:
+
+```
+config/ + common/  ──▶  shared/prisma, shared/queue  ──▶  module nghiệp vụ  ──▶  app.module.ts / worker.ts
+(tầng nền: env,           (Nest module hạ tầng)           (auth, users, projects,
+ CommonModule @Global)                                     export...)
+```
+
+(mũi tên = "được import bởi"; `config/` và `common/` dùng lẫn nhau: `ConfigService` lấy kiểu `Config` từ `config/`, logger trong `config/` lấy request id từ `common/context`)
+
+1. **`config/`, `common/`, `shared/`** là hạ tầng: không import module nghiệp vụ. Thứ nhiều module cùng cần (tên cookie, hàm băm token, decorator, DTO phân trang) đặt ở `common/`.
+2. **Module nghiệp vụ** (`src/<tên>/`) có `index.ts` (barrel). Module khác import qua thư mục: `from '../projects'`, `from '../common'`, `from '../shared/prisma'` — không trỏ vào file bên trong module khác. Trong cùng module import thẳng file.
+3. **Không vòng import** giữa các module: ESLint `import/no-cycle` chặn trong CI. Cần phụ thuộc ngược thì dùng Port + injection token (tài liệu 08, Mục 1.2 & 1.4) hoặc đưa phần dùng chung xuống `common/`.
+4. **Chỉ `src/config/` đọc `process.env`**; phần còn lại đọc cấu hình bằng `ConfigService` của `common/`: `config.get('storage.bucket')`.
+5. **Hai process, một mã nguồn**: `app.module.ts` (API) không import các `*WorkerModule`; `worker.ts` chỉ import hạ tầng (`PrismaModule`, `StorageModule`, kết nối queue) và các `*WorkerModule`. `@Cron` chỉ đăng ký trong API.
 
 ---
 
@@ -241,6 +259,7 @@ d:\FPT_FALL2026\EXE101\
 - **Components React**: Dùng `PascalCase.tsx` (ví dụ: `PackagingStage.tsx`, `DielineCanvas2D.tsx`).
 - **Hooks & Utilities**: Dùng `camelCase.ts` (ví dụ: `useDielineGeometry.ts`, `hapticAudio.ts`).
 - **Services, Controllers & Rules**: Dùng `kebab-case.suffix.ts` (ví dụ: `auth.controller.ts`, `safe-margin.rule.ts`, `storage.service.ts`).
+- **Backend NestJS (`be/src/`)**: thư mục module dạng `kebab-case` (`public-showcase/`); file theo loại `<tên>.module.ts`, `.controller.ts`, `.service.ts`, `.guard.ts`, `.strategy.ts`, `.processor.ts`, `.task.ts` (`@Cron`), `.dto.ts` (trong `dto/`, plugin Swagger đọc hậu tố này), `.constants.ts`, `.port.ts` (Port + injection token). Mỗi module và mỗi thư mục con của `common/` có `index.ts`. Unit test `<file>.spec.ts` đặt cạnh file; e2e `be/test/e2e/<luồng>.e2e-spec.ts`.
 - **Prisma Models**: Dùng `PascalCase` (ví dụ: `PackagingProject`, `BoxTemplate`), tên bảng CSDL dùng `snake_case` số nhiều (`@@map("packaging_projects")`).
 - **Tên biến & Hàm**: Dùng `camelCase` (ví dụ: `calculateDieline`, `isReadyForProduction`).
 - **Hằng số & Enums**: Dùng `UPPER_SNAKE_CASE` (ví dụ: `BOX_STRUCTURE_TYPES`, `MAKER`, `PRO_ARTISAN`).

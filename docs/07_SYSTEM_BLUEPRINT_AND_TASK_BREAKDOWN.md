@@ -4,6 +4,7 @@
 > **Khóa học**: EXE101 — Trải nghiệm Khởi nghiệp Đổi mới Sáng tạo (FPT University)  
 > **Slogan**: *"Make Every Present, Present."*  
 > **Phiên bản**: v2.1 (Chuyển Backend sang **NestJS** — tách REST API độc lập khỏi Next.js; bổ sung hàng đợi xuất file BullMQ, Cron dọn thùng rác, Refresh Token)  
+> **v2.2 (09/10/2026)**: Mã nguồn `be/` tổ chức lại theo skeleton *nestjs-project-structure*: module nằm thẳng dưới `src/`, hạ tầng ở `common/` + `shared/`, cấu hình lồng nhau có kiểu, barrel `index.ts` (Mục 1.3 – 1.5).  
 > *v2.0: Bổ sung Quản lý Lưu trữ Project, Chia sẻ Public 3D, Thư viện Template & Tiện ích Người dùng*
 
 ---
@@ -13,6 +14,8 @@
    - 1.1. Ngăn xếp công nghệ Backend NestJS
    - 1.2. Nguyên tắc giao tiếp Frontend (Next.js) ↔ Backend (NestJS)
    - 1.3. Cấu trúc thư mục Backend NestJS (`be/`)
+   - 1.4. Quy ước module & phụ thuộc (barrel `index.ts`, không vòng import)
+   - 1.5. Cấu hình & biến môi trường (`ConfigService` có kiểu)
 2. [Hệ Thống Use Cases Toàn Diện (Detailed Use Cases Specifications)](#2-hệ-thống-use-cases-toàn-diện)
    - 2.1. Phân hệ 1: Quản trị Tài khoản, Xác thực & Brand Kit (Auth & Identity)
    - 2.2. Phân hệ 2: Quản lý Dự án, Lưu trữ & Lịch sử Phiên bản (Project Lifecycle, Archive & Versioning)
@@ -45,12 +48,12 @@
 
 ## 1. TỔNG QUAN KIẾN TRÚC & NGĂN XẾP CÔNG NGHỆ
 
-Hệ thống được thiết kế theo mô hình **Modular Monorepo (pnpm workspaces)** gồm 3 workspace độc lập, đảm bảo 3 IT phát triển song song:
+Hệ thống được thiết kế theo mô hình **Modular Monorepo (npm workspaces)** gồm 3 workspace độc lập, đảm bảo 3 IT phát triển song song:
 
 | Workspace | Công nghệ | Phụ trách | Vai trò |
 | :--- | :--- | :--- | :--- |
 | `fe/` | **Next.js 14 App Router** + Three.js / R3F | **IT 1** | Giao diện, Studio 2D/3D, trang Public 3D. Chỉ hiển thị & gọi API, **không truy cập CSDL trực tiếp**. |
-| `be/` | **NestJS 11** + Prisma + PostgreSQL | **IT 3** | REST API: toàn bộ nghiệp vụ, xác thực, phân quyền, lưu trữ, hàng đợi xuất file, tác vụ định kỳ. |
+| `be/` | **NestJS 11** + Prisma + PostgreSQL + Redis | **IT 3** | REST API (toàn bộ nghiệp vụ, xác thực, phân quyền, lưu trữ, tác vụ định kỳ) và process **worker** xử lý hàng đợi (xuất file in, gửi email). |
 | `shared/` | TypeScript thuần — package **`@wrapfit/shared`** | **IT 2** | Kiểu dữ liệu dùng chung + thuật toán Parametric / FitCheck / Exporter, được cả `fe` và `be` import. |
 
 ```mermaid
@@ -69,17 +72,19 @@ graph TD
     subgraph CoreLayer ["TẦNG 2: THUẬT TOÁN HÌNH HỌC & VẬT LÝ IN ẤN (IT 2)"]
         ParametricEngine[Parametric Dieline Engine: L, W, H, t]
         FitCheckEngine[FitCheck™ Physics Validator]
-        PDFService[PDFKit Vector CMYK 300DPI Exporter]
+        PDFService[Vector Exporter: PDF CMYK, SVG, DXF]
         SnapshotEngine[Project State Serialization & Fork Validator]
         SharedTypes[Single Source of Truth: @wrapfit/shared]
     end
 
     subgraph BackendLayer ["TẦNG 3: BACKEND NESTJS & HẠ TẦNG CLOUD (IT 3)"]
-        API[NestJS REST API: Controllers, Guards, Pipes]
-        Auth[AuthModule: Passport Google OAuth 2.0 + JWT]
+        API[API process — dist/app.js: Controllers, Guards, Pipes]
+        Worker[Worker process — dist/worker.js: ExportProcessor, MailProcessor]
+        Auth[AuthModule: JWT cookie + Google OAuth 2.0]
         DB[(PostgreSQL + Prisma ORM)]
-        Queue[BullMQ + Redis: Export & Render Worker]
-        Cron[Scheduler: Dọn thùng rác 30 ngày]
+        Queue[(Redis: hàng đợi BullMQ export & mail)]
+        Cron[Scheduler: thùng rác 30 ngày, dọn file, đối soát export]
+        Realtime[EventsGateway: Socket.IO /api/socket.io]
         Storage[Cloudflare R2 / AWS S3 Assets Storage]
         AIEngine[AI Theme & Pattern Generator]
         QRService[Dynamic QR Code Generator]
@@ -87,82 +92,152 @@ graph TD
     end
 
     ClientLayer -->|Sử dụng Types & chạy thuật toán Client-side| CoreLayer
-    ClientLayer -->|REST API /api/* qua Next.js rewrites proxy| BackendLayer
-    BackendLayer -->|Tái sử dụng FitCheck, Fork & PDF Exporter| CoreLayer
+    ClientLayer -->|REST API /api/* qua Next.js rewrites proxy| API
+    API -->|Đẩy job| Queue
+    Queue -->|Nhận job| Worker
+    BackendLayer -->|Tái sử dụng FitCheck, Fork & dieline| CoreLayer
 ```
 
 ### 1.1. Ngăn xếp công nghệ Backend NestJS
 
 | Hạng mục | Công nghệ | Ghi chú triển khai |
 | :--- | :--- | :--- |
-| Runtime & Framework | Node.js 22 LTS, **NestJS 11** (TypeScript `strict`) | Express adapter mặc định, `app.setGlobalPrefix('api')` |
-| ORM & CSDL | **Prisma ORM 6** + PostgreSQL 16 | Một `PrismaService` duy nhất, cung cấp qua `PrismaModule` (`@Global()`) |
-| Xác thực | `@nestjs/passport`, `passport-google-oauth20`, `passport-jwt`, `@nestjs/jwt`, `bcryptjs` | Access Token 15 phút + Refresh Token 7 ngày, cả hai trong **HttpOnly Cookie** |
-| Phân quyền | `JwtAuthGuard` (toàn cục) + `@Public()`, `RolesGuard` + `@Roles()` | Mặc định mọi route đều yêu cầu đăng nhập, route công khai phải khai báo rõ |
+| Runtime & Framework | Node.js 22 LTS, **NestJS 11** (TypeScript `strict`) | Express adapter, `app.setGlobalPrefix('api')`. Cấu trúc mã nguồn theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) — Mục 1.3 |
+| ORM & CSDL | **Prisma ORM 6** + PostgreSQL 16 | Một `PrismaService` duy nhất, cung cấp qua `PrismaModule` (`@Global()`) tại `src/shared/prisma/` |
+| Xác thực | `@nestjs/passport`, `passport-google-oauth20`, `passport-jwt`, `@nestjs/jwt`, `bcryptjs` | Access Token 15 phút + Refresh Token 7 ngày (xoay vòng), cả hai trong **HttpOnly Cookie**; email xác minh & đặt lại mật khẩu gửi qua hàng đợi `mail` |
+| Phân quyền | `JwtAuthGuard` (toàn cục, `src/auth/guards/`) + `@Public()`, `RolesGuard` + `@Roles()` (`src/common/`) | Mặc định mọi route đều yêu cầu đăng nhập, route công khai phải khai báo rõ |
 | Validation | `class-validator`, `class-transformer`, `ValidationPipe` toàn cục | `whitelist: true, forbidNonWhitelisted: true, transform: true` |
 | Tài liệu API | `@nestjs/swagger` | OpenAPI tại `/api/docs` — IT 1 dùng để tra cứu / sinh client có kiểu |
-| Cấu hình | `@nestjs/config` + `class-validator` | Validate `.env` khi khởi động, thiếu biến là dừng ngay |
-| Hàng đợi bất đồng bộ | `@nestjs/bullmq` + Redis | Xuất PDF/SVG/DXF, render thumbnail & mockup, gửi email |
-| Tác vụ định kỳ | `@nestjs/schedule` | Cron xóa vĩnh viễn dự án nằm trong thùng rác quá 30 ngày |
-| Sự kiện nội bộ | `@nestjs/event-emitter` | `project.forked`, `export.completed`... → thông báo cho người dùng |
-| Chống lạm dụng | `@nestjs/throttler`, `helmet` | Giới hạn tần suất đăng nhập, like, fork, gọi AI |
-| Lưu trữ file | `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` | Tương thích cả Cloudflare R2 và AWS S3 |
-| Xử lý ảnh / QR | `sharp`, `qrcode` | Nén thumbnail, sinh QR độ phân giải cao |
-| Kiểm thử | Jest + Supertest | Unit test service, e2e test cho API |
-| Triển khai | Docker multi-stage, GitHub Actions | 2 process từ cùng 1 image: `api` (HTTP) và `worker` (BullMQ) |
+| Cấu hình | `@nestjs/config` + `class-validator`, `ConfigService` có kiểu của `CommonModule` | Kiểm tra `.env` khi khởi động (thiếu biến là dừng ngay), gom thành cấu hình lồng nhau theo `NODE_ENV` — Mục 1.5 |
+| Hàng đợi bất đồng bộ | `@nestjs/bullmq` + Redis | Hàng đợi `export` (PDF CMYK / SVG / DXF) và `mail`; chỉ process `worker` xử lý job |
+| Tác vụ định kỳ | `@nestjs/schedule` | Xóa vĩnh viễn dự án trong thùng rác quá 30 ngày, dọn file mồ côi trên storage, đối soát export bị kẹt, dọn token hết hạn — chỉ chạy trong process API |
+| Sự kiện nội bộ | `@nestjs/event-emitter` | `project.forked`, `export.completed` |
+| Realtime | `@nestjs/websockets` + Socket.IO | `EventsGateway` (namespace `events`, path `/api/socket.io`), xác thực bằng cookie ngay lúc handshake |
+| Chống lạm dụng | `@nestjs/throttler` (`HttpThrottlerGuard`), `helmet` | Giới hạn tần suất đăng nhập, like, fork, gọi AI |
+| Lưu trữ file | `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` | Tương thích Cloudflare R2, AWS S3 và SeaweedFS (local); CSDL chỉ lưu key, URL dựng lúc đọc |
+| QR | `qrcode` | QR PNG 1200 px + SVG, mức sửa lỗi H; nén thumbnail bằng `sharp` chưa làm |
+| Logging | `AppLogger` (mở rộng `ConsoleLogger` của Nest) | Mỗi dòng log mang `requestId` của request (hoặc của job trong worker); JSON một dòng ở production |
+| Kiểm thử & Lint | Jest + Supertest, ESLint (`typescript-eslint`, `import/no-cycle`) | Unit test `*.spec.ts` đặt cạnh file; e2e trong `be/test/e2e/` (cần PostgreSQL, Redis, SeaweedFS) |
+| Triển khai | Docker multi-stage, GitHub Actions | 1 image, 2 process: API `node dist/app.js` và worker `node dist/worker.js` |
 
 ### 1.2. Nguyên tắc giao tiếp Frontend (Next.js) ↔ Backend (NestJS)
 
 1. **Next.js không truy cập CSDL**: Không dùng Server Actions / Route Handlers để đọc ghi Prisma. Mọi nghiệp vụ đều đi qua REST API của NestJS (nguồn sự thật duy nhất).
 2. **Proxy cùng domain (khuyến nghị)**: IT 1 cấu hình `rewrites` trong `next.config.js` chuyển `/api/:path*` → `http://be:8080/api/:path*` (Backend chạy cổng 8080; cổng 3000 dành cho Next.js, dải quanh 4000 thường bị Hyper-V/WSL giữ trên Windows). Nhờ vậy Cookie HttpOnly là **same-origin** (không cần `SameSite=None`/CORS phức tạp), Google OAuth callback `https://wrapfit.vn/api/auth/google/callback` hoạt động trực tiếp, và toàn bộ đường dẫn `/api/...` trong tài liệu được giữ nguyên.
-   - *Phương án thay thế khi deploy tách domain `api.wrapfit.vn`*: đặt cookie `Domain=.wrapfit.vn; SameSite=Lax; Secure` và bật CORS `credentials: true` cho `https://wrapfit.vn`.
+   - *Phương án thay thế khi deploy tách domain `api.wrapfit.vn`*: đặt cookie `Domain=.wrapfit.vn; SameSite=Lax; Secure` và bật CORS `credentials: true` cho `https://wrapfit.vn` (biến `CORS_ORIGINS`).
 3. **Server Component gọi API**: Khi render phía server (RSC), Next.js phải chuyển tiếp cookie của người dùng: `fetch(API_URL + '/projects', { headers: { cookie: cookies().toString() } })`.
-4. **Hợp đồng dữ liệu**: DTO request/response của NestJS phải `implements` interface tương ứng trong `@wrapfit/shared/types` để không lệch pha giữa 3 tầng.
-5. **Tương thích module của `@wrapfit/shared`**: NestJS biên dịch ra CommonJS, vì vậy `shared/` phải được build ra cả CJS + ESM (dùng `tsup`) và tách sub-path exports:
-   - `@wrapfit/shared/types`, `@wrapfit/shared/parametric`, `@wrapfit/shared/fitcheck` — isomorphic, chạy được cả trình duyệt và Node.
-   - `@wrapfit/shared/exporter` — **chỉ chạy trên Node** (PDFKit), chỉ Backend import.
-   - Tuyệt đối không import `three`, `window`, `document` trong `shared/`.
+4. **Hợp đồng dữ liệu**: DTO request/response của NestJS `implements` interface tương ứng trong `@wrapfit/shared` (ví dụ `CanvasStateDto implements CanvasState`, `UpdateBrandKitDto implements BrandKit`) để không lệch pha giữa 3 tầng. Swagger `/api/docs` là hợp đồng HTTP luôn khớp code.
+5. **Cách dùng `@wrapfit/shared`**: `shared/` biên dịch bằng `tsc` ra CommonJS (`shared/dist/`, một entry `@wrapfit/shared`) — phải build trước khi chạy hay build backend (`npm --workspace=shared run build`). Mã trong `shared/` phải chạy được cả trình duyệt lẫn Node: tuyệt đối không import `three`, `window`, `document`.
 
 ### 1.3. Cấu trúc thư mục Backend NestJS (`be/`)
+
+Mã nguồn backend theo skeleton **[CatsMiaow/nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure)**: mỗi module nghiệp vụ nằm thẳng dưới `src/`, hạ tầng dùng chung tách ra `common/` (Nest module toàn cục) và `shared/` (các Nest module hạ tầng), cấu hình ở `config/`.
 
 ```
 be/
 ├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
+│   ├── schema.prisma            # Schema v2.1 (nguồn sự thật của CSDL)
+│   ├── migrations/              # SQL migration; CHECK constraint chỉ nằm ở đây
+│   └── seed.ts                  # 4 mẫu hộp + admin + dữ liệu mẫu (idempotent)
 ├── src/
-│   ├── main.ts                  # Bootstrap HTTP API: prefix /api, helmet, cookie-parser, ValidationPipe, Swagger
-│   ├── worker.ts                # Bootstrap process Worker (chỉ chạy BullMQ Processors, không mở cổng HTTP)
-│   ├── app.module.ts
-│   ├── config/                  # env.validation.ts (class-validator), kiểu AppConfigService
-│   ├── prisma/                  # PrismaModule (@Global), PrismaService
-│   ├── common/
-│   │   ├── decorators/          # @Public(), @Roles(), @CurrentUser()
-│   │   ├── guards/              # JwtAuthGuard, RolesGuard (ProjectOwnerGuard nằm trong modules/projects/presentation, được export)
+│   ├── app.ts                   # Khởi động API HTTP (dist/app.js)
+│   ├── worker.ts                # Khởi động worker BullMQ, không mở cổng HTTP (dist/worker.js)
+│   ├── repl.ts                  # Shell tương tác trên module API: npm run start:repl
+│   ├── mail-test.ts             # Gửi thử 1 email bằng cấu hình SMTP hiện tại
+│   ├── app.module.ts            # Ghép module + guard / filter / interceptor toàn cục
+│   ├── app.middleware.ts        # Request id, helmet, cookie-parser, CORS, prefix /api, ValidationPipe, Socket.IO adapter
+│   ├── swagger.ts               # OpenAPI /api/docs
+│   ├── config/
+│   │   ├── env.validation.ts    # Kiểm tra + giá trị mặc định của biến môi trường (class-validator)
+│   │   ├── envs/                # default.ts (cấu hình lồng nhau) + development.ts / production.ts / test.ts
+│   │   ├── configuration.ts     # default + file của NODE_ENV, nạp bằng ConfigModule.forRoot({ load })
+│   │   └── logger.config.ts     # AppLogger
+│   ├── common/                  # CommonModule (@Global): ConfigService có kiểu
+│   │   ├── decorators/          # @Public(), @OptionalAuth(), @Roles(), @CurrentUser()
+│   │   ├── guards/              # RolesGuard, HttpThrottlerGuard
 │   │   ├── filters/             # AllExceptionsFilter (chuẩn hóa định dạng lỗi)
-│   │   ├── interceptors/        # LoggingInterceptor, TransformResponseInterceptor
-│   │   └── dto/                 # PaginationQueryDto, PaginatedResponseDto<T>
-│   └── modules/
-│       ├── auth/                # Google OAuth, Email/Password, JWT, Refresh Token
-│       ├── users/               # Hồ sơ người dùng & Brand Kit
-│       ├── projects/            # CRUD, trạng thái, nhân bản, snapshot, cron dọn thùng rác
-│       ├── collections/         # Bộ sưu tập / thư mục dự án
-│       ├── public-showcase/     # Xem công khai, like, 1-Click Remix (fork)
-│       ├── templates/           # Thư viện mẫu Curated & Community
-│       ├── storage/             # Pre-signed URL S3 / R2 (@Global)
-│       ├── ai/                  # Sinh hoa văn & bảng màu AI
-│       ├── unboxing/            # Trải nghiệm mở hộp 3D & sinh QR
-│       ├── export/              # ExportController + ExportProcessor (BullMQ)
-│       └── notifications/       # Lắng nghe sự kiện nội bộ (@OnEvent) & gửi thông báo
-├── test/                        # e2e tests (Supertest)
-├── Dockerfile
+│   │   ├── interceptors/        # LoggingInterceptor
+│   │   ├── dto/                 # PaginationQueryDto, Paginated<T>, ErrorResponseDto
+│   │   ├── constants/ context/ events/ interfaces/ pipes/ providers/ utils/ adapters/
+│   │   └── index.ts             # barrel: import { ... } from '../common'
+│   ├── shared/
+│   │   ├── prisma/              # PrismaModule (@Global) + PrismaService
+│   │   └── queue/               # Kết nối BullMQ tới Redis (vai trò producer / worker)
+│   ├── auth/                    # Đăng ký, xác minh email, đăng nhập, refresh, Google OAuth, JwtAuthGuard
+│   ├── users/                   # Hồ sơ người dùng, Brand Kit, quản trị user (ADMIN)
+│   ├── projects/                # CRUD, trạng thái, nhân bản, snapshot, cron thùng rác — 4 tầng Clean Architecture
+│   ├── collections/             # Bộ sưu tập / thư mục dự án
+│   ├── public-showcase/         # Xem công khai, like, 1-Click Remix (fork)
+│   ├── templates/               # Thư viện mẫu Curated & Community
+│   ├── storage/                 # Pre-signed upload S3 / R2, hạn mức, dọn file (@Global)
+│   ├── ai/                      # Sinh bảng màu & hoa văn (Claude hoặc thuật toán dự phòng)
+│   ├── unboxing/                # Trải nghiệm mở hộp 3D & sinh QR
+│   ├── export/                  # ExportModule (API, hàng đợi) + ExportWorkerModule (ExportProcessor) + rendering/
+│   ├── mail/                    # MailModule (đưa email vào hàng đợi) + MailWorkerModule (gửi SMTP)
+│   ├── events/                  # EventsGateway (WebSocket)
+│   └── base/                    # HealthController: GET /api/health
+├── test/
+│   └── e2e/                     # *.e2e-spec.ts (Supertest) + helpers/
+├── Dockerfile                   # 1 image cho cả API và worker
 └── package.json
 ```
 
-Cấu trúc bên trong mỗi module:
-- **Module CRUD đơn giản** (`collections`, `templates`, `storage`, `ai`...): phẳng gồm `xxx.module.ts`, `xxx.controller.ts`, `xxx.service.ts`, `dto/` — Service dùng thẳng `PrismaService`.
-- **Module nghiệp vụ phức tạp** (`auth`, `projects`, `export`): chia 4 thư mục `presentation/`, `application/`, `domain/`, `infrastructure/` theo Clean Architecture — xem chi tiết tại tài liệu **08 — Mục 1.1 đến 1.3**.
+### 1.4. Quy ước module & phụ thuộc
+
+**Hướng phụ thuộc một chiều** (mũi tên = "được import bởi"):
+
+```
+config/ + common/  ──▶  shared/  ──▶  module nghiệp vụ  ──▶  app.module.ts, worker.ts
+                                      (auth, users, projects, export, ...)
+```
+
+`config/` và `common/` là tầng nền, dùng lẫn nhau: `ConfigService` (`common/providers/`) lấy kiểu `Config` từ `config/`, `AppLogger` (`config/logger.config.ts`) lấy request id từ `common/context/`.
+
+- `config/`, `common/`, `shared/` **không bao giờ** import module nghiệp vụ. Hằng số mà nhiều module cùng cần thì đặt ở `common/` (ví dụ tên cookie `ACCESS_COOKIE` ở `common/constants/cookies.constants.ts`, không ở `auth/`).
+- Module nghiệp vụ được phép import nhau (ví dụ `export` dùng `projects` và `storage`), miễn **không tạo vòng**. ESLint `import/no-cycle` chặn vòng khi chạy `npm --workspace=be run lint` (CI có bước này); một vòng giữa hai Nest module có thể làm class module bị `undefined` lúc decorator chạy.
+
+**Barrel `index.ts`**:
+
+- Mỗi module (`src/<tên>/`), `config/`, `common/` (và từng thư mục con của nó), `shared/prisma/`, `shared/queue/` có `index.ts` export class module và các thành phần module khác được dùng.
+- Import module khác qua thư mục: `import { PrismaService } from '../shared/prisma'`, `import { ConfigService, Public } from '../common'`, `import { UsersModule } from '../users'`.
+- Trong cùng một module, import thẳng file (`./dto/create-project.dto`), không đi qua barrel của chính nó và không bao giờ import `'.'` hay `'..'`.
+- Thứ tự import: package trước, file local sau.
+
+**Cấu trúc bên trong một module** — thêm thư mục theo quy mô:
+
+- **Module nhỏ** (`collections`, `templates`, `unboxing`, `users`...): phẳng gồm `<tên>.module.ts`, `<tên>.controller.ts`, `<tên>.service.ts`, `dto/`, `index.ts` — Service dùng thẳng `PrismaService`.
+- **Module có nhiều thành phần** (`auth`, `export`, `ai`): vẫn phẳng, thêm thư mục con theo vai trò: `auth/guards/`, `auth/strategies/`, `export/rendering/`, `ai/pattern/`.
+- **Module nghiệp vụ phức tạp** (`projects`): chia 4 thư mục `presentation/`, `application/`, `domain/`, `infrastructure/` theo Clean Architecture, Port + injection token — xem tài liệu **08 — Mục 1.1 đến 1.4**.
+- **Module có phần chạy trong worker** khai báo 2 class: `ExportModule` / `ExportWorkerModule`, `MailModule` / `MailWorkerModule`. API chỉ import bản thường (đẩy job), `worker.ts` chỉ import bản `*WorkerModule` (xử lý job). Tác vụ `@Cron` chỉ đăng ký trong process API (ví dụ `StorageMaintenanceModule`) để không chạy hai lần.
+
+**Đặt tên file**: `kebab-case.<loại>.ts` (`project-owner.guard.ts`, `export.processor.ts`, `query-projects.dto.ts`, `export.constants.ts`); unit test `<file>.spec.ts` đặt cạnh file được test.
+
+### 1.5. Cấu hình & biến môi trường
+
+```
+.env / biến môi trường
+   └─▶ config/env.validation.ts   validateEnv(): kiểm tra kiểu, giá trị mặc định, ràng buộc chéo
+         └─▶ config/envs/default.ts      gom thành cấu hình lồng nhau: app, auth, throttle, storage, ai, redis, export, mail
+               └─▶ config/envs/<NODE_ENV>.ts   ghi đè theo môi trường (production: cookie Secure mặc định bật)
+                     └─▶ ConfigService.get('auth.jwt.accessTtlSeconds')   → number (có kiểu, sai đường dẫn là lỗi)
+```
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '../common'; // không dùng ConfigService của @nestjs/config
+
+@Injectable()
+export class StorageService {
+  constructor(config: ConfigService) {
+    const bucket = config.get('storage.bucket');                 // string
+    const forcePathStyle = config.get('storage.forcePathStyle'); // boolean, không phải 'true'
+  }
+}
+```
+
+- `ConfigModule.forRoot({ validate: validateEnv, load: [configuration] })` chạy ở cả API (`app.module.ts`) và worker (`worker.ts`): thiếu `DATABASE_URL` hay secret JWT ngắn hơn 32 ký tự thì process dừng ngay khi khởi động.
+- **Thêm một biến môi trường**: (1) khai báo + giá trị mặc định trong `config/env.validation.ts`; (2) đặt vào đúng nhóm trong `config/envs/default.ts` (chuỗi `'true'|'false'` đổi thành boolean tại đây); (3) nếu production cần giá trị mặc định khác thì ghi đè trong `config/envs/production.ts`; (4) thêm vào `be/.env.example` và bảng biến môi trường của `be/README.md`.
+- Chỉ `config/` được đọc `process.env`. Logger là ngoại lệ có chủ đích: nó được tạo trước khi `.env` được nạp nên đọc `LOG_FORMAT` trực tiếp.
 
 ---
 
@@ -288,7 +363,7 @@ Cấu trúc bên trong mỗi module:
   2. Nếu chưa đăng nhập: Hệ thống gợi ý đăng nhập nhanh bằng Google (lưu lại trạng thái để chuyển tiếp sau khi auth).
   3. Hệ thống sao chép toàn bộ cấu trúc hình học, tọa độ hoa văn, font chữ vào tài khoản người dùng dưới dạng dự án mới, lưu vết `forkedFromId` để tri ân tác giả gốc.
   4. Mở ngay Studio Editor để người dùng chỉnh sửa theo ý mình.
-  5. Tác giả gốc nhận được thông báo: *"Dự án của bạn vừa được Remix bởi [Tên người dùng]!"* (NestJS phát sự kiện `project.forked`, `NotificationsModule` xử lý bất đồng bộ qua `@OnEvent`).
+  5. Tác giả gốc nhận được thông báo: *"Dự án của bạn vừa được Remix bởi [Tên người dùng]!"* (NestJS phát sự kiện `project.forked` — định nghĩa ở `be/src/common/events/`; `NotificationsModule` sẽ xử lý bất đồng bộ qua `@OnEvent`, chưa triển khai).
 
 ---
 
@@ -987,6 +1062,7 @@ model AiGeneration {
 5. **Về Backend NestJS**:
    - Mọi endpoint có DTO validate bằng `class-validator` và được mô tả trên Swagger (`@ApiTags`, `@ApiResponse`); không endpoint nào nhận `any`.
    - Route công khai phải gắn `@Public()` một cách tường minh; mọi route còn lại mặc định yêu cầu JWT. Route thao tác trên dự án phải kiểm tra quyền sở hữu (`ProjectOwnerGuard`).
-   - Không truy cập Prisma ngoài `PrismaService`; không đọc `process.env` trực tiếp mà dùng `ConfigService`.
+   - Không truy cập Prisma ngoài `PrismaService`; không đọc `process.env` ngoài `src/config/` mà dùng `ConfigService` của `common/` (`config.get('nhóm.khóa')`).
+   - Đặt file đúng cấu trúc Mục 1.3 – 1.4: module mới có `index.ts`, import module khác qua barrel, `npm --workspace=be run lint` không báo `import/no-cycle`.
    - Tác vụ nặng (xuất file, render, gửi email) bắt buộc đi qua hàng đợi BullMQ, không xử lý đồng bộ trong request HTTP.
    - Service nghiệp vụ cốt lõi (`auth`, `projects`, `public-showcase`, `export`) có unit test; các luồng chính có e2e test bằng Supertest.

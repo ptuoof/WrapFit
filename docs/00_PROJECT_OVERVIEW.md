@@ -36,6 +36,11 @@ graph TD
     FE <-->|REST API / JSON| BE[Backend API - NestJS 11 / Node.js / Port 8080]
     BE <-->|Prisma ORM| DB[(PostgreSQL Database / Docker Port 5432)]
     BE <-->|S3 API| Storage[(Cloud Storage S3 / R2)]
+    BE -->|Đẩy job BullMQ| Redis[(Redis / Docker Port 6379)]
+    Redis -->|Job xuất file in, email| Worker[Worker - process NestJS riêng, cùng image]
+    Worker -->|Prisma ORM| DB
+    Worker -->|Tải file in lên| Storage
     FE -. Dùng chung công thức toán .-> Shared[Thư viện @wrapfit/shared]
     BE -. Dùng chung bộ luật kiểm tra .-> Shared
+    Worker -. Dựng dieline để xuất file .-> Shared
 ```

@@ -3,12 +3,13 @@
 REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì quà tặng (tham chiếu Pacdora.com).
 Đây là workspace `be/` (`@wrapfit/backend`) trong monorepo WrapFit. Kiến trúc và phân công nhiệm vụ: xem [`docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md`](../docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md) và [`docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md`](../docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md).
 
-- **NestJS 11** theo kiến trúc modular monolith
+- **NestJS 11** theo kiến trúc modular monolith, mã nguồn tổ chức theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) (mục [Cấu trúc thư mục](#cấu-trúc-thư-mục))
+- **2 process từ cùng mã nguồn**: API HTTP (`dist/app.js`) và worker BullMQ + Redis (`dist/worker.js`) xuất file in, gửi email
 - **PostgreSQL 16 + Prisma 6** — Schema v2.1 (migration, seed)
 - **Auth**: email/mật khẩu + **Google OAuth 2.0**, JWT trong **HttpOnly Cookie** (refresh token xoay vòng, phát hiện dùng lại token, nhiều thiết bị) và **RBAC** theo `Role`
 - **WebSocket** (Socket.IO) có xác thực JWT ở bước handshake
 - **Swagger/OpenAPI** tại `/api/docs`
-- **Validation** (class-validator), kiểm tra biến môi trường khi khởi động, logging request, exception filter thống nhất, rate limit, helmet, CORS
+- **Validation** (class-validator), cấu hình có kiểu theo `NODE_ENV` (kiểm tra biến môi trường khi khởi động), logging request, exception filter thống nhất, rate limit, helmet, CORS
 - **Docker**: image build từ gốc repo (`be/Dockerfile`), chạy cùng PostgreSQL + Frontend bằng `docker-compose.yml` ở gốc
 
 ## Trạng thái so với WBS (tài liệu 07, Mục 5.3)
@@ -121,36 +122,45 @@ Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `
 
 ## Biến môi trường
 
-Xem `.env.example`. Ứng dụng sẽ **từ chối khởi động** nếu thiếu `DATABASE_URL` hoặc secret JWT ngắn hơn 32 ký tự.
+Xem `.env.example`. Ứng dụng sẽ **từ chối khởi động** (cả API lẫn worker) nếu thiếu `DATABASE_URL` hoặc secret JWT ngắn hơn 32 ký tự.
 
-| Biến | Mặc định | Ý nghĩa |
-| --- | --- | --- |
-| `PORT` | `8080` | Cổng server |
-| `DATABASE_URL` | – | Chuỗi kết nối PostgreSQL (database `wrapfit`) |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | – | Secret ký token (>= 32 ký tự, hai giá trị khác nhau) |
-| `JWT_ACCESS_TTL_SECONDS` | `900` | Thời hạn access token (15 phút) |
-| `JWT_REFRESH_TTL_SECONDS` | `604800` | Thời hạn refresh token (7 ngày) |
-| `BCRYPT_ROUNDS` | `10` | Độ khó băm mật khẩu |
-| `CORS_ORIGINS` | `*` | Danh sách origin, ngăn cách bằng dấu phẩy. Phải là origin cụ thể (vd. `http://localhost:3000`) để trình duyệt gửi cookie |
-| `FRONTEND_URL` | `http://localhost:3000` | Trang frontend mà trình duyệt quay về sau khi đăng nhập Google |
-| `COOKIE_SECURE` | *(tự động)* | `Secure` cho cookie đăng nhập; trống = bật khi `NODE_ENV=production` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | *(trống)* | Google OAuth; để trống cả hai = tắt đăng nhập Google |
-| `GOOGLE_CALLBACK_URL` | `http://localhost:8080/api/auth/google/callback` | Phải nằm trong *Authorized redirect URIs* của OAuth client |
-| `SWAGGER_ENABLED` | `true` | Bật/tắt `/api/docs` |
-| `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `60` / `100` | Rate limit mặc định (theo IP) |
-| `STORAGE_BUCKET` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
-| `STORAGE_ENDPOINT` | *(trống)* | R2: `https://<account-id>.r2.cloudflarestorage.com`; SeaweedFS local: `http://localhost:8333`; AWS S3: để trống |
-| `STORAGE_PUBLIC_ENDPOINT` | *(= `STORAGE_ENDPOINT`)* | Địa chỉ ghi vào pre-signed URL khi trình duyệt truy cập storage bằng địa chỉ khác backend (Docker) |
-| `STORAGE_REGION` | `auto` | `auto` cho R2, `us-east-1` cho SeaweedFS |
-| `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | – | Khóa API của bucket (R2: *R2 API Token*) |
-| `STORAGE_PUBLIC_URL` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
-| `STORAGE_FORCE_PATH_STYLE` | `false` | `true` cho SeaweedFS |
-| `ANTHROPIC_API_KEY` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
-| `AI_MODEL` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
-| `AI_TIMEOUT_MS` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
-| `REDIS_URL` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
-| `EXPORT_CONCURRENCY` | `2` | Số job xuất file một worker chạy song song |
-| `TRUST_PROXY` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
+Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, rồi gom thành cấu hình lồng nhau trong `src/config/envs/default.ts` (ghi đè theo `NODE_ENV` ở `envs/production.ts`...). Code đọc bằng `ConfigService` của `src/common` theo cột **Khóa cấu hình**, ví dụ `config.get('auth.jwt.accessTtlSeconds')` trả về `number`; các biến `true` / `false` trở thành boolean.
+
+| Biến | Khóa cấu hình | Mặc định | Ý nghĩa |
+| --- | --- | --- | --- |
+| `NODE_ENV` | `app.env` | `development` | `development` / `production` / `test`; chọn file ghi đè trong `config/envs/` |
+| `PORT` | `app.port` | `8080` | Cổng server |
+| `DATABASE_URL` | – (Prisma đọc trực tiếp) | – | Chuỗi kết nối PostgreSQL (database `wrapfit`) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | `auth.jwt.accessSecret` / `auth.jwt.refreshSecret` | – | Secret ký token (>= 32 ký tự, hai giá trị khác nhau) |
+| `JWT_ACCESS_TTL_SECONDS` | `auth.jwt.accessTtlSeconds` | `900` | Thời hạn access token (15 phút) |
+| `JWT_REFRESH_TTL_SECONDS` | `auth.jwt.refreshTtlSeconds` | `604800` | Thời hạn refresh token (7 ngày) |
+| `AUTH_TOKEN_SECRET` | `auth.tokenSecret` | *(= `JWT_REFRESH_SECRET`)* | Sinh link một lần trong email xác minh / đặt lại mật khẩu (>= 32 ký tự nếu đặt). Đổi giá trị chỉ vô hiệu các link đã gửi |
+| `BCRYPT_ROUNDS` | `auth.bcryptRounds` | `10` | Độ khó băm mật khẩu |
+| `COOKIE_SECURE` | `auth.cookieSecure` | *(tự động)* | `Secure` cho cookie đăng nhập; trống = tắt ở development, bật ở production (`envs/production.ts`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `auth.google.clientId` / `.clientSecret` | *(trống)* | Google OAuth; để trống cả hai = tắt đăng nhập Google |
+| `GOOGLE_CALLBACK_URL` | `auth.google.callbackUrl` | `http://localhost:8080/api/auth/google/callback` | Phải nằm trong *Authorized redirect URIs* của OAuth client |
+| `CORS_ORIGINS` | `app.corsOrigins` | `*` | Danh sách origin, ngăn cách bằng dấu phẩy. Phải là origin cụ thể (vd. `http://localhost:3000`) để trình duyệt gửi cookie |
+| `FRONTEND_URL` | `app.frontendUrl` | `http://localhost:3000` | Trang frontend: đích sau khi đăng nhập Google, gốc của link trong email và mã QR |
+| `SWAGGER_ENABLED` | `app.swaggerEnabled` | `true` | Bật/tắt `/api/docs` |
+| `TRUST_PROXY` | `app.trustProxy` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
+| `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `throttle.ttlSeconds` / `throttle.limit` | `60` / `100` | Rate limit mặc định (theo IP) |
+| `STORAGE_BUCKET` | `storage.bucket` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
+| `STORAGE_ENDPOINT` | `storage.endpoint` | *(trống)* | R2: `https://<account-id>.r2.cloudflarestorage.com`; SeaweedFS local: `http://localhost:8333`; AWS S3: để trống |
+| `STORAGE_PUBLIC_ENDPOINT` | `storage.publicEndpoint` | *(= `STORAGE_ENDPOINT`)* | Địa chỉ ghi vào pre-signed URL khi trình duyệt truy cập storage bằng địa chỉ khác backend (Docker) |
+| `STORAGE_REGION` | `storage.region` | `auto` | `auto` cho R2, `us-east-1` cho SeaweedFS |
+| `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | `storage.accessKeyId` / `.secretAccessKey` | – | Khóa API của bucket (R2: *R2 API Token*) |
+| `STORAGE_PUBLIC_URL` | `storage.publicUrl` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
+| `STORAGE_FORCE_PATH_STYLE` | `storage.forcePathStyle` | `false` | `true` cho SeaweedFS |
+| `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
+| `AI_MODEL` | `ai.model` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
+| `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
+| `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
+| `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
+| `SMTP_HOST` / `SMTP_PORT` | `mail.smtp.host` / `.port` | `localhost` / `1025` | SMTP của worker; mặc định là Mailpit trong `docker-compose.yml` (thư bị giữ lại, xem tại `http://localhost:8025`) |
+| `SMTP_SECURE` | `mail.smtp.secure` | `false` | `true` = TLS ngay từ đầu (cổng 465); `false` = STARTTLS nếu server hỗ trợ (587) |
+| `SMTP_USER` / `SMTP_PASS` | `mail.smtp.user` / `.pass` | *(trống)* | Đặt cả hai hoặc để trống cả hai (không xác thực) |
+| `MAIL_FROM` | `mail.from` | `WrapFit <no-reply@wrapfit.local>` | Người gửi; ở production tên miền cần bản ghi SPF / DKIM |
+| `LOG_FORMAT` | – (logger đọc trực tiếp) | *(tự động)* | `json` (một dòng JSON mỗi log) hoặc `text`; trống = `json` ở production |
 
 ## API hiện có
 
@@ -158,7 +168,10 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 
 | Method | Đường dẫn | Quyền | Mô tả |
 | --- | --- | --- | --- |
-| POST | `/api/auth/register` | public | Đăng ký (`email`, `password`, `fullName`) → đặt cookie đăng nhập |
+| POST | `/api/auth/register` | public | Đăng ký (`email`, `password`, `fullName`) → gửi email xác minh, chưa mở phiên đăng nhập |
+| POST | `/api/auth/verify-email` | public | Xác minh email bằng token trong link → đăng nhập được |
+| POST | `/api/auth/verify-email/resend` | public | Gửi lại link xác minh |
+| POST | `/api/auth/password/forgot` / `/api/auth/password/reset` | public | Gửi link đặt lại mật khẩu / đặt mật khẩu mới bằng token |
 | POST | `/api/auth/login` | public | Đăng nhập email & mật khẩu → đặt cookie đăng nhập |
 | POST | `/api/auth/refresh` | public (cần cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
 | POST | `/api/auth/logout` | public | Thu hồi phiên hiện tại, xoá cookie |

@@ -292,7 +292,7 @@ The output must be empty.
 ## (c) Change list by module
 
 - **`be/prisma/schema.prisma`**: the diff above.
-- **New `be/src/common/assets/asset-keys.ts`**:
+- **New `be/src/storage/asset-keys.ts`** (exported by the `storage` barrel):
   - `initAssetBase(publicUrl)`, called from the `StorageService` constructor.
   - `assetUrl(key)`, `expandCanvas(canvas)`, and `toStoredCanvas(canvas)` (pure URL → key).
 - **`storage.service.ts`**:
@@ -347,6 +347,7 @@ The output must be empty.
   - Imported in `be/src/worker.ts`.
 - **Config**:
   - `env.validation.ts`: `SMTP_HOST` (localhost), `SMTP_PORT` (1025), `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `MAIL_FROM`. Credentials are required in production.
+  - `config/envs/default.ts`: the `mail` group (`mail.smtp.*`, `mail.from`), read with the typed `ConfigService` of `be/src/common`.
   - `.env.example`.
   - `docker-compose.yml`: a `mailpit` service (1025 / UI 8025).
 - **Formula versioning**:

@@ -64,7 +64,7 @@ WrapFit/
 | **2D Canvas** | Paper.js / Fabric.js / SVG.js | Trình biên tập kéo thả đồ họa vector 2D |
 | **3D Rendering** | Three.js / React Three Fiber | Render khối hộp và texture thời gian thực |
 | **Motion & UX** | GSAP (Timeline, ScrollTrigger, Flip) | Diễn hoạt gập nắp hộp & Landing Page |
-| **Backend & Data**| NestJS 11, Prisma, PostgreSQL, S3 / Cloudflare R2 | Quản lý dự án, tài khoản & Cloud Storage (kiến trúc: `docs/07`, `docs/08`) |
+| **Backend & Data**| NestJS 11, Prisma, PostgreSQL, Redis + BullMQ (process worker), S3 / Cloudflare R2 | REST API dự án, tài khoản, Cloud Storage; worker xuất file in & gửi email. Mã nguồn theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) (`be/README.md`; kiến trúc: `docs/07` Mục 1, `docs/08`) |
 | **AI Integration** | Model Context Protocol (MCP), LLM APIs | Gợi ý Theme hoa văn & Hỗ trợ FitCheck |
 
 ---

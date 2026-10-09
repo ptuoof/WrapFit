@@ -92,7 +92,8 @@ WrapFit targets handmade boutique owners, artisan crafters, and thoughtful luxur
   - **Anime.js (`animejs`)**: 100% of UI micro-interactions, squishy bouncy buttons, mascot state morphing, mm number tickers, and bottom sheet springs.
   - **GSAP**: ScrollTrigger scrubbing and procedural 3D panel folding timelines.
 - **Audio Engine**: Web Audio API procedural synthesis (`tactileAudio.ts`) for zero-asset paper creasing, unboxing pop, and click sounds.
-- **Backend / DB**: NestJS 11, Prisma 6, PostgreSQL, Redis BullMQ, S3/Cloudflare R2 storage.
+- **Backend / DB**: NestJS 11, Prisma 6, PostgreSQL, Redis BullMQ, S3/Cloudflare R2 storage. Two processes from one codebase: the API (`be/src/app.ts`) and the BullMQ worker (`be/src/worker.ts`).
+- **Backend layout**: follows [CatsMiaow/nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) — one folder per feature module at `be/src/<module>/` with an `index.ts` barrel, shared infrastructure in `be/src/common/` (global `CommonModule`, typed `ConfigService`) and `be/src/shared/` (Prisma, queue), settings in `be/src/config/`. Rules: `be/README.md` and `docs/07`, sections 1.3–1.5.
 - **Vector Export**: CMYK 300 DPI layered vector PDF (`CutContour`, `Crease`, `Artwork`, `Dimensions`), SVG, and DXF.
 
 ---
@@ -121,3 +122,4 @@ Whenever working on any task relating to WrapFit Frontend, UI/UX, 3D Canvas, CAD
      - `branding/mascot-system.md`: Read for exact mascot states, emotional labels, and copy.
      - `shared/src/core/contracts.ts`: Read for master domain events, project structures, and OOP models.
      - `be/src/<module>/`: Read DTOs and controller routes for exact API request/response contracts.
+     - `be/README.md` (section "Cấu trúc thư mục") and `be/src/config/envs/default.ts`: Read before adding a backend module, an import between modules, or an environment variable.
