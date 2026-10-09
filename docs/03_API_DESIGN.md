@@ -1,6 +1,7 @@
 # 🌐 THIẾT KẾ GIAO DIỆN LẬP TRÌNH ỨNG DỤNG (API DESIGN)
 
 > **Base URL (Local)**: `http://localhost:8080/api`  
+> **Hướng dẫn tích hợp cho Frontend** (luồng, mã lỗi, kiểu dữ liệu, chỗ FE đang lệch): [`11_FE_INTEGRATION_GUIDE.md`](11_FE_INTEGRATION_GUIDE.md).  
 > **Tài liệu tương tác (Swagger)**: `http://localhost:8080/api/docs` — luôn khớp với code đang chạy.  
 > **Toàn bộ danh sách endpoint theo kế hoạch** (kèm Controller, quyền truy cập, Milestone): [`07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md`, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).
 
@@ -24,16 +25,20 @@
 | Method | Đường dẫn | Quyền | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/health` | Public | Trạng thái server + kết nối CSDL |
-| `POST` | `/api/auth/register` | Public | Đăng ký (`email`, `password`, `fullName`) → đặt cookie đăng nhập |
-| `POST` | `/api/auth/login` | Public | Đăng nhập bằng email & mật khẩu → đặt cookie đăng nhập |
+| `POST` | `/api/auth/register` | Public | Đăng ký (`email`, `password`, `fullName`) → luôn `201 { email, emailVerificationRequired: true }`, kể cả khi email đã có tài khoản (không lộ email nào đã đăng ký). **Không** đặt cookie: chưa xác minh email thì chưa đăng nhập được. FE luôn hiện "Kiểm tra hộp thư" |
+| `POST` | `/api/auth/login` | Public | Đăng nhập bằng email & mật khẩu → đặt cookie đăng nhập; email chưa xác minh → `403 code EMAIL_NOT_VERIFIED` |
+| `POST` | `/api/auth/verify-email` | Public | `{ token }` (giá trị `?token=` trong link email) → `200 { verified: true }`; mở lại link lần hai vẫn `200`. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED` |
+| `POST` | `/api/auth/verify-email/resend` | Public | `{ email }` → luôn `202 {}` (không lộ email nào có tài khoản) |
+| `POST` | `/api/auth/password/forgot` | Public | `{ email }` → luôn `202 {}`; gửi link đặt lại mật khẩu (30 phút) |
+| `POST` | `/api/auth/password/reset` | Public | `{ token, password }` (link đặt lại mật khẩu **hoặc** link hoàn tất đăng ký) → `200 {}`, thu hồi mọi phiên, xóa cookie; rồi đăng nhập lại. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED \| AUTH_TOKEN_CONSUMED` |
 | `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
 | `POST` | `/api/auth/logout` | Public | Thu hồi phiên hiện tại, xoá cookie |
 | `GET` | `/api/auth/google?redirect=/p/abc` | Public | Bắt đầu đăng nhập Google (điều hướng trình duyệt) |
 | `GET` | `/api/auth/google/callback` | Public | Google gọi lại → đặt cookie → chuyển về frontend |
 | `POST` | `/api/auth/logout-all` | Đã đăng nhập | Đăng xuất mọi thiết bị |
 | `GET` | `/api/auth/me` | Đã đăng nhập | Người dùng hiện tại (giống `GET /api/users/me`); `401` → gọi `/api/auth/refresh` |
-| `GET` · `PATCH` | `/api/users/me` | Đã đăng nhập | Xem / sửa hồ sơ (`fullName`, `shopName`, `avatarUrl`) |
-| `PATCH` | `/api/users/me/brand-kit` | Đã đăng nhập | Lưu Brand Kit (UC-02) `{ logoUrl?, colors: 3–5 màu #RRGGBB, fonts?: ≤ 3, slogan? }` — thay cả bộ, trường bỏ trống bị xóa; trả hồ sơ kèm `brandKit` |
+| `GET` · `PATCH` | `/api/users/me` | Đã đăng nhập | Xem / sửa hồ sơ (`fullName`, `shopName`, `avatarUrl`: ảnh mình đã tải lên, `null` = xóa) |
+| `PATCH` | `/api/users/me/brand-kit` | Đã đăng nhập | Lưu Brand Kit (UC-02) `{ logoUrl?` (logo mình đã tải lên)`, colors: 3–5 màu #RRGGBB, fonts?: ≤ 3, slogan? }` — thay cả bộ, trường bỏ trống bị xóa; trả hồ sơ kèm `brandKit` |
 | `GET` | `/api/users` · `/api/users/:id` | ADMIN | Danh sách (phân trang) / chi tiết người dùng |
 | `PATCH` · `DELETE` | `/api/users/:id` | ADMIN | Đổi role, khóa/mở khóa / xóa người dùng |
 | `POST` | `/api/projects` | Đã đăng nhập | Tạo dự án từ mẫu hộp (`templateId`, `title`, `dimensions`, tùy chọn `materialSpec`, `canvasState`, `collectionId`, `tags`) |
@@ -74,7 +79,7 @@
 // Response 200 — kèm header Set-Cookie: wf_access=…; Path=/api; HttpOnly; SameSite=Lax
 //                                 Set-Cookie: wf_refresh=…; Path=/api/auth; HttpOnly; SameSite=Lax
 {
-  "user": { "id": "…", "email": "admin@wrapfit.vn", "fullName": "WrapFit Admin", "role": "ADMIN", "subscriptionTier": "PRO_BUSINESS", "isActive": true },
+  "user": { "id": "…", "email": "admin@wrapfit.vn", "emailVerifiedAt": "2026-10-08T02:00:00.000Z", "fullName": "WrapFit Admin", "role": "ADMIN", "subscriptionTier": "PRO_BUSINESS", "isActive": true },
   "expiresIn": 900
 }
 ```
@@ -129,13 +134,28 @@
 - Giới hạn lượt AI trong 24 giờ theo gói: FREE 10, STARTER 50, PRO_BUSINESS 300 → hết trả `429`. Tối đa 5 yêu cầu / phút.
 - `theme` ≤ 200 ký tự; `preferredColors` tối đa 5 màu thương hiệu.
 
+### Tài khoản & email (xác minh, quên mật khẩu)
+
+- Đăng ký gửi email xác minh (link 24 giờ). Chưa xác minh: `login` trả `403 EMAIL_NOT_VERIFIED`, `refresh` trả `401`. FE hiển thị nút "Gửi lại email" (`verify-email/resend`).
+- Đăng ký một email **đã có tài khoản**: trả lời y hệt, chỉ email gửi đi khác nhau:
+  - tài khoản chưa xác minh → email "Hoàn tất đăng ký" với link đặt mật khẩu (30 phút). Mật khẩu gửi kèm lần đăng ký sau **không** được lưu, link xác minh cũ hết hiệu lực: chỉ chủ hộp thư quyết định mật khẩu, kể cả khi người khác đã đăng ký email đó trước;
+  - tài khoản đã xác minh → email "Email của bạn đã có tài khoản" (đăng nhập / quên mật khẩu), tối đa 1 lần / giờ, không thay đổi gì.
+- Tài khoản mật khẩu chưa xác minh, không có dự án và file nào bị xóa sau 7 ngày (cron 03:00).
+- Link trong email trỏ tới trang FE `/verify-email?token=…`, `/reset-password?token=…` hoặc `/complete-signup?token=…`; trang đó gọi API tương ứng với `token` (`/complete-signup` và `/reset-password` cùng gọi `POST /api/auth/password/reset`).
+- Mỗi tài khoản: tối đa 1 email mỗi loại / phút và 5 / ngày (vượt thì bỏ qua im lặng, vẫn `202`); thêm giới hạn 5 yêu cầu / phút / IP. Gửi lại email làm link cũ hết hiệu lực.
+- Đặt lại mật khẩu cũng xác minh email (link đến từ hộp thư). Tài khoản chỉ có Google dùng được để đặt mật khẩu lần đầu.
+- Đăng nhập Google vào email đã có tài khoản mật khẩu **chưa xác minh**: mật khẩu đó bị xóa và mọi phiên bị thu hồi (chặn chiếm tài khoản trước khi chủ thật đăng ký); chủ tài khoản đặt lại mật khẩu bằng "quên mật khẩu".
+- Email do worker gửi qua SMTP (`SMTP_*`, `MAIL_FROM`). Local: Mailpit trong `docker-compose.yml`, xem thư tại http://localhost:8025.
+
 ### Lưu trữ file (IT3-08)
 
 - FE xin URL rồi `PUT` file thẳng lên bucket (backend không nhận byte file). Chữ ký khóa đúng `Content-Type` và `Content-Length` đã khai báo: gửi file khác dung lượng / khác định dạng → bucket trả `403`. URL hết hạn sau 5 phút. Ví dụ code: [`be/README.md`](../be/README.md#lưu-trữ-file-s3--cloudflare-r2).
 - `purpose`: `LOGO` (PNG/JPEG/WebP/SVG/PDF, ≤ 15 MB), `IMAGE` (PNG/JPEG/WebP, ≤ 15 MB), `THUMBNAIL` / `AVATAR` (PNG/JPEG/WebP, ≤ 2 MB). Sai định dạng → `400`; quá dung lượng → `413`.
 - Hạn mức theo gói: FREE 100 MB, STARTER 1 GB, PRO_BUSINESS 10 GB, tính từ lúc cấp URL. Vượt → `403`.
-- `projectId` (tùy chọn) gắn file vào dự án của mình (không được ở thùng rác): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác — trừ ảnh / logo mà dự án khác (bản sao, Remix) vẫn dùng trong canvas: file đó được giữ lại và tách khỏi dự án đã xóa.
-- Admin xóa người dùng → file của người đó (và file sinh ra cho dự án của họ) bị xóa khỏi bucket, trừ ảnh mà dự án của người khác vẫn dùng.
+- `projectId` (tùy chọn) gắn file vào dự án của mình (không được ở thùng rác): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác — trừ ảnh / logo mà dự án khác (bản sao, Remix) vẫn hiển thị (`project_file_refs`): file đó được giữ lại và tách khỏi dự án đã xóa.
+- Admin xóa người dùng → file của người đó (và file sinh ra cho dự án của họ) bị xóa khỏi bucket, trừ ảnh mà dự án của người khác vẫn dùng: ảnh đó được chuyển (cả hạn mức) cho chủ dự án Remix cũ nhất.
+- Dùng file ở đâu cũng phải là file **của mình** đã tải lên: `thumbnailUrl`, `previewUrl` (THUMBNAIL / IMAGE), `avatarUrl` (AVATAR / IMAGE), `logoUrl` của Brand Kit (LOGO / IMAGE). URL trang khác → `400 code FILE_URL_NOT_ALLOWED`; file của người khác → `400 code FILE_NOT_OWNED`.
+- Canvas chỉ được thêm ảnh của mình (LOGO / IMAGE); ảnh mà dự án đã hiển thị từ trước (vd. ảnh của tác giả gốc trong bản Remix) được giữ nguyên. Đường dẫn tĩnh (`/branding/...`) và ảnh trang khác vẫn lưu như gửi lên, nhưng không được nhúng vào file in.
 - Chưa cấu hình storage (`STORAGE_BUCKET` trống) → `503`.
 
 ### Thư viện mẫu (IT3-07)

@@ -1,6 +1,7 @@
 # Production overrides: HTTPS through Caddy on one domain, internal services not published.
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-# Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, and the STORAGE_* variables of Cloudflare R2.
+# Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, the STORAGE_* variables of Cloudflare R2 and the SMTP_* / MAIL_FROM
+# variables of the email provider.
 # Requires Docker Compose >= 2.24 (`!reset`).
 services:
   caddy:
@@ -44,6 +45,17 @@ services:
       TRUST_PROXY: "true"
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       GOOGLE_CALLBACK_URL: https://${APP_DOMAIN}/api/auth/google/callback
+
+  # The worker sends the verify-email / reset-password messages: links point to the public domain, and a real SMTP
+  # relay is required (accounts cannot sign in before verifying their email).
+  worker:
+    environment:
+      FRONTEND_URL: https://${APP_DOMAIN}
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST (and SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM) to the email provider in .env}
+      MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM in .env, e.g. WrapFit <no-reply@wrapfit.vn> (domain with SPF + DKIM)}
+
+  mailpit:
+    ports: !reset []
 
   frontend:
     ports: !reset []

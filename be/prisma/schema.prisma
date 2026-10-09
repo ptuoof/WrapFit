@@ -1,5 +1,6 @@
 // WrapFit — Schema v2.1 (xem tài liệu 07, Mục 4.1).
-// Chỉ truy cập qua PrismaService (src/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
+// Khóa chính UUIDv7 (tăng dần theo thời gian: index B-tree không bị phân mảnh), trừ refresh_tokens.id = jti do code sinh.
+// Chỉ truy cập qua PrismaService (src/shared/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
 
 generator client {
   provider = "prisma-client-js"
@@ -63,6 +64,13 @@ enum FilePurpose {
   EXPORT // File in (PDF / SVG / DXF) do worker xuất (IT3-11)
 }
 
+// Mục đích của mã một lần gửi qua email (auth_tokens).
+enum AuthTokenPurpose {
+  VERIFY_EMAIL // Xác minh email sau khi đăng ký: chưa xác minh thì không đăng nhập được
+  RESET_PASSWORD // Đặt lại mật khẩu (quên mật khẩu)
+  COMPLETE_SIGNUP // Đăng ký lại một email chưa xác minh: chủ hộp thư đặt mật khẩu của mình (giống RESET_PASSWORD)
+}
+
 enum ExportStatus {
   PENDING // Đã vào hàng đợi BullMQ
   PROCESSING // Worker đang xử lý
@@ -77,25 +85,29 @@ enum ExportFileType {
 }
 
 model User {
-  id               String           @id @default(uuid()) @db.Uuid
+  id               String           @id @default(uuid(7)) @db.Uuid
   email            String           @unique
   passwordHash     String?          @map("password_hash") // null nếu chỉ đăng nhập bằng Google
   googleId         String?          @unique @map("google_id")
+  // Thời điểm chứng minh sở hữu email (link xác minh, đặt lại mật khẩu hoặc Google). null = chưa đăng nhập được.
+  emailVerifiedAt  DateTime?        @map("email_verified_at") @db.Timestamptz(3)
   fullName         String?          @map("full_name")
-  avatarUrl        String?          @map("avatar_url")
+  avatarUrl        String?          @map("avatar_url") // Ảnh từ nguồn ngoài (Google); ảnh tải lên WrapFit nằm ở avatarKey
+  avatarKey        String?          @map("avatar_key") // Key trên bucket; API trả avatarUrl = URL của key, ưu tiên hơn avatarUrl
   shopName         String?          @map("shop_name")
   role             Role             @default(MAKER)
   subscriptionTier SubscriptionTier @default(FREE) @map("subscription_tier")
-  brandKit         Json?            @map("brand_kit") // { logoUrl, colors, fonts, slogan }
+  brandKit         Json?            @map("brand_kit") // { logoKey, colors, fonts, slogan } (API trả logoUrl)
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]              @relation("UserReferrals")
   refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
   projects      PackagingProject[]
   collections   ProjectCollection[]
   mockups       SocialMockup[]
@@ -103,33 +115,56 @@ model User {
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
 
+  @@index([referredById])
   @@map("users")
 }
 
 // Mỗi refresh token là một dòng; `id` chính là `jti` trong JWT -> hỗ trợ nhiều thiết bị, xoay vòng và thu hồi.
 model RefreshToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  userAgent String?   @map("user_agent")
-  ipAddress String?   @map("ip_address")
-  expiresAt DateTime  @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  userAgent    String?   @map("user_agent")
+  ipAddress    String?   @map("ip_address")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  // Token mới thay thế khi /auth/refresh xoay vòng (logout thì để null): dùng lại token ngay sau đó là một tab khác
+  // refresh cùng lúc, không phải token bị đánh cắp.
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt]) // AuthMaintenanceTask xóa token hết hạn
   @@map("refresh_tokens")
 }
 
+// Mã một lần gửi qua email (xác minh email, đặt lại mật khẩu). Chỉ lưu SHA-256 của mã: lộ DB không lộ link.
+// Mỗi người dùng có tối đa một mã còn hiệu lực cho mỗi mục đích (unique index một phần, chỉ có trong migration).
+model AuthToken {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  purpose    AuthTokenPurpose
+  tokenHash  String           @unique @map("token_hash")
+  expiresAt  DateTime         @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime?        @map("consumed_at") @db.Timestamptz(3) // Đã dùng, hoặc bị thay bằng mã mới hơn
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt]) // Giới hạn số lần gửi lại
+  @@index([expiresAt]) // AuthMaintenanceTask xóa mã hết hạn
+  @@map("auth_tokens")
+}
+
 model ProjectCollection {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
   title       String
   description String?
   colorTag    String?  @default("#D4A373") @map("color_tag")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects PackagingProject[]
@@ -139,14 +174,16 @@ model ProjectCollection {
 }
 
 model BoxTemplate {
-  id            String  @id // tuck-top, sleeve-drawer, lid-base, pillow
-  name          String
-  category      String  @default("retail") // retail, luxury, food, accessories
-  description   String?
-  formulaSchema Json    @map("formula_schema")
-  preview3dUrl  String? @map("preview_3d_url")
-  isCurated     Boolean @default(true) @map("is_curated")
-  isActive      Boolean @default(true) @map("is_active")
+  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow
+  name           String
+  category       String  @default("retail") // retail, luxury, food, accessories
+  description    String?
+  formulaSchema  Json    @map("formula_schema")
+  // Phiên bản công thức dieline (@wrapfit/shared, parametric/registry.ts) gán cho dự án mới của cấu trúc này
+  formulaVersion Int     @default(1) @map("formula_version")
+  preview3dUrl   String? @map("preview_3d_url")
+  isCurated      Boolean @default(true) @map("is_curated")
+  isActive       Boolean @default(true) @map("is_active")
 
   projects        PackagingProject[]
   designTemplates DesignTemplate[]
@@ -157,7 +194,7 @@ model BoxTemplate {
 // Mẫu thiết kế "WrapFit Curated" trong Thư viện mẫu (UC-12, UC-13): cấu trúc hộp + kích thước + đồ họa dựng sẵn.
 // Mẫu cộng đồng không nằm ở đây: đó là các PackagingProject PUBLIC.
 model DesignTemplate {
-  id            String    @id @default(uuid()) @db.Uuid
+  id            String    @id @default(uuid(7)) @db.Uuid
   boxTemplateId String    @map("box_template_id")
   title         String
   description   String?
@@ -171,40 +208,44 @@ model DesignTemplate {
   usesCount     Int       @default(0) @map("uses_count") // Số lần "Dùng mẫu này"
   sortOrder     Int       @default(0) @map("sort_order") // Nhỏ hơn = hiển thị trước
   isActive      Boolean   @default(true) @map("is_active")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   boxTemplate BoxTemplate @relation(fields: [boxTemplateId], references: [id])
 
   @@index([isActive, sortOrder])
+  @@index([boxTemplateId])
   @@map("design_templates")
 }
 
 model PackagingProject {
-  id            String            @id @default(uuid()) @db.Uuid
-  userId        String            @map("user_id") @db.Uuid
-  templateId    String            @map("template_id")
-  collectionId  String?           @map("collection_id") @db.Uuid
-  title         String
-  slug          String            @unique @default(nanoid(10)) // Link công khai /p/[slug]
-  status        ProjectStatus     @default(ACTIVE)
-  visibility    ProjectVisibility @default(PRIVATE)
-  allowFork     Boolean           @default(true) @map("allow_fork")
-  forkedFromId  String?           @map("forked_from_id") @db.Uuid
-  dimensions    Json // { length, width, height, paperThickness }
-  materialSpec  Json              @map("material_spec") // { type, gsm, caliper, finish }
-  canvasState   Json              @map("canvas_state") // { elements: [...] }
-  fitcheckState Json?             @map("fitcheck_state") // { isValid, score, violations }
-  fitcheckScore Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
-  thumbnailUrl  String?           @map("thumbnail_url")
-  tags          String[]          @default([])
-  occasion      Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
-  industry      Industry?
-  viewsCount    Int               @default(0) @map("views_count")
-  likesCount    Int               @default(0) @map("likes_count")
-  deletedAt     DateTime?         @map("deleted_at") // Thời điểm vào thùng rác
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+  id             String            @id @default(uuid(7)) @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  templateId     String            @map("template_id")
+  collectionId   String?           @map("collection_id") @db.Uuid
+  title          String
+  slug           String            @unique @default(nanoid(10)) // Link công khai /p/[slug]
+  status         ProjectStatus     @default(ACTIVE)
+  visibility     ProjectVisibility @default(PRIVATE)
+  allowFork      Boolean           @default(true) @map("allow_fork")
+  forkedFromId   String?           @map("forked_from_id") @db.Uuid
+  dimensions     Json // { length, width, height, paperThickness }
+  materialSpec   Json              @map("material_spec") // { type, gsm, caliper, finish }
+  canvasState    Json              @map("canvas_state") // { elements: [...] }; ảnh tải lên lưu bằng key (users/...), API trả URL
+  fitcheckState  Json?             @map("fitcheck_state") // { isValid, score, violations }
+  fitcheckScore  Int?              @map("fitcheck_score") // = fitcheckState.score: thẻ Dashboard (UC-03), kiểm duyệt Thư viện ≥ 90 (UC-14)
+  thumbnailKey   String?           @map("thumbnail_key") // Key trên bucket; API trả thumbnailUrl
+  tags           String[]          @default([])
+  occasion       Occasion? // Gắn khi chia sẻ lên Thư viện cộng đồng (bộ lọc UC-12)
+  industry       Industry?
+  viewsCount     Int               @default(0) @map("views_count")
+  likesCount     Int               @default(0) @map("likes_count")
+  version        Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
+  // Chốt lúc tạo dự án (= boxTemplate.formulaVersion), không bao giờ đổi: sửa công thức không làm xê dịch dieline cũ
+  formulaVersion Int               @map("formula_version")
+  deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       BoxTemplate         @relation(fields: [templateId], references: [id])
@@ -217,23 +258,26 @@ model PackagingProject {
   snapshots      ProjectSnapshot[]
   likes          ProjectLike[]
   files          StoredFile[]
+  fileRefs       ProjectFileRef[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
   @@index([status, deletedAt]) // Cron dọn thùng rác
   @@index([collectionId])
+  @@index([templateId])
+  @@index([forkedFromId]) // Đếm lượt remix trên thẻ Thư viện; SET NULL khi xóa bản gốc
   @@map("packaging_projects")
 }
 
 model ProjectSnapshot {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   projectId   String   @map("project_id") @db.Uuid
   name        String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
   canvasState Json     @map("canvas_state")
   dimensions  Json
-  previewUrl  String?  @map("preview_url")
+  previewKey  String?  @map("preview_key") // Key trên bucket; API trả previewUrl
   isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -242,10 +286,10 @@ model ProjectSnapshot {
 }
 
 model ProjectLike {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   projectId String   @map("project_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -256,16 +300,15 @@ model ProjectLike {
 }
 
 model UnboxingExperience {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
   projectId      String   @unique @map("project_id") @db.Uuid
   slug           String   @unique @default(nanoid(12))
   recipientName  String   @map("recipient_name")
   giftNote       String   @map("gift_note") @db.Text
   audioTrackUrl  String?  @map("audio_track_url")
   particleEffect String   @default("confetti") @map("particle_effect")
-  qrCodeUrl      String?  @map("qr_code_url")
   viewsCount     Int      @default(0) @map("views_count")
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -273,29 +316,30 @@ model UnboxingExperience {
 }
 
 model SocialMockup {
-  id         String   @id @default(uuid()) @db.Uuid
+  id         String   @id @default(uuid(7)) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
   projectId  String   @map("project_id") @db.Uuid
   presetName String   @map("preset_name")
-  renderUrl  String   @map("render_url")
-  createdAt  DateTime @default(now()) @map("created_at")
+  renderKey  String   @map("render_key") // Key trên bucket của ảnh render
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+  @@index([userId])
   @@map("social_mockups")
 }
 
 model ExportJob {
-  id          String         @id @default(uuid()) @db.Uuid
+  id          String         @id @default(uuid(7)) @db.Uuid
   projectId   String         @map("project_id") @db.Uuid
   fileType    ExportFileType @map("file_type")
   status      ExportStatus   @default(PENDING)
   storageKey  String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
   errorLog    String?        @map("error_log")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -306,33 +350,63 @@ model ExportJob {
 // File trên S3 / R2 (IT3-08). Ghi lại lúc cấp pre-signed URL: chữ ký khóa đúng dung lượng và định dạng,
 // nên `size` dùng được để tính hạn mức theo gói. File gắn với dự án bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn.
 model StoredFile {
-  id          String      @id @default(uuid()) @db.Uuid
+  id          String      @id @default(uuid(7)) @db.Uuid
   userId      String      @map("user_id") @db.Uuid
   projectId   String?     @map("project_id") @db.Uuid
   key         String      @unique // users/<userId>/<purpose>/<uuid>.<ext>
   purpose     FilePurpose
   contentType String      @map("content_type")
   size        Int // byte
-  createdAt   DateTime    @default(now()) @map("created_at")
+  // Thời điểm xác nhận file có thật trên bucket. null = mới cấp URL, chưa biết trình duyệt đã upload chưa:
+  // StorageMaintenanceTask kiểm tra (HEAD) rồi xác nhận hoặc xóa dòng.
+  confirmedAt DateTime?   @map("confirmed_at") @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  refs    ProjectFileRef[]
 
   @@index([userId])
   @@index([projectId])
+  @@index([confirmedAt, createdAt])
   @@map("stored_files")
+}
+
+// Ảnh tải lên mà một dự án đang hiển thị (canvas của dự án hoặc của các mốc phiên bản). Bản remix hiển thị ảnh của
+// tác giả gốc: file chỉ được xóa khỏi bucket khi không còn dự án nào trỏ tới. Đồng bộ trong cùng transaction với mỗi lần
+// ghi canvas (projects/infrastructure/project-file-refs.ts). Xóa file còn được tham chiếu bị khóa ngoại chặn lại.
+model ProjectFileRef {
+  projectId    String @map("project_id") @db.Uuid
+  storedFileId String @map("stored_file_id") @db.Uuid
+
+  project    PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  storedFile StoredFile       @relation(fields: [storedFileId], references: [id], onDelete: NoAction)
+
+  @@id([projectId, storedFileId])
+  @@index([storedFileId])
+  @@map("project_file_refs")
+}
+
+// Object trên bucket không xóa được (lỗi S3) sau khi dòng DB đã bị xóa: StorageMaintenanceTask thử xóa lại.
+model OrphanedObject {
+  key       String   @id
+  attempts  Int      @default(0)
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("orphaned_objects")
 }
 
 // Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.
 // Lần sinh bằng thuật toán dự phòng (không gọi AI) không được ghi.
 model AiGeneration {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(uuid(7)) @db.Uuid
   userId       String   @map("user_id") @db.Uuid
   theme        String
   model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
   inputTokens  Int      @map("input_tokens")
   outputTokens Int      @map("output_tokens")
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

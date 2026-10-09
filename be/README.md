@@ -3,12 +3,13 @@
 REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì quà tặng (tham chiếu Pacdora.com).
 Đây là workspace `be/` (`@wrapfit/backend`) trong monorepo WrapFit. Kiến trúc và phân công nhiệm vụ: xem [`docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md`](../docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md) và [`docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md`](../docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md).
 
-- **NestJS 11** theo kiến trúc modular monolith
+- **NestJS 11** theo kiến trúc modular monolith, mã nguồn tổ chức theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) (mục [Cấu trúc thư mục](#cấu-trúc-thư-mục))
+- **2 process từ cùng mã nguồn**: API HTTP (`dist/app.js`) và worker BullMQ + Redis (`dist/worker.js`) xuất file in, gửi email
 - **PostgreSQL 16 + Prisma 6** — Schema v2.1 (migration, seed)
 - **Auth**: email/mật khẩu + **Google OAuth 2.0**, JWT trong **HttpOnly Cookie** (refresh token xoay vòng, phát hiện dùng lại token, nhiều thiết bị) và **RBAC** theo `Role`
 - **WebSocket** (Socket.IO) có xác thực JWT ở bước handshake
 - **Swagger/OpenAPI** tại `/api/docs`
-- **Validation** (class-validator), kiểm tra biến môi trường khi khởi động, logging request, exception filter thống nhất, rate limit, helmet, CORS
+- **Validation** (class-validator), cấu hình có kiểu theo `NODE_ENV` (kiểm tra biến môi trường khi khởi động), logging request, exception filter thống nhất, rate limit, helmet, CORS
 - **Docker**: image build từ gốc repo (`be/Dockerfile`), chạy cùng PostgreSQL + Frontend bằng `docker-compose.yml` ở gốc
 
 ## Trạng thái so với WBS (tài liệu 07, Mục 5.3)
@@ -29,35 +30,57 @@ REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì q
 
 ## Cấu trúc thư mục
 
+Theo skeleton [CatsMiaow/nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure): mỗi module nghiệp vụ nằm thẳng dưới `src/`, hạ tầng dùng chung ở `common/` và `shared/`, cấu hình ở `config/`.
+
 ```
 prisma/
   schema.prisma            # Schema v2.1: users, packaging_projects, box_templates, collections, snapshots...
   migrations/              # SQL migration
   seed.ts                  # admin + 4 mẫu hộp (tuck-top, sleeve-drawer, lid-base, pillow) + collection/dự án mẫu
 src/
-  main.ts                  # khởi động API (HTTP)
-  worker.ts                # khởi động worker BullMQ (không mở cổng HTTP)
-  app.setup.ts             # cấu hình dùng chung (prefix /api, pipe, CORS, helmet)
-  swagger.setup.ts
+  app.ts                   # khởi động API (HTTP) -> dist/app.js
+  worker.ts                # khởi động worker BullMQ (không mở cổng HTTP) -> dist/worker.js
+  repl.ts                  # shell tương tác trên module API: npm run start:repl
+  mail-test.ts             # gửi thử 1 email bằng cấu hình SMTP hiện tại
+  app.middleware.ts        # cấu hình dùng chung (request id, helmet, CORS, prefix /api, ValidationPipe)
   app.module.ts            # ghép module + guard/filter/interceptor toàn cục
-  config/                  # validate biến môi trường
-  prisma/                  # PrismaModule (global) + PrismaService
-  common/                  # decorators, guards, filters, interceptors, dto, adapters
-  modules/
-    auth/                  # register, login, refresh, logout
-    users/                 # hồ sơ cá nhân + quản trị user (ADMIN)
-    projects/              # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
-    collections/           # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
-    public-showcase/       # trang công khai /p/[slug], Remix (fork), thả tim
-    templates/             # Thư viện mẫu Curated & Community (cache 60 s)
-    storage/               # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
-    ai/                    # sinh bảng màu + hoa văn SVG (Claude hoặc thuật toán dự phòng)
-    unboxing/              # trải nghiệm mở hộp 3D + mã QR in đáy hộp
-    export/                # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
-    events/                # WebSocket gateway (thông báo realtime)
-    health/                # GET /api/health
-test/                      # e2e test
+  swagger.ts
+  config/
+    env.validation.ts      # kiểm tra + giá trị mặc định của biến môi trường
+    envs/default.ts        # gom biến môi trường thành cấu hình lồng nhau (app, auth, storage, mail...)
+    envs/production.ts     # khác biệt theo NODE_ENV (development.ts, test.ts: chưa có gì)
+    configuration.ts       # default + file của NODE_ENV, nạp bằng ConfigModule.forRoot({ load })
+    logger.config.ts       # AppLogger (JSON ở production, kèm request id)
+  common/                  # @Global CommonModule: ConfigService có kiểu, decorators, guards, filters,
+                           # interceptors, dto, constants, utils...
+  shared/
+    prisma/                # PrismaModule (global) + PrismaService
+    queue/                 # kết nối BullMQ (Redis)
+  auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
+  base/                    # GET /api/health
+  users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
+  projects/                # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
+  collections/             # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
+  public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
+  templates/               # Thư viện mẫu Curated & Community (cache 60 s)
+  storage/                 # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
+  ai/                      # sinh bảng màu + hoa văn SVG (Claude hoặc thuật toán dự phòng)
+  unboxing/                # trải nghiệm mở hộp 3D + mã QR in đáy hộp
+  export/                  # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
+  mail/                    # MailService (đưa vào hàng đợi) + MailProcessor (worker gửi SMTP)
+  events/                  # WebSocket gateway (thông báo realtime)
+test/
+  e2e/                     # e2e test (*.e2e-spec.ts) + helpers/
 ```
+
+**Quy ước**
+
+- Module nhỏ để phẳng (`<ten>.module.ts`, `.controller.ts`, `.service.ts`, `dto/`); chỉ thêm thư mục con khi module lớn (`auth/guards`, `export/rendering`, 4 tầng của `projects/`).
+- Mỗi module có `index.ts` export class module và những gì module khác dùng. Import module khác qua thư mục: `from '../common'`, `from '../users'`. Trong cùng module import thẳng file; không import `'.'` hay `'..'`.
+- `common/` và `shared/` không import module nghiệp vụ. ESLint (`import/no-cycle`) báo lỗi nếu có vòng import.
+- Đọc cấu hình bằng `ConfigService` của `common/` (không dùng bản của `@nestjs/config`): `config.get('auth.jwt.accessTtlSeconds')` trả về `number`, đường dẫn sai thì ném lỗi. Thêm biến môi trường: khai báo trong `config/env.validation.ts`, rồi đặt vào `config/envs/default.ts`.
+
+**Khác skeleton**: dùng Prisma thay TypeORM (không có `src/entity/`, schema ở `prisma/`); có thêm entry `worker.ts` và `mail-test.ts` (cả hai chạy trong container production nên nằm trong `src/`, không ở `bin/`); `AuthController` ở `auth/` chứ không ở `base/`; `ValidationPipe` và middleware request id đăng ký trong `app.middleware.ts` để request id có mặt từ middleware đầu tiên; giữ Jest thay Vitest; không khai báo `Express.User` toàn cục vì `req.user` là `GoogleProfile` ở callback OAuth.
 
 ## Chạy nhanh (local)
 
@@ -67,13 +90,14 @@ Yêu cầu: Node.js >= 20, Docker. Các lệnh dưới đây chạy **tại gố
 npm install                                  # cài toàn bộ workspace (fe, be, shared)
 docker compose up -d postgres                # chỉ chạy database (postgres / password, db: wrapfit)
 docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 8333, bucket wrapfit)
-docker compose up -d redis                   # hàng đợi BullMQ (xuất file in)
+docker compose up -d redis                   # hàng đợi BullMQ (xuất file in, email)
+docker compose up -d mailpit                 # bắt mọi email (xác minh, quên mật khẩu): xem tại http://localhost:8025
 cp be/.env.example be/.env                   # nhớ đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 npm --workspace=be run db:generate
 npm --workspace=be run db:migrate            # áp dụng migration vào database dev
 npm --workspace=be run db:seed               # tạo 4 mẫu hộp + admin: admin@wrapfit.vn / Admin@12345 + dữ liệu mẫu
 npm run dev:be                               # = npm --workspace=be run dev (watch mode)
-npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất file in
+npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất file in + gửi email
 ```
 
 Hoặc `cd be` rồi dùng trực tiếp `npm run <script>`.
@@ -98,36 +122,45 @@ Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `
 
 ## Biến môi trường
 
-Xem `.env.example`. Ứng dụng sẽ **từ chối khởi động** nếu thiếu `DATABASE_URL` hoặc secret JWT ngắn hơn 32 ký tự.
+Xem `.env.example`. Ứng dụng sẽ **từ chối khởi động** (cả API lẫn worker) nếu thiếu `DATABASE_URL` hoặc secret JWT ngắn hơn 32 ký tự.
 
-| Biến | Mặc định | Ý nghĩa |
-| --- | --- | --- |
-| `PORT` | `8080` | Cổng server |
-| `DATABASE_URL` | – | Chuỗi kết nối PostgreSQL (database `wrapfit`) |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | – | Secret ký token (>= 32 ký tự, hai giá trị khác nhau) |
-| `JWT_ACCESS_TTL_SECONDS` | `900` | Thời hạn access token (15 phút) |
-| `JWT_REFRESH_TTL_SECONDS` | `604800` | Thời hạn refresh token (7 ngày) |
-| `BCRYPT_ROUNDS` | `10` | Độ khó băm mật khẩu |
-| `CORS_ORIGINS` | `*` | Danh sách origin, ngăn cách bằng dấu phẩy. Phải là origin cụ thể (vd. `http://localhost:3000`) để trình duyệt gửi cookie |
-| `FRONTEND_URL` | `http://localhost:3000` | Trang frontend mà trình duyệt quay về sau khi đăng nhập Google |
-| `COOKIE_SECURE` | *(tự động)* | `Secure` cho cookie đăng nhập; trống = bật khi `NODE_ENV=production` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | *(trống)* | Google OAuth; để trống cả hai = tắt đăng nhập Google |
-| `GOOGLE_CALLBACK_URL` | `http://localhost:8080/api/auth/google/callback` | Phải nằm trong *Authorized redirect URIs* của OAuth client |
-| `SWAGGER_ENABLED` | `true` | Bật/tắt `/api/docs` |
-| `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `60` / `100` | Rate limit mặc định (theo IP) |
-| `STORAGE_BUCKET` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
-| `STORAGE_ENDPOINT` | *(trống)* | R2: `https://<account-id>.r2.cloudflarestorage.com`; SeaweedFS local: `http://localhost:8333`; AWS S3: để trống |
-| `STORAGE_PUBLIC_ENDPOINT` | *(= `STORAGE_ENDPOINT`)* | Địa chỉ ghi vào pre-signed URL khi trình duyệt truy cập storage bằng địa chỉ khác backend (Docker) |
-| `STORAGE_REGION` | `auto` | `auto` cho R2, `us-east-1` cho SeaweedFS |
-| `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | – | Khóa API của bucket (R2: *R2 API Token*) |
-| `STORAGE_PUBLIC_URL` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
-| `STORAGE_FORCE_PATH_STYLE` | `false` | `true` cho SeaweedFS |
-| `ANTHROPIC_API_KEY` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
-| `AI_MODEL` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
-| `AI_TIMEOUT_MS` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
-| `REDIS_URL` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
-| `EXPORT_CONCURRENCY` | `2` | Số job xuất file một worker chạy song song |
-| `TRUST_PROXY` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
+Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, rồi gom thành cấu hình lồng nhau trong `src/config/envs/default.ts` (ghi đè theo `NODE_ENV` ở `envs/production.ts`...). Code đọc bằng `ConfigService` của `src/common` theo cột **Khóa cấu hình**, ví dụ `config.get('auth.jwt.accessTtlSeconds')` trả về `number`; các biến `true` / `false` trở thành boolean.
+
+| Biến | Khóa cấu hình | Mặc định | Ý nghĩa |
+| --- | --- | --- | --- |
+| `NODE_ENV` | `app.env` | `development` | `development` / `production` / `test`; chọn file ghi đè trong `config/envs/` |
+| `PORT` | `app.port` | `8080` | Cổng server |
+| `DATABASE_URL` | – (Prisma đọc trực tiếp) | – | Chuỗi kết nối PostgreSQL (database `wrapfit`) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | `auth.jwt.accessSecret` / `auth.jwt.refreshSecret` | – | Secret ký token (>= 32 ký tự, hai giá trị khác nhau) |
+| `JWT_ACCESS_TTL_SECONDS` | `auth.jwt.accessTtlSeconds` | `900` | Thời hạn access token (15 phút) |
+| `JWT_REFRESH_TTL_SECONDS` | `auth.jwt.refreshTtlSeconds` | `604800` | Thời hạn refresh token (7 ngày) |
+| `AUTH_TOKEN_SECRET` | `auth.tokenSecret` | *(= `JWT_REFRESH_SECRET`)* | Sinh link một lần trong email xác minh / đặt lại mật khẩu (>= 32 ký tự nếu đặt). Đổi giá trị chỉ vô hiệu các link đã gửi |
+| `BCRYPT_ROUNDS` | `auth.bcryptRounds` | `10` | Độ khó băm mật khẩu |
+| `COOKIE_SECURE` | `auth.cookieSecure` | *(tự động)* | `Secure` cho cookie đăng nhập; trống = tắt ở development, bật ở production (`envs/production.ts`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `auth.google.clientId` / `.clientSecret` | *(trống)* | Google OAuth; để trống cả hai = tắt đăng nhập Google |
+| `GOOGLE_CALLBACK_URL` | `auth.google.callbackUrl` | `http://localhost:8080/api/auth/google/callback` | Phải nằm trong *Authorized redirect URIs* của OAuth client |
+| `CORS_ORIGINS` | `app.corsOrigins` | `*` | Danh sách origin, ngăn cách bằng dấu phẩy. Phải là origin cụ thể (vd. `http://localhost:3000`) để trình duyệt gửi cookie |
+| `FRONTEND_URL` | `app.frontendUrl` | `http://localhost:3000` | Trang frontend: đích sau khi đăng nhập Google, gốc của link trong email và mã QR |
+| `SWAGGER_ENABLED` | `app.swaggerEnabled` | `true` | Bật/tắt `/api/docs` |
+| `TRUST_PROXY` | `app.trustProxy` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
+| `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `throttle.ttlSeconds` / `throttle.limit` | `60` / `100` | Rate limit mặc định (theo IP) |
+| `STORAGE_BUCKET` | `storage.bucket` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
+| `STORAGE_ENDPOINT` | `storage.endpoint` | *(trống)* | R2: `https://<account-id>.r2.cloudflarestorage.com`; SeaweedFS local: `http://localhost:8333`; AWS S3: để trống |
+| `STORAGE_PUBLIC_ENDPOINT` | `storage.publicEndpoint` | *(= `STORAGE_ENDPOINT`)* | Địa chỉ ghi vào pre-signed URL khi trình duyệt truy cập storage bằng địa chỉ khác backend (Docker) |
+| `STORAGE_REGION` | `storage.region` | `auto` | `auto` cho R2, `us-east-1` cho SeaweedFS |
+| `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | `storage.accessKeyId` / `.secretAccessKey` | – | Khóa API của bucket (R2: *R2 API Token*) |
+| `STORAGE_PUBLIC_URL` | `storage.publicUrl` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
+| `STORAGE_FORCE_PATH_STYLE` | `storage.forcePathStyle` | `false` | `true` cho SeaweedFS |
+| `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
+| `AI_MODEL` | `ai.model` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
+| `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
+| `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
+| `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
+| `SMTP_HOST` / `SMTP_PORT` | `mail.smtp.host` / `.port` | `localhost` / `1025` | SMTP của worker; mặc định là Mailpit trong `docker-compose.yml` (thư bị giữ lại, xem tại `http://localhost:8025`) |
+| `SMTP_SECURE` | `mail.smtp.secure` | `false` | `true` = TLS ngay từ đầu (cổng 465); `false` = STARTTLS nếu server hỗ trợ (587) |
+| `SMTP_USER` / `SMTP_PASS` | `mail.smtp.user` / `.pass` | *(trống)* | Đặt cả hai hoặc để trống cả hai (không xác thực) |
+| `MAIL_FROM` | `mail.from` | `WrapFit <no-reply@wrapfit.local>` | Người gửi; ở production tên miền cần bản ghi SPF / DKIM |
+| `LOG_FORMAT` | – (logger đọc trực tiếp) | *(tự động)* | `json` (một dòng JSON mỗi log) hoặc `text`; trống = `json` ở production |
 
 ## API hiện có
 
@@ -135,7 +168,10 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 
 | Method | Đường dẫn | Quyền | Mô tả |
 | --- | --- | --- | --- |
-| POST | `/api/auth/register` | public | Đăng ký (`email`, `password`, `fullName`) → đặt cookie đăng nhập |
+| POST | `/api/auth/register` | public | Đăng ký (`email`, `password`, `fullName`) → gửi email xác minh, chưa mở phiên đăng nhập |
+| POST | `/api/auth/verify-email` | public | Xác minh email bằng token trong link → đăng nhập được |
+| POST | `/api/auth/verify-email/resend` | public | Gửi lại link xác minh |
+| POST | `/api/auth/password/forgot` / `/api/auth/password/reset` | public | Gửi link đặt lại mật khẩu / đặt mật khẩu mới bằng token |
 | POST | `/api/auth/login` | public | Đăng nhập email & mật khẩu → đặt cookie đăng nhập |
 | POST | `/api/auth/refresh` | public (cần cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
 | POST | `/api/auth/logout` | public | Thu hồi phiên hiện tại, xoá cookie |
@@ -292,7 +328,7 @@ npm --workspace=be run test:e2e
 
 ## Thêm module mới
 
-1. `npx nest g module modules/<ten>` (và `controller`, `service` tương ứng). Module nghiệp vụ phức tạp chia 4 thư mục `presentation/ application/ domain/ infrastructure/` (tài liệu 08, Mục 1.1–1.3).
+1. `npx nest g module <ten>` (và `controller`, `service` tương ứng), rồi tạo `src/<ten>/index.ts` export module. Module nghiệp vụ phức tạp chia 4 thư mục `presentation/ application/ domain/ infrastructure/` (tài liệu 08, Mục 1.1–1.3).
 2. Sửa `prisma/schema.prisma`, rồi `npm run db:migrate -- --name <ten>` (trong `be/`).
 3. Mặc định mọi route đều yêu cầu đăng nhập; dùng `@Public()` để mở, `@Roles(Role.ADMIN)` để giới hạn theo role, `@CurrentUser()` để lấy user hiện tại.
 4. DTO đặt trong `dto/`; plugin Swagger tự sinh tài liệu từ DTO có hậu tố `.dto.ts`.
@@ -309,7 +345,7 @@ npm --workspace=be run test:e2e
 | `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork` (ảnh nhúng data URI + chữ), đơn vị mm |
 | `DXF` | Máy bế CNC | R12, mm, lớp `CUT` (đỏ) và `CREASE` (xanh, nét đứt) |
 
-**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/modules/export/rendering/`.
+**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
 

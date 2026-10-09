@@ -7,7 +7,7 @@
 
 ## 1. Sơ Đồ Kiến Trúc Hệ Thống (System Architecture)
 
-Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14 App Router + Pure Domain Core)** giúp 3 thành viên IT phát triển độc lập, không bị chồng chéo code:
+Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14 App Router + Pure Domain Core + NestJS API & Worker)** giúp 3 thành viên IT phát triển độc lập, không bị chồng chéo code:
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
@@ -15,7 +15,7 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 │  • Landing Page 3D (GSAP ScrollTrigger)    • 2D Visual Canvas Editor      │
 │  • 3D Box Folding Simulation (Three.js)    • UI/UX Design System (Figma)  │
 └─────────────────────────────────────┬─────────────────────────────────────┘
-                                      │ Sử dụng contracts: src/types/*
+                                      │ Sử dụng contracts: @wrapfit/shared (shared/src/types/*)
 ┌─────────────────────────────────────▼─────────────────────────────────────┐
 │             TẦNG 2: ĐỘNG CƠ CỐT LÕI (CORE ENGINES) (Phụ trách: IT 2)      │
 │  • Parametric Dieline Engine (Công thức toán học L, W, H, Caliper t)       │
@@ -25,7 +25,8 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
                                       │ Lưu trữ & Truy xuất dữ liệu
 ┌─────────────────────────────────────▼─────────────────────────────────────┐
 │            TẦNG 3: HẠ TẦNG DỮ LIỆU & BÊN THỨ 3 (Phụ trách: IT 3)          │
-│  • API Endpoints (Next.js App Router / Server Actions)                    │
+│  • REST API NestJS 11 (be/src/<module>/, cổng 8080, prefix /api)          │
+│  • Worker BullMQ + Redis: xuất file PDF / SVG / DXF, gửi email            │
 │  • PostgreSQL Database (Prisma ORM): Users, Projects, Templates, Jobs     │
 │  • Cloud Object Storage (S3 / R2): Lưu trữ logo vector & file PDF xuất in │
 │  • AI Pattern Integration: Sinh hoa văn nền theo chủ đề dịp tặng          │
@@ -54,10 +55,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ### 👤 IT 1: Frontend Lead & 2D/3D Packaging Studio
 - **Trọng tâm**: Trải nghiệm thị giác, tương tác kéo thả 2D và mô phỏng 3D thời gian thực.
 - **Thư mục làm việc độc quyền**:
-  - `fe/src/components/canvas/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
-  - `fe/src/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
-  - `fe/src/app/editor/[id]/`: Trang phòng thu thiết kế (Studio workspace).
-  - `fe/src/app/page.tsx`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
+  - `fe/src/features/studio/components/canvas/`: Canvas 2D kéo thả logo, chữ, sticker, hoa văn.
+  - `fe/src/features/studio/components/three/`: Sân khấu 3D render khối hộp, texture map và nếp gập.
+  - `fe/src/views/editor/studio/`: Trang phòng thu thiết kế (Studio workspace, route `/editor/[id]`).
+  - `fe/src/views/home/`: Landing Page 3D cuộn chuột phục vụ Pitching CP4.
 - **Agent Skills hỗ trợ**: `packaging-threejs-fold`, `wrapfit-design-system`, `scroll-storytelling`.
 - **Nhánh Git**: `feature/it1-editor-3d`
 
@@ -82,9 +83,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 - **Trọng tâm**: CSDL, API lưu trữ, Cloud Storage, Authentication và tích hợp AI bên ngoài.
 - **Thư mục làm việc độc quyền**:
   - `be/prisma/schema.prisma` + `be/prisma/migrations/`: Thiết kế và quản trị CSDL PostgreSQL (qua migration).
-  - `be/src/modules/<tên>/`: Mỗi phân hệ là một NestJS Module (controller, service, DTO) — xem `docs/08`, Mục 1 & 7.
-  - `be/src/common/`: Guard, decorator, filter, interceptor dùng chung (JWT, RBAC, định dạng lỗi).
-  - `be/src/main.ts`: Khởi chạy NestJS REST API server (cổng 8080, prefix `/api`).
+  - `be/src/<tên>/`: Mỗi phân hệ là một NestJS Module (controller, service, DTO, `index.ts`) — xem `docs/08`, Mục 1 & 7. Cấu trúc theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure), quy ước trong `be/README.md`.
+  - `be/src/common/`: Guard, decorator, filter, interceptor, `ConfigService` dùng chung (RBAC, định dạng lỗi).
+  - `be/src/config/`: Kiểm tra biến môi trường + cấu hình theo `NODE_ENV`. `be/src/shared/`: Prisma, hàng đợi BullMQ.
+  - `be/src/app.ts`: Khởi chạy NestJS REST API server (cổng 8080, prefix `/api`).
 - **Agent Skills hỗ trợ**: `insforge-backend-flow`.
 - **Nhánh Git**: `feature/it3-backend-auth-storage`
 
@@ -93,10 +95,12 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 ## 3. Hợp Đồng Dữ Liệu Chung (Single Source of Truth)
 
 Để 3 IT không bị đụng độ mã nguồn (merge conflict), toàn bộ giao tiếp giữa 3 tầng được chuẩn hóa tại thư mục:  
-📁 `src/types/`:
-- `src/types/dieline.ts`: Cấu trúc tọa độ các mặt hộp, nét cắt (Cut), nét cấn (Crease).
-- `src/types/project.ts`: Cấu trúc dự án bao bì, kích thước $(L, W, H)$, chất liệu giấy và các phần tử thiết kế.
-- `src/types/fitcheck.ts`: Cấu trúc báo cáo lỗi in ấn và cảnh báo an toàn.
+📁 `shared/src/types/` (package `@wrapfit/shared`):
+- `shared/src/types/dieline.ts`: Cấu trúc tọa độ các mặt hộp, nét cắt (Cut), nét cấn (Crease).
+- `shared/src/types/project.ts`: Cấu trúc dự án bao bì, kích thước $(L, W, H)$, chất liệu giấy và các phần tử thiết kế.
+- `shared/src/types/fitcheck.ts`: Cấu trúc báo cáo lỗi in ấn và cảnh báo an toàn.
+
+Phía backend, DTO của NestJS `implements` các interface này (ví dụ `CanvasStateDto implements CanvasState`), và Swagger `/api/docs` là hợp đồng HTTP giữa `fe/` và `be/`. Cách tổ chức mã nguồn `be/`: `be/README.md` và tài liệu `docs/07`, Mục 1.3 – 1.5.
 
 ---
 

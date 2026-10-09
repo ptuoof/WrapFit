@@ -20,8 +20,12 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
     const startedAt = Date.now();
-    const log = (status: number) =>
-      this.logger.log(`${request.method} ${request.originalUrl} ${status} +${Date.now() - startedAt}ms`);
+    // The request id is added by AppLogger; `user` is set by JwtAuthGuard on authenticated routes.
+    const log = (status: number) => {
+      const userId = (request.user as { id?: string } | undefined)?.id;
+      const user = userId ? ` user=${userId}` : '';
+      this.logger.log(`${request.method} ${request.originalUrl} ${status} +${Date.now() - startedAt}ms${user}`);
+    };
 
     return next.handle().pipe(
       tap({

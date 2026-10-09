@@ -1,0 +1,649 @@
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>WrapFit Studio Dashboard</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans for a clean luxury aesthetic -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              900: '#0f172a',
+              gold: '#c5a059',
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02)',
+            'card': '0 10px 30px -4px rgba(0, 0, 0, 0.04)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom CSS Styling -->
+<style data-purpose="custom-styling">
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #ededed;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* Circular SVG Gauge Styling */
+    .gauge-circle {
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+  </style>
+<!-- END: Custom CSS Styling -->
+</head>
+<body class="min-h-screen p-3 md:p-6 lg:p-8 flex items-center justify-center">
+<!-- BEGIN: MainDashboardContainer -->
+<main class="w-full max-w-[1520px] bg-[#f5f6f8] rounded-[2.5rem] p-4 md:p-6 lg:p-7 shadow-2xl border border-gray-200/80">
+<!-- BEGIN: TopNavigationBar -->
+<header class="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6">
+<!-- Brand & Search Bar -->
+<div class="flex items-center gap-6 w-full xl:w-auto">
+<div class="flex items-center gap-2">
+<span class="text-2xl font-extrabold tracking-tight text-black flex items-center">
+            WRAP<span class="text-slate-400 font-light">FIT</span>
+</span>
+</div>
+<!-- Search Bar -->
+<div class="relative flex-1 md:w-80" data-purpose="search-box">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="w-full pl-10 pr-4 py-2.5 bg-white border-none rounded-full text-xs font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-black placeholder-gray-400" placeholder="Tìm kiếm mẫu hộp, khuôn CAD, vật liệu..." type="text">
+</div>
+</div>
+<!-- Navigation Pill Tabs -->
+<nav class="flex items-center gap-1.5 overflow-x-auto w-full xl:w-auto py-1 scrollbar-none" data-purpose="nav-tabs">
+<button class="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-xs font-semibold whitespace-nowrap shadow-sm">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+</svg>
+          Trang Chủ
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+<path clip-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" fill-rule="evenodd"></path>
+</svg>
+          Bé Gói AI
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Kho Mẫu CAD
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Vật Liệu PBR
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Lịch Sản Xuất
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Kế Hoạch Dự Án
+        </button>
+<button class="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Bộ Sưu Tập
+        </button>
+</nav>
+<!-- Action & Profile -->
+<div class="flex items-center gap-3 self-end xl:self-auto">
+<button aria-label="Thông báo" class="p-2.5 bg-white text-gray-700 rounded-full hover:bg-gray-100 relative shadow-sm">
+<span class="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full"></span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<div class="relative cursor-pointer group">
+<img alt="User Avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7yxQZHwTvSHK4C0LWbvSJJQ0VkUoTNt-5B2wbV4SaXC6We0UqHIVqq4R8RmAUvcXvcF-j1R9xt-BDPnjXh717DmH8r-LU7NH2TEZwzmopvgVrgKACQcVFSETlU47py9xrOGZ1IfqkPkQHuY5n43OUn3SclbEwBRnqP3HgMDW9Cx72pb4jG1oSJoMJbIykQo3ZGJHIv98wC73ZBhXE7jvwutINJEBBV5dYzgsY2bLK">
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></div>
+</div>
+</div>
+</header>
+<!-- END: TopNavigationBar -->
+<!-- BEGIN: BentoGridLayout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5" data-purpose="bento-grid">
+<!-- ================= COL 1: Hero Studio & AI Assistant ================= -->
+<div class="lg:col-span-5 flex flex-col gap-5">
+<!-- BEGIN: Hero Feature Card -->
+<article class="bg-white rounded-[2rem] p-6 lg:p-7 relative overflow-hidden shadow-soft flex flex-col justify-between min-h-[460px]">
+<!-- Card Header & Badge -->
+<div class="relative z-10">
+<div class="flex items-center gap-1.5 text-amber-600 font-semibold text-xs tracking-wider uppercase mb-2">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+</svg>
+<span class="">WRAPFIT AI STUDIO</span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
+              Mẫu Hộp Tiêu Biểu<br>Trong Ngày
+            </h1>
+<p class="text-gray-500 text-xs mt-2.5 max-w-[260px] leading-relaxed">
+              Cấu trúc âm dương nam châm giấu cạnh, cán màng nhung Soft-touch, ép kim đồng vàng sang trọng.
+            </p>
+<!-- Actions Row -->
+<div class="flex items-center gap-2 mt-5">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold rounded-full shadow-md transition-all">
+<span class="">Thử Nghiệm Mẫu Này</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+<button class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-colors" title="Đổi mẫu ngẫu nhiên">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Hero Image Backdrop -->
+<div class="absolute right-0 top-0 bottom-0 w-1/2 md:w-3/5 overflow-hidden flex items-center justify-end p-4 pointer-events-auto">
+  <div class="w-full h-full bg-[#fbf9f6] rounded-2xl border border-gray-200/80 p-3.5 flex flex-col justify-between shadow-inner relative">
+    <div class="flex items-center justify-between z-10">
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-semibold text-gray-600 bg-white/90 border border-gray-200/80 px-2 py-0.5 rounded-md shadow-sm">Có thể in</span>
+        <span class="text-[10px] font-semibold text-gray-600 bg-white/90 border border-gray-200/80 px-2 py-0.5 rounded-md shadow-sm">Tải xuống được</span>
+      </div>
+      <span class="text-[10px] font-mono text-gray-500 bg-gray-100/80 px-2 py-0.5 rounded-md">CAD DXF/PDF</span>
+    </div>
+    <div class="grid grid-cols-2 gap-3 items-center h-full my-auto">
+      <div class="h-48 rounded-xl bg-white/90 border border-dashed border-gray-200 p-2 flex items-center justify-center relative shadow-sm group hover:border-blue-400 transition-colors">
+        <svg class="w-full h-full text-blue-600" viewBox="0 0 160 160" fill="none" stroke="currentColor">
+          <rect x="35" y="20" width="90" height="120" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="none" fill="#2563eb" fill-opacity="0.02" rx="1"></rect>
+          <line x1="35" y1="45" x2="125" y2="45" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2"></line>
+          <line x1="35" y1="115" x2="125" y2="115" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2"></line>
+          <line x1="60" y1="20" x2="60" y2="140" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2"></line>
+          <line x1="100" y1="20" x2="100" y2="140" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2"></line>
+          <path d="M20 45 L35 45 L35 115 L20 115 Z" stroke="#2563eb" stroke-width="1.5" fill="none"></path>
+          <path d="M125 45 L140 45 L140 115 L125 115 Z" stroke="#2563eb" stroke-width="1.5" fill="none"></path>
+          <path d="M60 5 L100 5 L100 20 L60 20 Z" stroke="#2563eb" stroke-width="1.5" fill="none"></path>
+          <path d="M60 140 L100 140 L100 155 L60 155 Z" stroke="#2563eb" stroke-width="1.5" fill="none"></path>
+          <circle cx="48" cy="32" r="2" fill="#2563eb"></circle>
+          <circle cx="112" cy="32" r="2" fill="#2563eb"></circle>
+        </svg>
+        <span class="absolute bottom-1.5 left-2 text-[9px] font-mono font-medium text-gray-500 bg-white/80 px-1 rounded">Dieline 2D</span>
+      </div>
+      <div class="h-48 rounded-xl bg-white/90 border border-gray-100 p-2 flex items-center justify-center relative shadow-sm overflow-hidden">
+        <img alt="Mẫu hộp tiêu biểu 3D" class="object-contain max-h-full max-w-full drop-shadow-md hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAG16Ce1CI9H0x5WQrTp-q8tI5NQoCoaNOLD4uHZwU30wi1TSOdsYPO8nAvZAbiEpC9otUiCVLIhj2aTXJOIaj-vzWmcA3CL9MpK4Fl3IuC7O0rr81zPMZcdupdeiELFKJEXZ_7qa9B34sQL2U8pgs2Nohus_VmEldcX1XLftR9NBJ0kGUIXp8w4Lb0emcLaVTBv39XIdL5GEHR5Ub4yszI-q2vbKLGQeIvJr5rEwu2">
+        <span class="absolute bottom-1.5 right-2 text-[9px] font-mono font-medium text-gray-500 bg-white/80 px-1 rounded">Mockup 3D</span>
+      </div>
+    </div>
+    <div class="flex items-center justify-between text-[10px] font-mono text-gray-500 pt-1 border-t border-gray-200/50">
+      <span class="flex items-center gap-1.5"><span class="w-2 h-0.5 bg-blue-600 inline-block"></span> Dao cắt (Cut)</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-0.5 bg-red-600 inline-block border-b border-dashed"></span> Nếp cấn (Crease)</span>
+      <span class="">Kích thước: 240x180x60mm</span>
+    </div>
+  </div>
+</div>
+<!-- Bottom Packaging Variant Strip -->
+<div class="relative z-10 pt-6 mt-6 border-t border-gray-100 flex items-center gap-2.5 overflow-x-auto scrollbar-none" data-purpose="packaging-thumbnails">
+<div class="p-1.5 bg-gray-50 hover:bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5">
+<img alt="Hộp Nam Châm" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-EUqIl6lEZ8xJWXD7qERIdzMoAxaSGSeZ5IRRIM43BYEw14DGb8mYNr7H1KC5sc3e19xv5CLkiBuDeDLISWBbnyE7QiadrqyOoOonMtaCmJKx4DA_V6cDvjdcbx1k86YyV8NnaGFI36Yl5D36odzezbDSpJDj-PtqKQm3Dv6Vqo2k-zXlFUNWo8HKGzAd-zIOb5s3m5gVmDAuWDYe_zJSxGLJ83S9Aulv-s0v9DuO">
+</div>
+<div class="p-1.5 bg-gray-50 hover:bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5">
+<img alt="Túi Giấy Kraft" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHWDGxo4GdmqU2oYLhz-5yt5waLUMmsKnGwwRK0glTKt0ELnPEKnBT4Rkk9wUFIzs19Mf8dTfhUmeH9HxHHsS1HM1qghCaQ4qQAsKa0K9qILvaHAHcgKz6YnX7a1sxQYWNovx1m0XrVkSQAvyHyhrUiC_UIuKdYX7hfTKqsV69VBbjrKELnrqq6iihIQTu1eS2EeWFb9gDqhbgvJEBqnYKvQAabW1GBV8i9BZLCZzS">
+</div>
+<div class="p-1.5 bg-gray-50 hover:bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5">
+<img alt="Hộp Khay Trượt" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhlj4rCtH0QnNVHvh_WABmR20AOXhvqQSVR_dO65KoaPYW0fzGnlQ8Z4NT9pXOm4ptLPvjuntaAZrMd-6Hf9UBe_1AcW4Ip7Yg40B6sNKk4b9yp-eBQ5KHHYTIMH_szRETRqbYXK2WwUmaD9qIw7EPpQC5JN24wMgT2lGdauI1yEnAcflb2rckX4XTuLO84ujzv0XxknQoJpPYmZdLK9HZsjqqtNJPb0OvgU-hU6Kv">
+</div>
+<div class="p-1.5 bg-gray-50 hover:bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5">
+<img alt="Hộp Quà Cao Cấp" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt74SkLAXkfvWdioc2fo0v1qUJ7Wp8KGZ6ReZKGxufJHU4wrP8Iwy2gbQf1MCce6iLZwr8TmhCb19Ijd7kAVA-Ub87I84PQqTSsBsJzEZjMOVnxAiTzpikUgRbFa769j-j6aOP1IvqzrOW1M81RClUjScil7iK1b1YYLPlRPEz2Oh2e1aIsrn8OFKn1lw63ABDFcW-jJNsBvQ_NlEG4Z8JUWRp4RoI7eNRy22Kzb4t">
+</div>
+<div class="p-1.5 bg-gray-50 hover:bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5">
+<img alt="Seal Sáp Niêm Phong" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAml60iUiVCUWaGP80BDZ-U12MN_HMX83jos6qeDOFkIyFSbhDAGIGB76iYDdLer-_lJdEE69i878-X6N-WVhnll1PP25YdnLAU2SjUteykYUPl0rmaaoNGOx8xfro66VYSPyrmLR8DYIhP-yeh5K9B_L16GuVeGLUH_BZ_MrILtK3pUp7rF93dCl-c9butaRYlFySV12BTLmwvBkCEZbP5HHh3JA-BrwgsmtSMn7w4">
+</div>
+</div>
+</article>
+<!-- END: Hero Feature Card -->
+<!-- BEGIN: Ask Bé Gói AI Assistant -->
+<article class="bg-white rounded-[2rem] p-6 shadow-soft flex flex-col justify-between" data-purpose="ai-assistant-card">
+<div class="flex items-start justify-between">
+<div>
+<h2 class="text-lg font-bold text-gray-900">Bé Gói AI Assistant</h2>
+<p class="text-xs text-gray-400 mt-0.5">Trợ lý tính toán dieline, bù hao hụt và vật liệu bao bì.</p>
+</div>
+<button class="text-gray-400 hover:text-gray-600 p-1">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+</svg>
+</button>
+</div>
+<!-- Mascot Center Emblem (Inspired by Alta metallic glyph) -->
+<div class="py-5 flex justify-center items-center">
+<div class="relative w-24 h-24 rounded-full bg-gradient-to-tr from-slate-200 via-gray-100 to-slate-300 p-1 shadow-inner flex items-center justify-center">
+<div class="w-full h-full rounded-full bg-white flex items-center justify-center shadow-md relative overflow-hidden">
+<!-- 3D Metallic Emblem Illusion -->
+<div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-700 to-black opacity-90 rounded-full flex items-center justify-center text-white">
+<svg class="w-12 h-12 text-gray-200 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Fast Prompt Tags -->
+<div class="flex flex-wrap items-center gap-1.5 mb-3">
+<span class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium rounded-full cursor-pointer transition">Hộp Quà</span>
+<span class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium rounded-full cursor-pointer transition">Mỹ Phẩm</span>
+<span class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium rounded-full cursor-pointer transition">Rượu Vang</span>
+<span class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium rounded-full cursor-pointer transition">Bánh Kẹo</span>
+<span class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium rounded-full cursor-pointer transition">Dieline Khóa Đáy</span>
+</div>
+<!-- AI Chat Input Box -->
+<div class="relative flex items-center">
+<div class="absolute left-3.5 flex items-center gap-1.5 text-gray-400">
+<svg class="w-4 h-4 hover:text-gray-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<svg class="w-4 h-4 hover:text-gray-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="w-full pl-16 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-black" placeholder="Hỏi Bé Gói về thông số dieline..." type="text">
+<button class="absolute right-2.5 p-2 bg-black text-white rounded-full hover:bg-gray-800 transition">
+<svg class="w-3.5 h-3.5 rotate-45 transform" fill="currentColor" viewBox="0 0 20 20">
+<path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- END: Ask Bé Gói AI Assistant -->
+</div>
+<!-- ================= COL 2: Made for You & Your Library ================= -->
+<div class="lg:col-span-4 flex flex-col gap-5">
+<!-- BEGIN: Made For You (Đề Xuất Cho Bạn) -->
+<article class="bg-white rounded-[2rem] p-6 shadow-soft flex-1 flex flex-col justify-between" data-purpose="made-for-you">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-base font-bold text-gray-900">Đề Xuất Cho Bạn</h2>
+<a class="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1" href="#">
+              Xem Tất Cả 
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<!-- List of recommended items -->
+<div class="space-y-3"><!-- Item 1: Hộp Thư Nắp Gập Lật -->
+<div class="group p-3 rounded-2xl bg-gray-50/70 hover:bg-white transition-all border border-gray-200/60 hover:border-gray-300 shadow-sm">
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-1.5">
+      <span class="text-[9px] font-medium text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">Có thể in</span>
+      <span class="text-[9px] font-medium text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">Tải xuống được</span>
+    </div>
+    <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">FEFCO 0427</span>
+  </div>
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="h-20 bg-white rounded-xl border border-gray-100 p-1 flex items-center justify-center relative overflow-hidden">
+      <svg class="w-full h-16 text-blue-600" viewBox="0 0 120 90" fill="none" stroke="currentColor">
+        <rect x="30" y="15" width="60" height="60" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.03"></rect>
+        <line x1="30" y1="32" x2="90" y2="32" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="30" y1="58" x2="90" y2="58" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="45" y1="15" x2="45" y2="75" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="75" y1="15" x2="75" y2="75" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <path d="M15 32 L30 32 L30 58 L15 58 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M90 32 L105 32 L105 58 L90 58 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M45 5 L75 5 L75 15 L45 15 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M45 75 L75 75 L75 85 L45 85 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+      </svg>
+      <span class="absolute bottom-1 left-1.5 text-[8px] font-mono text-gray-500">Dieline 2D</span>
+    </div>
+    <div class="h-20 bg-white rounded-xl border border-gray-100 p-1 flex items-center justify-center relative overflow-hidden">
+      <img alt="Hộp Âm Dương Luxury 3D" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCo8PXIXBYvqBO99j5_8O7Jo2uq2OvlMbo39rp0U2TCmacakmVBf0_lMv93B-Rqi-wb6C0GVeQmkrOq0SZUCnmNb6nqS77KBaGzB-j697zeo65EGNPcfMNPlF7LWFOX2u0Cm7_EU42olBi4_Gx98MgQZHVpjgzPhxaiNroEAHaf1EeP9_xJvospTL2F8WtmHLI_vOVh0PkqltWBfD9R8yTk9BSQnSK5BbcvEH4rsI4b">
+      <span class="absolute bottom-1 right-1.5 text-[8px] font-mono text-gray-500">3D View</span>
+    </div>
+  </div>
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="text-xs font-bold text-gray-900">Mẫu Hộp Gập Lật Âm Dương</h3>
+      <p class="text-[11px] text-gray-500">Dòng cao cấp, chuẩn nắp gập liền thân</p>
+    </div>
+    <button class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm group-hover:bg-black group-hover:text-white transition-colors">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Item 2: Hộp Cài Đáy Khóa Ngược -->
+<div class="group p-3 rounded-2xl bg-gray-50/70 hover:bg-white transition-all border border-gray-200/60 hover:border-gray-300 shadow-sm">
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-1.5">
+      <span class="text-[9px] font-medium text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">Có thể in</span>
+      <span class="text-[9px] font-medium text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">Tải xuống được</span>
+    </div>
+    <span class="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">FEFCO 0215</span>
+  </div>
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="h-20 bg-white rounded-xl border border-gray-100 p-1 flex items-center justify-center relative overflow-hidden">
+      <svg class="w-full h-16 text-blue-600" viewBox="0 0 120 90" fill="none" stroke="currentColor">
+        <rect x="20" y="25" width="80" height="40" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.03"></rect>
+        <line x1="40" y1="25" x2="40" y2="65" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="60" y1="25" x2="60" y2="65" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="80" y1="25" x2="80" y2="65" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="20" y1="25" x2="100" y2="25" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <line x1="20" y1="65" x2="100" y2="65" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="2 2"></line>
+        <path d="M20 12 L40 12 L40 25 L20 25 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M60 12 L80 12 L80 25 L60 25 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M25 65 L35 78 L45 65 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+        <path d="M65 65 L75 78 L85 65 Z" stroke="#2563eb" stroke-width="1.2" fill="none"></path>
+      </svg>
+      <span class="absolute bottom-1 left-1.5 text-[8px] font-mono text-gray-500">Dieline 2D</span>
+    </div>
+    <div class="h-20 bg-white rounded-xl border border-gray-100 p-1 flex items-center justify-center relative overflow-hidden">
+      <img alt="Hộp Cài Đáy Khóa 3D" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqsWvwlyu1TWLpbCGfU2p1yFVOggM0bAgURsgR5wpTe4el047uNLDZ80Sj3xTQA6gJkFB5FlmfCTG_hysh6-ouA51nZzWzhwO6sx1Pbiy9pIHQSjyRQjOryaYIzkBduK-7n10p94GrWaUvWefM-IOFgv4UJAk-jRhVPjR1W2LDIIc9Mzm2HQW8vespyO0nrolt3ZvllGWGKHTm8s8WgSXX78VnayHbko9yRFsjix-Q">
+      <span class="absolute bottom-1 right-1.5 text-[8px] font-mono text-gray-500">3D View</span>
+    </div>
+  </div>
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="text-xs font-bold text-gray-900">Hộp Gập Đáy Khóa Ngược</h3>
+      <p class="text-[11px] text-gray-500">Đóng gói tốc độ cao, khóa tự gập</p>
+    </div>
+    <button class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm group-hover:bg-black group-hover:text-white transition-colors">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg></button></div></div></div>
+</article>
+<!-- END: Made For You -->
+<!-- BEGIN: Your Library / Closet (Kho Mẫu Của Bạn) -->
+<article class="bg-white rounded-[2rem] p-6 shadow-soft flex-1 flex flex-col justify-between" data-purpose="packaging-library">
+<div class="flex items-center justify-between mb-3">
+<div>
+<h2 class="text-base font-bold text-gray-900">Kho Mẫu Của Bạn</h2>
+<span class="text-[11px] text-gray-400">128 mẫu khuôn • 42 đồ án</span>
+</div>
+<a class="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1" href="#">
+              Xem Tất Cả 
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<!-- Categories 5 Columns -->
+<div class="grid grid-cols-5 gap-2.5 pt-2"><!-- Category 1: Hộp Cứng FEFCO/Rigid -->
+<div class="flex flex-col items-center text-center group cursor-pointer">
+  <div class="w-full aspect-square rounded-2xl bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-between group-hover:border-blue-400 group-hover:bg-white transition-all shadow-sm relative overflow-hidden">
+    <span class="text-[8px] font-mono text-gray-600 bg-white border border-gray-200/60 px-1 rounded absolute top-1.5 left-1.5">CAD</span>
+    <svg class="w-8 h-8 text-blue-600 my-auto group-hover:scale-105 transition-transform" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+      <rect x="8" y="8" width="24" height="24" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.04"></rect>
+      <line x1="14" y1="8" x2="14" y2="32" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="26" y1="8" x2="26" y2="32" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="8" y1="14" x2="32" y2="14" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="8" y1="26" x2="32" y2="26" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+    </svg>
+    <span class="text-[8px] font-mono text-emerald-600">Có thể in</span>
+  </div>
+  <span class="text-[11px] font-bold text-gray-800 mt-2 truncate w-full">Hộp Cứng</span>
+  <span class="text-[10px] text-gray-400 font-medium">32 dieline</span>
+</div>
+<!-- Category 2: Hộp Xếp Folding -->
+<div class="flex flex-col items-center text-center group cursor-pointer">
+  <div class="w-full aspect-square rounded-2xl bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-between group-hover:border-blue-400 group-hover:bg-white transition-all shadow-sm relative overflow-hidden">
+    <span class="text-[8px] font-mono text-gray-600 bg-white border border-gray-200/60 px-1 rounded absolute top-1.5 left-1.5">CAD</span>
+    <svg class="w-8 h-8 text-blue-600 my-auto group-hover:scale-105 transition-transform" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+      <rect x="5" y="12" width="30" height="16" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.04"></rect>
+      <line x1="12" y1="12" x2="12" y2="28" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="20" y1="12" x2="20" y2="28" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="28" y1="12" x2="28" y2="28" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <path d="M12 6 L20 6 L20 12 L12 12 Z" stroke="#2563eb" stroke-width="1.1"></path>
+      <path d="M12 28 L20 28 L20 34 L12 34 Z" stroke="#2563eb" stroke-width="1.1"></path>
+    </svg>
+    <span class="text-[8px] font-mono text-emerald-600">Có thể in</span>
+  </div>
+  <span class="text-[11px] font-bold text-gray-800 mt-2 truncate w-full">Hộp Gập</span>
+  <span class="text-[10px] text-gray-400 font-medium">24 dieline</span>
+</div>
+<!-- Category 3: Hộp Rãnh RSC -->
+<div class="flex flex-col items-center text-center group cursor-pointer">
+  <div class="w-full aspect-square rounded-2xl bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-between group-hover:border-blue-400 group-hover:bg-white transition-all shadow-sm relative overflow-hidden">
+    <span class="text-[8px] font-mono text-gray-600 bg-white border border-gray-200/60 px-1 rounded absolute top-1.5 left-1.5">CAD</span>
+    <svg class="w-8 h-8 text-blue-600 my-auto group-hover:scale-105 transition-transform" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+      <rect x="6" y="14" width="28" height="12" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.04"></rect>
+      <line x1="13" y1="14" x2="13" y2="26" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="20" y1="14" x2="20" y2="26" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="27" y1="14" x2="27" y2="26" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <path d="M6 8 L13 8 L13 14 L6 14 Z" stroke="#2563eb" stroke-width="1.1"></path>
+      <path d="M20 8 L27 8 L27 14 L20 14 Z" stroke="#2563eb" stroke-width="1.1"></path>
+      <path d="M6 26 L13 26 L13 32 L6 32 Z" stroke="#2563eb" stroke-width="1.1"></path>
+      <path d="M20 26 L27 26 L27 32 L20 32 Z" stroke="#2563eb" stroke-width="1.1"></path>
+    </svg>
+    <span class="text-[8px] font-mono text-emerald-600">Có thể in</span>
+  </div>
+  <span class="text-[11px] font-bold text-gray-800 mt-2 truncate w-full">Hộp RSC</span>
+  <span class="text-[10px] text-gray-400 font-medium">18 dieline</span>
+</div>
+<!-- Category 4: Hộp Khay Trượt -->
+<div class="flex flex-col items-center text-center group cursor-pointer">
+  <div class="w-full aspect-square rounded-2xl bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-between group-hover:border-blue-400 group-hover:bg-white transition-all shadow-sm relative overflow-hidden">
+    <span class="text-[8px] font-mono text-gray-600 bg-white border border-gray-200/60 px-1 rounded absolute top-1.5 left-1.5">CAD</span>
+    <svg class="w-8 h-8 text-blue-600 my-auto group-hover:scale-105 transition-transform" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+      <rect x="10" y="10" width="20" height="20" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.04"></rect>
+      <rect x="13" y="13" width="14" height="14" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></rect>
+      <path d="M4 10 L10 10 L10 30 L4 30 Z" stroke="#2563eb" stroke-width="1.1"></path>
+      <path d="M30 10 L36 10 L36 30 L30 30 Z" stroke="#2563eb" stroke-width="1.1"></path>
+    </svg>
+    <span class="text-[8px] font-mono text-emerald-600">Có thể in</span>
+  </div>
+  <span class="text-[11px] font-bold text-gray-800 mt-2 truncate w-full">Hộp Khay</span>
+  <span class="text-[10px] text-gray-400 font-medium">16 dieline</span>
+</div>
+<!-- Category 5: Túi Giấy & Khay Lót -->
+<div class="flex flex-col items-center text-center group cursor-pointer">
+  <div class="w-full aspect-square rounded-2xl bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-between group-hover:border-blue-400 group-hover:bg-white transition-all shadow-sm relative overflow-hidden">
+    <span class="text-[8px] font-mono text-gray-600 bg-white border border-gray-200/60 px-1 rounded absolute top-1.5 left-1.5">CAD</span>
+    <svg class="w-8 h-8 text-blue-600 my-auto group-hover:scale-105 transition-transform" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+      <path d="M10 10 L30 10 L32 32 L8 32 Z" stroke="#2563eb" stroke-width="1.2" fill="#2563eb" fill-opacity="0.04"></path>
+      <line x1="16" y1="10" x2="16" y2="32" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <line x1="24" y1="10" x2="24" y2="32" stroke="#dc2626" stroke-width="1" stroke-dasharray="2 1.5"></line>
+      <path d="M15 10 C15 6 25 6 25 10" stroke="#2563eb" stroke-width="1"></path>
+    </svg>
+    <span class="text-[8px] font-mono text-emerald-600">Có thể in</span>
+  </div>
+  <span class="text-[11px] font-bold text-gray-800 mt-2 truncate w-full">Túi Giấy</span>
+  <span class="text-[10px] text-gray-400 font-medium">12 dieline</span>
+</div></div>
+</article>
+<!-- END: Your Library -->
+</div>
+<!-- ================= COL 3: Status, Upcoming, Style Insights ================= -->
+<div class="lg:col-span-3 flex flex-col gap-5">
+<!-- BEGIN: Workshop Status Card (Weather Widget equivalent) -->
+<article class="bg-white rounded-[2rem] p-5 shadow-soft flex items-center justify-between" data-purpose="workshop-status">
+<div class="flex items-center gap-3.5">
+<!-- Sun / Workshop Icon -->
+<div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shadow-inner">
+<svg class="w-6 h-6 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-xl font-extrabold text-gray-900">24°C</span>
+<span class="text-xs font-semibold text-gray-700">• Xưởng In Củ Chi</span>
+</div>
+<p class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                Độ ẩm 55% • Chuẩn dán keo
+              </p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</article>
+<!-- END: Workshop Status Card -->
+<!-- BEGIN: Upcoming Schedule Card (Lịch Sản Xuất) -->
+<article class="bg-white rounded-[2rem] p-6 shadow-soft flex-1 flex flex-col justify-between" data-purpose="production-schedule">
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-base font-bold text-gray-900">Lịch Sản Xuất</h2>
+<a class="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1" href="#">
+              Tất Cả 
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<!-- Schedule Timeline -->
+<div class="space-y-4">
+<!-- Schedule 1 -->
+<div class="flex items-center justify-between">
+<div>
+<span class="text-xs font-bold text-gray-900 block">Tối nay • Test Proofing</span>
+<span class="text-[11px] text-gray-400">19:30 - Mẫu quà Tết Thượng H���ng</span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200/60">
+<img alt="Test Proofing" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_iSbdYOvS2X9OJyCzhBjgvt9zmjxd4yzTiW4Svz7xe8frkNy7qdmOboEwgyzUbv5P8MDOdaGJcGv4PaBUZOOINuygR17yJF4v8gNmT5J9Ns5Ym2jPOGQQW0gNNQe5VEJ01EMpKwGFWa-vG1aWXQapi9-0vTak-KO3UQsXGl_bFBUR0_CguzH41rbrhgb697vSYZuMKt9BysMvnuv7FDg_ctLk9b1WiOpapzS7n50y">
+</div>
+</div>
+<!-- Schedule 2 -->
+<div class="flex items-center justify-between">
+<div>
+<span class="text-xs font-bold text-gray-900 block">Thứ 6 • Cắt Dao Bế CNC</span>
+<span class="text-[11px] text-gray-400">08:00 - Lô hộp bánh Trung Thu</span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200/60">
+<img alt="Cắt Dao Bế" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJR9q3ISOOdgWBRS7zLCYcX6w7gIyzUGJvDIRsTrKH0lgyTY6d2tvn39FW92xGWcDTfqyGuF7tA1t3fgxFSyLOzsecTnrmBTg2Or8JOs5PasOtKMJF94DqYpiQnf9omm5tI4ZRDyNWoJquB6k5Yi2l7YT4b7f6C78R2WUedBiCZu3X0A84lQGFGrbetv4nG0T0hALDQADTmnRhduy7mcBeUc_Mjg0hnKt4NyJNGaMR">
+</div>
+</div>
+<!-- Schedule 3 -->
+<div class="flex items-center justify-between">
+<div>
+<span class="text-xs font-bold text-gray-900 block">Thứ 2 • Xuất Kho Đợt 1</span>
+<span class="text-[11px] text-gray-400">14:00 - Giao 5.000 túi Kraft Cafe</span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200/60">
+<img alt="Giao Hàng" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWNOsSz7qzr-TyHNgcymxYYNfcQK7luPyBoSruCoqEempEn8LwGhQe2XayJTBj4VUXY_W0SQKAcmwy9Sm6F6E-4tAo7231026Z6fPB5tN0fa1D2EK31YG0tRlyr6nSIfPohk-RHRQ6nM2Os2SgNGDXbGD8OZ1-choSe5WDEKNbhtR3HB_sh0iPV3mn5zxjKfiGz0vYM57BqPzoGGJh3iwGwoiSrrWOpM3peR1UcDJ7">
+</div>
+</div>
+</div>
+</article>
+<!-- END: Upcoming Schedule Card -->
+<!-- BEGIN: Packaging Quality & Tech Insights -->
+<article class="bg-white rounded-[2rem] p-5 shadow-soft" data-purpose="packaging-insights">
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Chỉ Số Kỹ Thuật</h2>
+<a class="text-[11px] font-semibold text-gray-400 hover:text-black flex items-center gap-0.5" href="#">
+              Chi Tiết
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<!-- Gauge Indicators Grid -->
+<div class="grid grid-cols-5 gap-1.5 text-center">
+<!-- Gauge 1: 82% Caliper -->
+<div class="flex flex-col items-center">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-black gauge-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="82, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[11px] font-extrabold text-gray-900">82%</span>
+</div>
+<span class="text-[9px] font-medium text-gray-500 mt-1 truncate w-full">Caliper</span>
+</div>
+<!-- Gauge 2: 74% Kháng Nứt -->
+<div class="flex flex-col items-center">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-black gauge-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="74, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[11px] font-extrabold text-gray-900">74%</span>
+</div>
+<span class="text-[9px] font-medium text-gray-500 mt-1 truncate w-full">Nứt Gân</span>
+</div>
+<!-- Gauge 3: 68% Bền Màu -->
+<div class="flex flex-col items-center">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-black gauge-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="68, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[11px] font-extrabold text-gray-900">68%</span>
+</div>
+<span class="text-[9px] font-medium text-gray-500 mt-1 truncate w-full">Bền Màu</span>
+</div>
+<!-- Gauge 4: 41% Thân Thiện Eco -->
+<div class="flex flex-col items-center">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-black gauge-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="41, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[11px] font-extrabold text-gray-900">41%</span>
+</div>
+<span class="text-[9px] font-medium text-gray-500 mt-1 truncate w-full">Eco Bio</span>
+</div>
+<!-- Gauge 5: 36% Tiết Kiệm Khổ -->
+<div class="flex flex-col items-center">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-black gauge-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="36, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[11px] font-extrabold text-gray-900">36%</span>
+</div>
+<span class="text-[9px] font-medium text-gray-500 mt-1 truncate w-full">Khổ Giấy</span>
+</div>
+</div>
+</article>
+<!-- END: Packaging Quality & Tech Insights -->
+</div>
+</div>
+<!-- END: BentoGridLayout -->
+</main>
+<!-- END: MainDashboardContainer -->
+<!-- BEGIN: Interactive Feedback Script -->
+<script data-purpose="card-interactions">
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small click interaction feedback for prompt chips
+      const chips = document.querySelectorAll('[data-purpose="ai-assistant-card"] span');
+      const aiInput = document.querySelector('[data-purpose="ai-assistant-card"] input');
+      
+      chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          if (aiInput) {
+            aiInput.value = `Gợi ý giải pháp cấu trúc bao bì cho: ${chip.textContent.trim()}`;
+            aiInput.focus();
+          }
+        });
+      });
+    });
+  </script>
+<!-- END: Interactive Feedback Script -->
+
+
+</body></html>

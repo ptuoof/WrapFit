@@ -1,0 +1,17 @@
+/*
+ * Stitch screen root.
+ *
+ * In Stitch every screen is its own document: <body> starts from browser defaults plus
+ * Tailwind preflight. Here a screen is a <div data-stitch> inside the app's <body>, so
+ * it would inherit the app's ink colour, font features and smoothing. Reset those to
+ * what a fresh Stitch <body> has. Zero specificity: the screen's own body classes and
+ * styles (emitted later) win, exactly as they would on <body>.
+ */
+:where([data-stitch]) {
+  color: initial;
+  font-family: var(--st-ff-sans);
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}

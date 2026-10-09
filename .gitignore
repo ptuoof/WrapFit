@@ -66,3 +66,7 @@ generate_docx_report.js
 generate_tight_docx_report.js
 index.html
 
+
+# Stitch visual parity output (fe/scripts/stitch/visual-parity.mjs)
+.visual-parity/
+.claude/

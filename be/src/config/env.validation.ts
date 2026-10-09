@@ -40,6 +40,13 @@ export class EnvironmentVariables {
   @MinLength(32)
   JWT_REFRESH_SECRET: string;
 
+  /**
+   * Derives the one-time links of verify / reset emails. Empty = JWT_REFRESH_SECRET (older .env files). Changing it
+   * invalidates the links already sent, and only them: rotate it separately from the JWT secrets.
+   */
+  @IsString()
+  AUTH_TOKEN_SECRET: string = '';
+
   @IsInt()
   @Min(60)
   JWT_ACCESS_TTL_SECONDS: number = 900;
@@ -130,6 +137,10 @@ export class EnvironmentVariables {
   @Min(1000)
   AI_TIMEOUT_MS: number = 30000;
 
+  /** `json` = one JSON object per log line (log collectors), `text` = readable. Empty = json in production. */
+  @IsIn(['', 'json', 'text'])
+  LOG_FORMAT: string = '';
+
   /** `true` behind a reverse proxy (Caddy in production): rate limits and sessions use the client IP. */
   @IsIn(['true', 'false'])
   TRUST_PROXY: string = 'false';
@@ -144,6 +155,35 @@ export class EnvironmentVariables {
   @Min(1)
   @Max(16)
   EXPORT_CONCURRENCY: number = 2;
+
+  /**
+   * SMTP relay of the worker (verify-email and reset-password messages). The defaults are Mailpit from
+   * docker-compose.yml: every message is caught and shown at http://localhost:8025, nothing leaves the machine.
+   */
+  @IsString()
+  @IsNotEmpty()
+  SMTP_HOST: string = 'localhost';
+
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  SMTP_PORT: number = 1025;
+
+  /** `true` = implicit TLS (port 465). `false` = plain, upgraded with STARTTLS when the server offers it (587). */
+  @IsIn(['true', 'false'])
+  SMTP_SECURE: string = 'false';
+
+  /** Both empty = no authentication (Mailpit). */
+  @IsString()
+  SMTP_USER: string = '';
+
+  @IsString()
+  SMTP_PASS: string = '';
+
+  /** Sender shown to users; its domain needs SPF/DKIM records at the provider in production. */
+  @IsString()
+  @IsNotEmpty()
+  MAIL_FROM: string = 'WrapFit <no-reply@wrapfit.local>';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
@@ -162,6 +202,12 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(
       'Invalid environment variables:\n - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together (or both left empty)',
     );
+  }
+  if (validated.AUTH_TOKEN_SECRET && validated.AUTH_TOKEN_SECRET.length < 32) {
+    throw new Error('Invalid environment variables:\n - AUTH_TOKEN_SECRET must be at least 32 characters (or empty)');
+  }
+  if (!validated.SMTP_USER !== !validated.SMTP_PASS) {
+    throw new Error('Invalid environment variables:\n - SMTP_USER and SMTP_PASS must be set together (or both left empty)');
   }
   if (validated.STORAGE_BUCKET) {
     const missing = (['STORAGE_ACCESS_KEY_ID', 'STORAGE_SECRET_ACCESS_KEY', 'STORAGE_PUBLIC_URL'] as const).filter(

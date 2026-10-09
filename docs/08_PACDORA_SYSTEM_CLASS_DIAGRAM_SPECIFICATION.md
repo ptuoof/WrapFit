@@ -15,6 +15,7 @@
    - 1.1. Ánh xạ Clean Architecture sang NestJS
    - 1.2. Dependency Inversion với NestJS DI (Injection Token)
    - 1.3. Mức độ áp dụng theo từng Module (Pragmatic Clean Architecture)
+   - 1.4. Ghép các module trong `be/src/` (phụ thuộc, barrel, API & worker)
 2. [Sơ Đồ Lớp Kiến Trúc Tổng Thể (Master System Class Diagram)](#2-sơ-đồ-lớp-kiến-trúc-tổng-thể-master-system-class-diagram)
 3. [Chi Tiết 26 Gói Phân Hệ Chuyên Sâu (Deep Domain Class Diagrams)](#3-chi-tiết-26-gói-phân-hệ-chuyên-sâu-deep-domain-class-diagrams)
    - 3.1. [Gói 1: Quản Trị Vòng Đời Dự Án & Aggregate Root (Domain Core & Lifecycle)](#31-gói-1-quản-trị-vòng-đời-dự-án--aggregate-root)
@@ -62,7 +63,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ HTTPS REST /api/* (JSON + HttpOnly Cookie JWT)
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 1. PRESENTATION LAYER — NestJS (modules/*/presentation)                     │
+│ 1. PRESENTATION LAYER — NestJS (src/*/presentation)                         │
 │    • @Controller: ProjectsController, AuthController, ECommerceController   │
 │    • Request DTO + ValidationPipe (class-validator), Swagger decorators     │
 │    • Guards: JwtAuthGuard, RolesGuard, SubscriptionTierGuard, ProjectAccess │
@@ -71,7 +72,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Calls Application Use Cases
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 2. APPLICATION SERVICES LAYER — @Injectable() (modules/*/application)       │
+│ 2. APPLICATION SERVICES LAYER — @Injectable() (src/*/application)           │
 │    • ProjectApplicationService, IdentityApplicationService, SecurityService │
 │    • PreflightAuditApplicationService, ExportApplicationService             │
 │    • SubscriptionBillingService, OrderFulfillmentService, NotificationSvc   │
@@ -81,7 +82,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Coordinates Core Entities
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 3. DOMAIN CORE LAYER — TypeScript thuần (modules/*/domain)                  │
+│ 3. DOMAIN CORE LAYER — TypeScript thuần (src/*/domain)                      │
 │    • KHÔNG import @nestjs/*, @prisma/client hay SDK bên thứ ba              │
 │    • Aggregates: PackagingProject, User, Collection, Order, SupportTicket   │
 │    • Entities: Address, RefundRequest, NewsletterSubscriber, Banner, Member │
@@ -91,7 +92,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Implements Interfaces / Inversion (NestJS DI)
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 4. INFRASTRUCTURE LAYER — NestJS Providers (modules/*/infrastructure)       │
+│ 4. INFRASTRUCTURE LAYER — NestJS Providers (src/*/infrastructure)           │
 │    • Database: PostgreSQL via Prisma (PrismaService + PrismaRepositories)   │
 │    • Cloud Storage: AWS S3 / Cloudflare R2 Adapter (S3StorageAdapter)       │
 │    • Payment Gateways: Stripe Adapter, VNPay Adapter, MoMo Adapter          │
@@ -106,15 +107,16 @@
 
 | Tầng | Thành phần NestJS | Thư mục | Quy tắc phụ thuộc |
 | :--- | :--- | :--- | :--- |
-| **Presentation** | `@Controller`, Request/Response DTO (`class-validator`, `@nestjs/swagger`), Guard, Pipe, Interceptor, Exception Filter, `@Processor` (BullMQ), `@Cron`, `@OnEvent` | `modules/<tên>/presentation/` | Chỉ gọi Application Service. Không gọi Prisma, không chứa logic nghiệp vụ. |
-| **Application** | Class `@Injectable()` (Use Case / Application Service), Port interface + injection token | `modules/<tên>/application/` | Phụ thuộc Domain và các Port. Không biết đến Prisma, Stripe, S3... |
-| **Domain Core** | Class TypeScript thuần: Aggregate, Entity, Value Object, Domain Event, Domain Policy; thuật toán từ `@wrapfit/shared` | `modules/<tên>/domain/` | **Không** import `@nestjs/*`, `@prisma/client`, SDK bên thứ ba → test được bằng Jest thuần, không cần khởi động Nest. |
-| **Infrastructure** | `PrismaXxxRepository`, `StripePaymentGatewayAdapter`, `S3StorageAdapter`... đăng ký bằng custom provider | `modules/<tên>/infrastructure/` | Implement các Port. Là nơi duy nhất được dùng `PrismaService` và SDK bên ngoài. |
+| **Presentation** | `@Controller`, Request/Response DTO (`class-validator`, `@nestjs/swagger`), Guard, Pipe, Interceptor, Exception Filter, `@Processor` (BullMQ), `@Cron`, `@OnEvent` | `src/<tên>/presentation/` | Chỉ gọi Application Service. Không gọi Prisma, không chứa logic nghiệp vụ. |
+| **Application** | Class `@Injectable()` (Use Case / Application Service), Port interface + injection token | `src/<tên>/application/` | Phụ thuộc Domain và các Port. Không biết đến Prisma, Stripe, S3... |
+| **Domain Core** | Class TypeScript thuần: Aggregate, Entity, Value Object, Domain Event, Domain Policy; thuật toán từ `@wrapfit/shared` | `src/<tên>/domain/` | **Không** import `@nestjs/*`, `@prisma/client`, SDK bên thứ ba → test được bằng Jest thuần, không cần khởi động Nest. |
+| **Infrastructure** | `PrismaXxxRepository`, `StripePaymentGatewayAdapter`, `S3StorageAdapter`... đăng ký bằng custom provider | `src/<tên>/infrastructure/` | Implement các Port. Là nơi duy nhất được dùng `PrismaService` và SDK bên ngoài. |
 
-Cấu trúc một module đầy đủ (ví dụ `address-book`):
+Thực tế trong code: `be/src/projects/` là module đủ 4 tầng. Cấu trúc một module đầy đủ (ví dụ `address-book`, chưa triển khai):
 
 ```
-be/src/modules/address-book/
+be/src/address-book/
+├── index.ts                              # export * from './address-book.module' (+ những gì module khác dùng)
 ├── address-book.module.ts
 ├── presentation/
 │   ├── address-book.controller.ts        # @Controller('users/me/addresses')
@@ -169,19 +171,53 @@ export class AddressBookModule {}
 ```
 
 - **Transaction xuyên repository**: dùng `@nestjs-cls/transactional` + `@nestjs-cls/transactional-adapter-prisma` để Application Service khai báo `@Transactional()` mà không phải truyền `Prisma.TransactionClient` qua từng hàm.
-- **Strategy theo cấu hình**: chọn adapter lúc khởi động bằng `useFactory`, ví dụ `{ provide: PAYMENT_GATEWAY, useFactory: (cfg: ConfigService, stripe, vnpay) => cfg.get('PAYMENT_PROVIDER') === 'vnpay' ? vnpay : stripe, inject: [ConfigService, StripePaymentGatewayAdapter, VnpayPaymentGatewayAdapter] }`.
+- **Strategy theo cấu hình**: chọn adapter lúc khởi động bằng `useFactory`, ví dụ `{ provide: PAYMENT_GATEWAY, useFactory: (config: ConfigService, stripe, vnpay) => config.get('payment.provider') === 'vnpay' ? vnpay : stripe, inject: [ConfigService, StripePaymentGatewayAdapter, VnpayPaymentGatewayAdapter] }` — `ConfigService` có kiểu của `be/src/common`, khóa `payment.provider` khai báo trong `config/envs/default.ts` (tài liệu 07, Mục 1.5). Đang dùng cách này: `AI_PATTERN_GENERATOR` trong `ai.module.ts` chọn Claude hay bộ sinh thuật toán theo `ai.anthropicApiKey`.
+- **Port gắn vào provider sẵn có**: `{ provide: PROJECT_FILES, useExisting: StorageService }` trong `projects.module.ts` — `StorageService` (module `storage`) implement port của `projects`; `ProjectsService` (tầng application) xóa / đếm file qua port `IProjectFiles`, không gọi thẳng `StorageService` (Mục 1.4).
 - **Unit test**: thay Port bằng mock qua `Test.createTestingModule({ providers: [AddressBookService, { provide: ADDRESS_REPOSITORY, useValue: mockRepo }] })`.
 
 ### 1.3. Mức độ áp dụng theo từng Module (Pragmatic Clean Architecture)
 
-Để phù hợp quy mô nhóm 3 IT trong EXE101, **không bắt buộc mọi module phải đủ 4 tầng**:
+Để phù hợp quy mô nhóm 3 IT trong EXE101, **không bắt buộc mọi module phải đủ 4 tầng**. Cách tổ chức thư mục trong một module theo nguyên tắc của skeleton *nestjs-project-structure*: thêm thư mục theo quy mô (tài liệu 07, Mục 1.3 – 1.4).
 
-| Loại module | Ví dụ | Cấu trúc áp dụng |
+| Loại module | Hiện có trong `be/src/` | Cấu trúc áp dụng |
 | :--- | :--- | :--- |
-| **Nghiệp vụ phức tạp** (có trạng thái, quy tắc, tích hợp bên ngoài) | Projects (State Pattern, Trash 30 ngày), Export, Auth, Billing, Orders, Collaboration | Đầy đủ 4 tầng: `presentation / application / domain / infrastructure` + Port & Token |
-| **CRUD đơn giản** (ít quy tắc nghiệp vụ) | Newsletter, Contact, Banner, WebConfig, Collections, Templates | Gọn 3 lớp: `Controller → Service → PrismaService`, vẫn có DTO và Guard đầy đủ |
+| **Nghiệp vụ phức tạp** (có trạng thái, quy tắc, cổng ra hạ tầng) | `projects` (State Pattern, thùng rác 30 ngày, port `PROJECT_REPOSITORY`, `SNAPSHOT_REPOSITORY`, `PROJECT_FILES`). Về sau: Billing, Orders, Collaboration | Đủ 4 tầng: `presentation / application / domain / infrastructure` + Port & Token |
+| **Nhiều thành phần, ít quy tắc** | `auth` (`guards/`, `strategies/`), `export` (`rendering/`), `ai` (`pattern/`) | Phẳng + thư mục con theo vai trò. Tách 4 tầng khi phát sinh quy tắc nghiệp vụ |
+| **CRUD đơn giản** | `collections`, `templates`, `users`, `unboxing`, `public-showcase`. Về sau: Newsletter, Contact, Banner, WebConfig | Gọn 3 lớp: `Controller → Service → PrismaService`, vẫn có DTO và Guard đầy đủ |
+| **Hạ tầng / kỹ thuật** | `common/` (CommonModule `@Global`), `shared/prisma`, `shared/queue`, `storage` (`@Global`), `mail`, `events`, `base` | Không chứa quy tắc nghiệp vụ. `common/` và `shared/` không import module nghiệp vụ |
 
 Khi một module CRUD phát sinh nghiệp vụ phức tạp hơn, tách dần ra Port/Repository mà không ảnh hưởng tới Controller.
+
+### 1.4. Ghép các module trong `be/src/` (phụ thuộc, barrel, API & worker)
+
+Phụ thuộc giữa các module nghiệp vụ hiện tại (mũi tên = "import"; mọi module đều dùng `common/` và `shared/prisma`, không vẽ lại):
+
+```mermaid
+graph LR
+    auth[auth] --> users[users]
+    auth --> mail[mail]
+    users --> storage[storage]
+    projects[projects] --> storage
+    exportMod[export] --> projects
+    exportMod --> storage
+    showcase[public-showcase] --> projects
+    showcase --> storage
+    showcase --> users
+    templates[templates] --> projects
+    templates --> storage
+    templates --> users
+    unboxing[unboxing] --> projects
+    unboxing --> storage
+    unboxing --> users
+    base[base] --> exportMod
+    storage -.->|import type: port PROJECT_FILES| projects
+```
+
+- **Không vòng import**: mỗi module export qua `index.ts` (barrel) và module khác import qua thư mục (`from '../projects'`). ESLint `import/no-cycle` báo lỗi nếu có vòng; `import type` bị xóa khi biên dịch nên không tính.
+- **Khi module A cần thứ của module B mà B lại phụ thuộc A**, chọn một trong hai cách đang dùng trong code:
+  1. *Đảo phụ thuộc bằng Port* (Mục 1.2): `projects` khai báo port `PROJECT_FILES` (`projects/application/ports/project-files.port.ts`), `StorageService` implement nó và `ProjectsModule` gắn bằng `{ provide: PROJECT_FILES, useExisting: StorageService }` — `storage` chỉ `import type` từ `projects`.
+  2. *Đưa phần dùng chung xuống `common/`*: tên cookie `ACCESS_COOKIE` (11 controller cần) ở `common/constants/`, hàm băm token email (cả `auth` lẫn `mail` cần) ở `common/utils/auth-token.crypto.ts`.
+- **API & worker**: module có phần chạy nền khai báo 2 class trong cùng file `*.module.ts` — `ExportModule` (controller + đẩy job, import vào `app.module.ts`) và `ExportWorkerModule` (`ExportProcessor`, import vào `worker.ts`); tương tự `MailModule` / `MailWorkerModule`. Các `@Processor` (BullMQ) chỉ tồn tại trong process worker, các `@Cron` chỉ trong process API.
 
 ---
 
@@ -805,34 +841,36 @@ sequenceDiagram
 
 Cột **Ưu tiên** khớp với Milestone trong tài liệu 07 (WBS). Các gói đánh dấu **Sau MVP** chưa có trong WBS hiện tại; nên triển khai sau khi hoàn thành CP4.
 
-| Gói | Phân hệ | NestJS Module (`be/src/modules/`) | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
+| Gói | Phân hệ | NestJS Module (`be/src/<module>/`) | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | Vòng đời Dự án & Aggregate Root | `projects` | `/projects`, `/projects/:id/snapshots` | State Pattern trong `domain/`, `ProjectOwnerGuard` | CP3 |
 | 2 | Động cơ Toán Hình Học CAD | *(không phải module — thư viện `@wrapfit/shared/parametric`)* | — | `projects` gọi để validate kích thước / tái tính dieline khi đổi kích thước | CP2 |
 | 3 | Phòng thu Vector 2D | *(phía `fe/`)* | — | BE chỉ validate & lưu `canvasState` (JSON) theo schema trong `@wrapfit/shared` | CP3 |
 | 4 | WebGL 3D & Gập Động Học | *(phía `fe/`)* | — | Không có thành phần Backend | CP3 |
-| 5 | FitCheck™ Preflight | `projects` (`PreflightAuditService`) | *(chạy nội bộ khi xuất file / đăng Template)* | Chạy lại `@wrapfit/shared/fitcheck` phía server, không tin điểm do client gửi lên; lưu kết quả vào `fitcheckState` | CP3 |
+| 5 | FitCheck™ Preflight | `projects` (`domain/project-fitcheck.ts`) | *(chạy nội bộ khi xuất file / đăng Template)* | Chạy lại `@wrapfit/shared/fitcheck` phía server, không tin điểm do client gửi lên; lưu kết quả vào `fitcheckState` | CP3 |
 | 6 | Xuất bản Công nghiệp & Render Đám mây | `export` | `/projects/:id/exports`, `/exports/:jobId` | `@Processor('export')` (BullMQ) trong process `worker` | CP4 |
 | 7 | Public Showcase & Unboxing | `public-showcase`, `unboxing` | `/public/projects/:slug`, `/projects/:id/unboxing`, `/public/unboxing/:slug` | `@Public()`, `@nestjs/throttler` cho like/fork, sinh QR bằng `qrcode` | CP4 |
-| 8 | Xác thực & RBAC | `auth`, `users` | `/auth/*`, `/users/me` | Passport Google + JWT cookie, `RolesGuard` | CP2 |
+| 8 | Xác thực & RBAC | `auth`, `users` | `/auth/*`, `/users/me` | Passport Google + JWT cookie; `JwtAuthGuard` (`auth/guards/`, toàn cục), `RolesGuard` (`common/guards/`) | CP2 |
 | 9 | Wishlist & Collections | `collections` (+ like trong `public-showcase`) | `/collections`, `/public/projects/:slug/like` | CRUD gọn 3 lớp | CP3 |
-| 10 | Lưu trữ, Thùng rác 30 ngày & Quota S3 | `storage` (`@Global`) + `TrashPurgeTask` trong `projects` | `/storage/presigned-upload` | `@Cron` 02:00 hằng ngày; kiểm tra quota theo `subscriptionTier` trước khi cấp pre-signed URL | CP3 |
+| 10 | Lưu trữ, Thùng rác 30 ngày & Quota S3 | `storage` (`@Global`, + `StorageMaintenanceTask`) + `TrashPurgeTask` trong `projects` | `/storage/presigned-upload`, `/storage/usage` | `@Cron` 02:00 hằng ngày; kiểm tra quota theo `subscriptionTier` trước khi cấp pre-signed URL | CP3 |
 | 11 | Quản trị Nền tảng & Audit Log | `admin` | `/admin/*` | `@Roles(Role.ADMIN)` ở cấp Controller, `AuditLogInterceptor` | Sau MVP |
-| 12 | Bảo mật Tài khoản & Mật khẩu | `auth` | `/auth/password/forgot`, `/auth/password/reset` | Token đặt lại mật khẩu lưu dạng băm, hết hạn 30 phút, gửi qua hàng đợi `mail` | Sau MVP |
+| 12 | Bảo mật Tài khoản & Mật khẩu | `auth` + `mail` | `/auth/verify-email`, `/auth/password/forgot`, `/auth/password/reset`, `/auth/logout-all` | Token xác minh / đặt lại mật khẩu lưu dạng băm (đặt lại: hết hạn 30 phút), email đi qua hàng đợi `mail` do worker gửi | ✅ Đã có (CP3) |
 | 13 | Thanh toán & Thuê bao | `billing` | `/billing/*`, `/webhooks/stripe`, `/webhooks/vnpay`, `/webhooks/momo` | Webhook cần raw body: `NestFactory.create(AppModule, { rawBody: true })`; xác minh chữ ký; xử lý idempotent | Sau MVP |
 | 14 | Giỏ hàng, Đặt hàng & Vận chuyển | `cart`, `orders`, `shipping` | `/cart`, `/orders` | `IShippingProvider` (GHTK/GHN Adapter) | Sau MVP |
-| 15 | Thông báo Đa kênh | `notifications` | `/notifications` | `@OnEvent` listener; realtime tùy chọn bằng `@WebSocketGateway` (Socket.IO) | CP4 (in-app cơ bản) |
+| 15 | Thông báo Đa kênh | `events` (đã có: `EventsGateway` Socket.IO `/api/socket.io`) + `notifications` (chưa có) | `/notifications` | `notifications` lắng nghe `project.forked`, `export.completed` (`common/events/`) bằng `@OnEvent`, lưu thông báo và đẩy realtime qua `EventsGateway` | CP4 (in-app cơ bản) |
 | 16 | Hỗ trợ Khách hàng & Ticket | `support` | `/support/tickets` | Đính kèm ảnh qua pre-signed upload | Sau MVP |
 | 17 | Tìm kiếm, Lọc & Phân trang | `common/dto` (`PaginationQueryDto`, `PaginatedResponseDto<T>`) | *(dùng chung)* | PostgreSQL full-text search / `pg_trgm` cho tìm theo tên, tag | CP3 |
 | 18 | Mã giảm giá & Tiếp thị liên kết | `promotions` | `/coupons/validate`, `/referrals` | Dùng `User.referralCode`, `referredById` sẵn có | Sau MVP |
 | 19 | 2FA TOTP & Phiên thiết bị | `auth` | `/auth/2fa/*`, `/users/me/sessions` | `otplib`; danh sách phiên lấy từ bảng `refresh_tokens` | Sau MVP |
 | 20 | Đánh giá, Blog CMS & SEO | `reviews`, `blog` | `/reviews`, `/blog/posts` | SEO render phía `fe/` (Next.js metadata); BE cung cấp dữ liệu | Sau MVP |
-| 21 | Rate Limiting & GDPR | `ThrottlerModule` (toàn cục) + `privacy` | `/users/me/export-data`, `DELETE /users/me` | Xuất dữ liệu cá nhân qua hàng đợi, xóa tài khoản cascade + xóa file S3 | CP2 (rate limit) / Sau MVP (GDPR) |
+| 21 | Rate Limiting & GDPR | `ThrottlerModule` + `HttpThrottlerGuard` (`common/guards/`, toàn cục) + `privacy` | `/users/me/export-data`, `DELETE /users/me` | Xuất dữ liệu cá nhân qua hàng đợi, xóa tài khoản cascade + xóa file S3 | CP2 (rate limit) / Sau MVP (GDPR) |
 | 22 | Sổ Địa chỉ | `address-book` | `/users/me/addresses` | Ví dụ mẫu 4 tầng tại Mục 1.1 – 1.2 | Sau MVP |
 | 23 | Hủy đơn, Hoàn tiền & Mua lại | `orders` (`RefundsController`, `AdminRefundsController`) | `/orders/:id/cancel`, `/orders/:id/refunds`, `/orders/:id/reorder`, `/admin/refunds/:id` | Gọi `IPaymentGateway.refundTransaction` | Sau MVP |
 | 24 | Newsletter & Liên hệ | `newsletter`, `contact` | `/newsletter/subscribe`, `/contact` | `@Public()` + Throttler chặt (chống spam), email qua hàng đợi `mail` | Sau MVP |
 | 25 | Cộng tác Thiết kế & Phân quyền Nhóm | `collaboration` | `/projects/:id/members`, `/invitations/:token/accept` | Nâng `ProjectOwnerGuard` thành `ProjectAccessGuard` (VIEWER / EDITOR / ADMIN) | Sau MVP |
 | 26 | Banner Slider & Cấu hình Web | `cms` | `/cms/banners`, `/cms/config`, `/admin/cms/*` | `@nestjs/cache-manager`, xóa cache khi Admin cập nhật | Sau MVP |
+
+Ngoài 26 gói trên, `be/src/` còn các module: `templates` (Thư viện mẫu, IT3-07), `ai` (sinh hoa văn, IT3-09), `mail` (hàng đợi email), `events` (WebSocket), `base` (`GET /api/health`), cùng hạ tầng `config/`, `common/`, `shared/prisma`, `shared/queue`. Module mới cho một gói tạo tại `be/src/<tên-module>/` kèm `index.ts` (tài liệu 07, Mục 1.4).
 
 ---
 

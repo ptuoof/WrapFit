@@ -2,7 +2,7 @@
 
 > **Dự án**: WrapFit Platform (Nền tảng Thiết kế & Đóng gói Bao bì Quà tặng Thông minh)  
 > **Khóa học**: EXE101 — Trải nghiệm Khởi nghiệp Đổi mới Sáng tạo (FPT University)  
-> **Mô hình kiến trúc**: **Modular Monorepo (Next.js 14 App Router + Pure Domain Core + Node.js/Prisma BaaS)**  
+> **Mô hình kiến trúc**: **Modular Monorepo — npm workspaces (Next.js 14 App Router + Pure Domain Core `@wrapfit/shared` + NestJS 11 API & Worker)**  
 > **Quy chuẩn thiết kế**: Clean Architecture, Domain-Driven Design (DDD) & Separation of Concerns (SoC)
 
 ---
@@ -163,52 +163,29 @@ d:\FPT_FALL2026\EXE101\
 │   ├── tsconfig.json
 │   └── package.json                        # Package name: @wrapfit/shared
 │
-└── be/                                     # BACKEND API & DATA INFRASTRUCTURE (IT 3)
+└── be/                                     # BACKEND API & DATA INFRASTRUCTURE (IT 3) — NestJS, theo skeleton nestjs-project-structure
     ├── prisma/                             # Quản trị Cơ sở Dữ liệu Quan hệ PostgreSQL
-    │   ├── schema.prisma                   # Lược đồ thực thể (Users, Projects, Orders, Tickets...)
+    │   ├── schema.prisma                   # Lược đồ thực thể (Users, Projects, Templates, Exports...)
     │   ├── migrations/                     # Lịch sử các bước thay đổi cấu trúc bảng CSDL
     │   └── seed.ts                         # Dữ liệu mẫu khởi tạo (4 mẫu hộp chuẩn, tài khoản Admin)
     ├── src/
-    │   ├── index.ts                        # Điểm khởi chạy máy chủ Express / Node.js
-    │   ├── config/                         # Cấu hình môi trường & biến bí mật
-    │   │   ├── environment.ts              # Kiểm tra biến .env (DATABASE_URL, S3_KEY, JWT_SECRET)
-    │   │   └── database.ts                 # Kết nối Prisma Client Singleton
-    │   ├── controllers/                    # Tiếp nhận HTTP Request & trả về Response
-    │   │   ├── auth.controller.ts          # Đăng ký, đăng nhập, quên mật khẩu, 2FA
-    │   │   ├── project.controller.ts       # CRUD dự án, nhân bản (fork), chuyển trạng thái
-    │   │   ├── storage.controller.ts       # Nhận tải lên ảnh S3 & trả Presigned URL
-    │   │   ├── order.controller.ts         # Đặt hàng in ấn, hủy đơn, hoàn tiền
-    │   │   ├── payment.controller.ts       # Xử lý thanh toán & Webhook IPN (VNPay, Stripe)
-    │   │   ├── admin.controller.ts         # Báo cáo thống kê, duyệt template, khóa user
-    │   │   └── webhook.controller.ts       # Nhận Webhook từ đối tác giao hàng GHTK / Cổng thanh toán
-    │   ├── services/                       # Xử lý Logic Nghiệp vụ Cốt Lõi (Business Logic)
-    │   │   ├── auth.service.ts             # Băm mật khẩu Argon2, cấp phát JWT, xác minh Google OAuth
-    │   │   ├── project.service.ts          # Lưu snapshot, sao chép cấu trúc, quản lý thùng rác
-    │   │   ├── storage.service.ts          # Giao tiếp AWS S3 / Cloudflare R2, tính dung lượng Quota
-    │   │   ├── export-queue.service.ts     # Đẩy tác vụ xuất file PDF/DXF nặng vào BullMQ
-    │   │   ├── ai-pattern.service.ts       # Tích hợp Gemini / Stable Diffusion sinh hoa văn hộp
-    │   │   ├── payment.service.ts          # Tạo phiên thanh toán VNPay QR & xác minh chữ ký bảo mật
-    │   │   └── notification.service.ts     # Gửi email Resend & bắn thông báo chuông In-app
-    │   ├── repositories/                   # Thao tác CSDL trừu tượng (Data Access Layer)
-    │   │   ├── user.repository.ts
-    │   │   ├── project.repository.ts
-    │   │   ├── order.repository.ts
-    │   │   └── audit.repository.ts
-    │   ├── middleware/                     # Bộ lọc trung gian bảo vệ API
-    │   │   ├── auth.middleware.ts          # Giải mã JWT Bearer token & đính kèm User vào Request
-    │   │   ├── rbac.middleware.ts          # Kiểm tra quyền: requireRole('ADMIN', 'PRO_ARTISAN')
-    │   │   ├── rate-limit.middleware.ts    # Giới hạn số lượt gọi API bằng Redis chống Brute-force
-    │   │   └── error-handler.middleware.ts # Bắt lỗi toàn cục & chuẩn hóa định dạng JSON lỗi
-    │   ├── jobs/                           # Các tiến trình chạy ngầm định kỳ (Background Workers)
-    │   │   ├── trash-purge.job.ts          # Quét dọn thùng rác tự động lúc 00:00 (xóa dự án > 30 ngày)
-    │   │   └── export-worker.ts            # Worker ngầm kết xuất file PDF CMYK và Mockup 4K
-    │   └── lib/                            # Thư viện dùng chung tầng Backend
-    │       ├── prisma.ts                   # Prisma Client Instance
-    │       ├── logger.ts                   # Ghi log file hệ thống (Winston / Pino)
-    │       └── crypto.ts                   # Tạo mã OTP ngẫu nhiên, sinh mã băm
+    │   ├── app.ts                          # Khởi chạy API HTTP (cổng 8080, prefix /api)
+    │   ├── worker.ts                       # Process BullMQ riêng: xuất file in, gửi email
+    │   ├── app.module.ts                   # Ghép module + guard / filter / interceptor toàn cục
+    │   ├── app.middleware.ts               # Request id, helmet, CORS, ValidationPipe, WebSocket adapter
+    │   ├── config/                         # env.validation.ts + envs/ (default, production...) + configuration.ts
+    │   ├── common/                         # @Global CommonModule: ConfigService, decorators, guards, filters, dto
+    │   ├── shared/                         # Nest module hạ tầng: prisma/ (PrismaService), queue/ (BullMQ)
+    │   ├── auth/                           # Đăng ký, đăng nhập, refresh, Google OAuth, JwtAuthGuard
+    │   ├── base/                           # GET /api/health
+    │   ├── users/  collections/  templates/  public-showcase/  unboxing/  ai/  events/
+    │   ├── projects/                       # 4 tầng: presentation / application / domain / infrastructure
+    │   ├── storage/                        # Pre-signed upload S3 / R2, hạn mức, dọn file
+    │   ├── export/                         # Hàng đợi xuất file + ExportProcessor (worker) + rendering/
+    │   └── mail/                           # Đưa email vào hàng đợi + gửi SMTP (worker)
+    ├── test/e2e/                           # E2E test (Jest + Supertest)
     ├── .env.example                        # Mẫu biến môi trường Backend
-    ├── docker-compose.yml                  # Khởi chạy PostgreSQL, Redis & MinIO cục bộ
-    ├── Dockerfile                          # Đóng gói Container Docker cho Production
+    ├── Dockerfile                          # Một image cho cả API (dist/app.js) và worker (dist/worker.js)
     ├── tsconfig.json
     └── package.json
 ```
@@ -236,10 +213,28 @@ d:\FPT_FALL2026\EXE101\
    - Chạy được ở cả Client-side (Trình duyệt) lẫn Server-side (Node.js).
 2. **`fe/` (Frontend)**:
    - Import types, công thức toán và quy tắc FitCheck từ `@wrapfit/shared`.
-   - Giao tiếp với `be/` qua HTTP API Client (`fe/src/lib/apiClient.ts`).
+   - Giao tiếp với `be/` qua HTTP API Client (`fe/src/api/`, trên HTTP client `fe/src/services/api/`).
 3. **`be/` (Backend)**:
-   - Import types, contracts và exporter engine từ `@wrapfit/shared`.
-   - Phụ thuộc vào Prisma ORM, CSDL PostgreSQL, Redis và Cloud S3.
+   - Import types, công thức dieline và FitCheck từ `@wrapfit/shared` (DTO `implements` các interface của shared).
+   - Phụ thuộc vào Prisma ORM, CSDL PostgreSQL, Redis (BullMQ) và Cloud S3 / R2.
+
+### 3.1. Ranh giới bên trong `be/src/`
+
+Backend theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure). Phụ thuộc cũng đi một chiều:
+
+```
+config/ + common/  ──▶  shared/prisma, shared/queue  ──▶  module nghiệp vụ  ──▶  app.module.ts / worker.ts
+(tầng nền: env,           (Nest module hạ tầng)           (auth, users, projects,
+ CommonModule @Global)                                     export...)
+```
+
+(mũi tên = "được import bởi"; `config/` và `common/` dùng lẫn nhau: `ConfigService` lấy kiểu `Config` từ `config/`, logger trong `config/` lấy request id từ `common/context`)
+
+1. **`config/`, `common/`, `shared/`** là hạ tầng: không import module nghiệp vụ. Thứ nhiều module cùng cần (tên cookie, hàm băm token, decorator, DTO phân trang) đặt ở `common/`.
+2. **Module nghiệp vụ** (`src/<tên>/`) có `index.ts` (barrel). Module khác import qua thư mục: `from '../projects'`, `from '../common'`, `from '../shared/prisma'` — không trỏ vào file bên trong module khác. Trong cùng module import thẳng file.
+3. **Không vòng import** giữa các module: ESLint `import/no-cycle` chặn trong CI. Cần phụ thuộc ngược thì dùng Port + injection token (tài liệu 08, Mục 1.2 & 1.4) hoặc đưa phần dùng chung xuống `common/`.
+4. **Chỉ `src/config/` đọc `process.env`**; phần còn lại đọc cấu hình bằng `ConfigService` của `common/`: `config.get('storage.bucket')`.
+5. **Hai process, một mã nguồn**: `app.module.ts` (API) không import các `*WorkerModule`; `worker.ts` chỉ import hạ tầng (`PrismaModule`, `StorageModule`, kết nối queue) và các `*WorkerModule`. `@Cron` chỉ đăng ký trong API.
 
 ---
 
@@ -247,15 +242,15 @@ d:\FPT_FALL2026\EXE101\
 
 | Dịch Vụ Bên Thứ 3 | Mục Đích Sử Dụng | Vị Trí Triển Khai Trong Mã Nguồn | Biến Môi Trường Cần Thiết |
 | :--- | :--- | :--- | :--- |
-| **AWS S3 / Cloudflare R2** | Lưu trữ ảnh logo người dùng tải lên, ảnh mockup 4K và file PDF xuất in | `be/src/services/storage.service.ts` | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` |
+| **AWS S3 / Cloudflare R2** | Lưu trữ ảnh logo người dùng tải lên, ảnh mockup 4K và file PDF xuất in | `be/src/storage/storage.service.ts` | `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` |
 | **PostgreSQL** | Cơ sở dữ liệu chính lưu thông tin User, Project, Template, Order | `be/prisma/schema.prisma` | `DATABASE_URL="postgresql://user:pass@host:5432/wrapfit"` |
-| **Redis & BullMQ** | Hàng đợi tác vụ ngầm xuất PDF/Mockup và Rate Limiting chống spam | `be/src/jobs/`, `be/src/middleware/rate-limit.middleware.ts` | `REDIS_URL="redis://localhost:6379"` |
-| **VNPay / Stripe / MoMo** | Cổng thanh toán gói Pro và đơn hàng in ấn quà tặng | `be/src/services/payment.service.ts` | `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `STRIPE_SECRET_KEY` |
-| **GHTK / GHN API** | Tính phí ship tự động và đẩy đơn giao vận | `be/src/controllers/webhook.controller.ts` | `GHTK_API_TOKEN`, `GHN_SHOP_ID` |
-| **Resend / SendGrid** | Gửi email giao dịch (Xác thực, Quên mật khẩu, Báo đơn hàng) | `be/src/services/notification.service.ts` | `RESEND_API_KEY`, `SENDER_EMAIL` |
-| **Google OAuth 2.0** | Đăng nhập nhanh 1 cú nhấp chuột cho người dùng | `be/src/services/auth.service.ts` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
-| **Gemini / Stability AI** | Sinh hoa văn bao bì tự động theo chủ đề dịp tặng quà | `be/src/services/ai-pattern.service.ts` | `GEMINI_API_KEY` |
-| **Cloudflare Turnstile** | CAPTCHA bảo vệ form đăng ký, quên mật khẩu chống bot | `fe/src/components/auth/`, `be/src/middleware/` | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
+| **Redis & BullMQ** | Hàng đợi tác vụ ngầm xuất PDF/Mockup và Rate Limiting chống spam | `be/src/shared/queue/`, `be/src/export/`, `be/src/mail/`, `be/src/common/guards/http-throttler.guard.ts` | `REDIS_URL="redis://localhost:6379"` |
+| **VNPay / Stripe / MoMo** | Cổng thanh toán gói Pro và đơn hàng in ấn quà tặng | `be/src/payments/` (chưa có) | `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `STRIPE_SECRET_KEY` |
+| **GHTK / GHN API** | Tính phí ship tự động và đẩy đơn giao vận | `be/src/shipping/` (chưa có) | `GHTK_API_TOKEN`, `GHN_SHOP_ID` |
+| **Resend / SendGrid** | Gửi email giao dịch (Xác thực, Quên mật khẩu, Báo đơn hàng) | `be/src/mail/` (SMTP qua worker) | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` |
+| **Google OAuth 2.0** | Đăng nhập nhanh 1 cú nhấp chuột cho người dùng | `be/src/auth/strategies/google.strategy.ts` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` |
+| **Gemini / Stability AI** | Sinh hoa văn bao bì tự động theo chủ đề dịp tặng quà | `be/src/ai/` (Claude, dự phòng bằng thuật toán) | `ANTHROPIC_API_KEY`, `AI_MODEL` |
+| **Cloudflare Turnstile** | CAPTCHA bảo vệ form đăng ký, quên mật khẩu chống bot | `fe/src/components/auth/`, `be/src/common/guards/` (chưa có) | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
 
 ---
 
@@ -264,6 +259,7 @@ d:\FPT_FALL2026\EXE101\
 - **Components React**: Dùng `PascalCase.tsx` (ví dụ: `PackagingStage.tsx`, `DielineCanvas2D.tsx`).
 - **Hooks & Utilities**: Dùng `camelCase.ts` (ví dụ: `useDielineGeometry.ts`, `hapticAudio.ts`).
 - **Services, Controllers & Rules**: Dùng `kebab-case.suffix.ts` (ví dụ: `auth.controller.ts`, `safe-margin.rule.ts`, `storage.service.ts`).
+- **Backend NestJS (`be/src/`)**: thư mục module dạng `kebab-case` (`public-showcase/`); file theo loại `<tên>.module.ts`, `.controller.ts`, `.service.ts`, `.guard.ts`, `.strategy.ts`, `.processor.ts`, `.task.ts` (`@Cron`), `.dto.ts` (trong `dto/`, plugin Swagger đọc hậu tố này), `.constants.ts`, `.port.ts` (Port + injection token). Mỗi module và mỗi thư mục con của `common/` có `index.ts`. Unit test `<file>.spec.ts` đặt cạnh file; e2e `be/test/e2e/<luồng>.e2e-spec.ts`.
 - **Prisma Models**: Dùng `PascalCase` (ví dụ: `PackagingProject`, `BoxTemplate`), tên bảng CSDL dùng `snake_case` số nhiều (`@@map("packaging_projects")`).
 - **Tên biến & Hàm**: Dùng `camelCase` (ví dụ: `calculateDieline`, `isReadyForProduction`).
 - **Hằng số & Enums**: Dùng `UPPER_SNAKE_CASE` (ví dụ: `BOX_STRUCTURE_TYPES`, `MAKER`, `PRO_ARTISAN`).
