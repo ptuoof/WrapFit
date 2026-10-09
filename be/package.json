@@ -16,6 +16,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/app.js",
     "start:worker": "node dist/worker.js",
+    "start:repl": "nest start --entryFile repl",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\"",
     "test": "jest",
