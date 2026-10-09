@@ -27,6 +27,13 @@ export const VERIFY_EMAIL_TTL_MS = 24 * 60 * 60 * 1000;
 /** Lifetime of the link in the "reset your password" message (short: it grants access to the account). */
 export const RESET_PASSWORD_TTL_MS = 30 * 60 * 1000;
 
+/**
+ * Failed password logins allowed per email address in the window, whatever the IP (credential stuffing spreads over
+ * many IPs, which the per-IP rate limit does not see). Then 429 until the window ends.
+ */
+export const MAX_FAILED_LOGINS = 10;
+export const FAILED_LOGIN_WINDOW_SECONDS = 15 * 60;
+
 /** At most one email of each kind per user per minute, and this many per day (resend / forgot password). */
 export const AUTH_EMAIL_MIN_INTERVAL_MS = 60 * 1000;
 export const AUTH_EMAILS_PER_DAY = 5;

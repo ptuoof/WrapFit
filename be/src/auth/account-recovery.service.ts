@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuthTokenPurpose } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { ConfigService } from '../common';
+import { ConfigService, SESSIONS_REVOKED, SessionsRevokedEvent } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { MailService } from '../mail';
 import { AuthTokensService } from './auth-tokens.service';
+import { LoginAttemptsService } from './login-attempts.service';
 
 /** Stable error codes of the one-time links, read by the frontend to pick its message. */
 export type AuthTokenErrorCode = 'AUTH_TOKEN_INVALID' | 'AUTH_TOKEN_EXPIRED' | 'AUTH_TOKEN_CONSUMED';
@@ -30,6 +32,8 @@ export class AccountRecoveryService {
     private readonly prisma: PrismaService,
     private readonly tokens: AuthTokensService,
     private readonly mail: MailService,
+    private readonly loginAttempts: LoginAttemptsService,
+    private readonly events: EventEmitter2,
     config: ConfigService,
   ) {
     this.bcryptRounds = config.get('auth.bcryptRounds');
@@ -88,19 +92,27 @@ export class AccountRecoveryService {
     const result = await this.prisma.$transaction(async (tx) => {
       // The link of a repeated registration (COMPLETE_SIGNUP) sets the password the same way.
       const outcome = await this.tokens.consume(tx, rawToken, ['RESET_PASSWORD', 'COMPLETE_SIGNUP'], now);
-      if (outcome.status !== 'ok') return { outcome, sessionsRevoked: 0 };
-      await tx.user.update({ where: { id: outcome.userId }, data: { passwordHash } });
+      if (outcome.status !== 'ok') return { outcome, sessionsRevoked: 0, email: null };
+      const { email } = await tx.user.update({
+        where: { id: outcome.userId },
+        data: { passwordHash },
+        select: { email: true },
+      });
       await tx.user.updateMany({ where: { id: outcome.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: now } });
       const { count } = await tx.refreshToken.updateMany({
         where: { userId: outcome.userId, revokedAt: null },
         data: { revokedAt: now },
       });
-      return { outcome, sessionsRevoked: count };
+      return { outcome, sessionsRevoked: count, email };
     });
 
     const { outcome } = result;
     if (outcome.status === 'ok') {
       this.logger.log(`auth.password_reset.ok userId=${outcome.userId} sessionsRevoked=${result.sessionsRevoked}`);
+      const event: SessionsRevokedEvent = { userId: outcome.userId };
+      this.events.emit(SESSIONS_REVOKED, event);
+      // The owner of the mailbox proved who they are: failed logins of whoever guessed before no longer count.
+      if (result.email) await this.loginAttempts.reset(result.email);
       return;
     }
     throw tokenError(

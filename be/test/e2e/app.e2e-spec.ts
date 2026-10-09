@@ -350,5 +350,18 @@ describe('API (e2e)', () => {
       expect(socket.connected).toBe(false);
       socket.close();
     });
+
+    it('closes the WebSocket connections of a user who signs out everywhere', async () => {
+      const socket: Socket = connect({ extraHeaders: { cookie: cookies({ wf_access: bobAccess }) } });
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', resolve);
+        socket.once('connect_error', reject);
+      });
+      const closed = new Promise<string>((resolve) => socket.once('disconnect', resolve));
+
+      await api().post('/api/auth/logout-all').set('Cookie', cookies({ wf_access: bobAccess })).expect(204);
+      expect(await closed).toBe('io server disconnect');
+      socket.close();
+    });
   });
 });

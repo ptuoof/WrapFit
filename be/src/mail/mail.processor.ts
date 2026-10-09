@@ -59,7 +59,12 @@ export class MailProcessor extends WorkerHost {
   private async send(job: Job<AuthEmailJobData>, authTokenId: string): Promise<{ sent: boolean }> {
     const token = await this.prisma.authToken.findUnique({
       where: { id: authTokenId },
-      select: { purpose: true, expiresAt: true, consumedAt: true, user: { select: { email: true, fullName: true } } },
+      select: {
+        purpose: true,
+        expiresAt: true,
+        consumedAt: true,
+        user: { select: { email: true, fullName: true, emailVerifiedAt: true } },
+      },
     });
     if (!token || token.consumedAt || token.expiresAt <= new Date()) {
       this.logger.log(`mail.skipped authTokenId=${authTokenId} reason=token_no_longer_usable`);
@@ -67,7 +72,10 @@ export class MailProcessor extends WorkerHost {
     }
 
     const link = `${this.frontendUrl}${LINK_PATHS[token.purpose]}?token=${rawAuthToken(this.secret, authTokenId)}`;
-    const content = authEmail(token.purpose, link, token.user.fullName);
+    // Anyone can register someone else's address with a name of their choice (a link, a fake warning): the name
+    // only greets the owner once they proved the address.
+    const name = token.user.emailVerifiedAt ? token.user.fullName : null;
+    const content = authEmail(token.purpose, link, name);
     await this.deliver(job, token.user.email, content, `purpose=${token.purpose} authTokenId=${authTokenId}`);
     return { sent: true };
   }

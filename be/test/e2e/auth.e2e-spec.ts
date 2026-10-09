@@ -263,6 +263,36 @@ describe('Account emails (e2e)', () => {
     });
   });
 
+  describe('failed logins per address (Redis)', () => {
+    // Through the services: the per-IP limits of the routes (10 / minute) would answer 429 first.
+    const signIn = (address: string, password: string) => app.get(AuthService).login({ email: address, password });
+    const recovery = () => app.get(AccountRecoveryService);
+    const failTenTimes = async (address: string) => {
+      for (let i = 0; i < 10; i++) await expect(signIn(address, 'Wrong0pass1')).rejects.toMatchObject({ status: 401 });
+    };
+    const locked = { status: 429, response: expect.objectContaining({ code: 'LOGIN_RATE_LIMITED' }) };
+
+    it('locks password logins of an address after 10 failures, whatever the IP, until the owner resets the password', async () => {
+      const address = email('lam');
+      await app.get(AuthService).register({ email: address, password: TEST_PASSWORD });
+      await recovery().verifyEmail(await linkToken(address, 'VERIFY_EMAIL'));
+
+      await failTenTimes(address);
+      await expect(signIn(address, TEST_PASSWORD)).rejects.toMatchObject(locked); // even the right password
+
+      await ageTokens(address);
+      await recovery().forgotPassword(address);
+      await recovery().resetPassword(await linkToken(address, 'RESET_PASSWORD'), 'NewPassw0rd9');
+      await expect(signIn(address, 'NewPassw0rd9')).resolves.toMatchObject({ user: { email: address } });
+    });
+
+    it('counts an address without an account the same way, so the lock tells nothing', async () => {
+      const ghost = email('ghost-login');
+      await failTenTimes(ghost);
+      await expect(signIn(ghost, TEST_PASSWORD)).rejects.toMatchObject(locked);
+    });
+  });
+
   describe('Google sign-in on an address registered by someone else first (pre-account takeover)', () => {
     it("removes the unproven password and the squatter's sessions; the Google owner keeps the account", async () => {
       const victim = email('victim');

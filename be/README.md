@@ -56,6 +56,7 @@ src/
   shared/
     prisma/                # PrismaModule (global) + PrismaService
     queue/                 # kết nối BullMQ (Redis)
+    redis/                 # RedisModule (global): client ioredis `REDIS` cho bộ đếm nhỏ (đăng nhập sai, lượt xem)
   auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
   base/                    # GET /api/health
   users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
@@ -228,6 +229,8 @@ if (res.status === 401) {
 3. Nếu một refresh token đã bị thu hồi mà vẫn bị gửi lại, hệ thống coi là có khả năng bị đánh cắp và thu hồi **toàn bộ** phiên của user đó (cookie trên trình duyệt cũng bị xoá).
 4. Mỗi request, `JwtStrategy` kiểm tra lại user trong database nên việc khoá tài khoản hay đổi role có hiệu lực ngay.
 5. Tài khoản chỉ đăng nhập bằng Google (`passwordHash = null`) không thể đăng nhập bằng mật khẩu.
+6. Ngoài giới hạn 10 lần / phút theo IP, mỗi **địa chỉ email** chỉ được đăng nhập sai 10 lần trong 15 phút (đếm trong Redis, kể cả địa chỉ không có tài khoản): sau đó `429 LOGIN_RATE_LIMITED` kèm `retryAfterSeconds`, kể cả khi đúng mật khẩu. Đăng nhập thành công hoặc đặt lại mật khẩu xoá bộ đếm. Redis lỗi thì bỏ qua bước này.
+7. Thu hồi phiên (`logout-all`, phát hiện refresh token bị dùng lại, đặt lại mật khẩu, admin khoá / xoá tài khoản) cũng đóng mọi kết nối WebSocket của user. Email gửi tới tài khoản chưa xác minh không chèn `fullName` (ai cũng có thể đăng ký địa chỉ của người khác với tên tuỳ ý).
 
 ### Đăng nhập bằng Google — cách lấy Client ID
 
@@ -322,6 +325,8 @@ socket.emit('ping', {});
 ```
 
 Mỗi kết nối tự vào room `user:<id>` (và `admins` với ADMIN). Từ service khác, inject `EventsGateway` và gọi `emitToAll` / `emitToUser`.
+
+Token chỉ được kiểm tra lúc handshake, nên server tự đóng socket khi access token hết hạn (client kết nối lại bằng cookie mới sau `refresh`) và khi phiên của user bị thu hồi (sự kiện nội bộ `auth.sessions_revoked`).
 
 Handshake từ trình duyệt có `Origin` ngoài `CORS_ORIGINS` / `FRONTEND_URL` bị từ chối (`allowRequest` trong `src/common/adapters/socket-io.adapter.ts`): CORS của Socket.IO không áp dụng cho transport WebSocket.
 
