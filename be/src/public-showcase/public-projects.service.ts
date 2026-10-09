@@ -1,8 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { PROJECT_FORKED, ProjectForkedEvent } from '../common';
 import { PrismaService } from '../shared/prisma';
+import { isFirstView, REDIS, Viewer } from '../shared/redis';
 import { ProjectsService } from '../projects';
 import type { ProjectDetail } from '../projects';
 import { assetUrl, toClientCanvas } from '../storage';
@@ -55,15 +57,20 @@ export class PublicProjectsService {
     private readonly prisma: PrismaService,
     private readonly projects: ProjectsService,
     private readonly events: EventEmitter2,
+    @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
-  /** Read-only view. Counts a view unless the owner looks at their own project. */
-  async view(slug: string, viewerId?: string) {
+  /**
+   * Read-only view. Counts a view unless the owner looks at their own project, once per viewer every
+   * VIEW_DEDUP_SECONDS (the count orders the community hub).
+   */
+  async view(slug: string, viewerId?: string, client: Omit<Viewer, 'userId'> = {}) {
     const project = await this.findShared(slug);
     const isOwner = project.userId === viewerId;
+    const counts = !isOwner && (await isFirstView(this.redis, `project:${project.id}`, { ...client, userId: viewerId }));
 
     const [viewsCount, liked] = await Promise.all([
-      isOwner ? project.viewsCount : this.incrementViews(project.id),
+      counts ? this.incrementViews(project.id) : project.viewsCount,
       viewerId ? this.hasLiked(viewerId, project.id) : false,
     ]);
 

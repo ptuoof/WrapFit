@@ -152,7 +152,9 @@ describe('Unboxing (e2e)', () => {
       const json = JSON.stringify(res.body);
       expect(json).not.toMatch(/@e2e\.test|userId|projectId|slug/);
       expect(json).not.toContain(projectId);
-      expect((await api().get(page()).expect(200)).body.viewsCount).toBe(2);
+      // Reopening the page counts once per viewer; another browser counts again.
+      expect((await api().get(page()).expect(200)).body.viewsCount).toBe(1);
+      expect((await api().get(page()).set('User-Agent', 'another-browser').expect(200)).body.viewsCount).toBe(2);
     });
 
     it('answers 404 for unknown slugs and projects in the trash', async () => {

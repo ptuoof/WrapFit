@@ -184,7 +184,8 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 | GET | `/api/users`, `/api/users/:id` | ADMIN | Danh sách (phân trang) / chi tiết user |
 | PATCH | `/api/users/:id` | ADMIN | Đổi role, khoá/mở khoá tài khoản |
 | DELETE | `/api/users/:id` | ADMIN | Xoá user |
-| GET | `/api/health` | public | Kiểm tra server + database |
+| GET | `/api/health` | public | Kiểm tra server: `status`, `database`, `redis`, `worker` (up / down) |
+| GET | `/api/health/details` | ADMIN | Như trên, thêm số job của hàng đợi xuất file và uptime |
 
 Định dạng lỗi thống nhất (tài liệu 07, Mục 4.3):
 

@@ -81,12 +81,10 @@ describe('API (e2e)', () => {
 
   it('GET /api/health reports the database as up', async () => {
     const res = await api().get('/api/health').expect(200);
-    expect(res.body).toMatchObject({ status: 'ok', database: 'up', redis: 'up' });
     // Reported for monitoring only: an export worker may or may not be running next to the tests.
-    expect(['up', 'down']).toContain(res.body.worker);
-    expect(res.body.exportQueue).toEqual(
-      expect.objectContaining({ waiting: expect.any(Number), failed: expect.any(Number) }),
-    );
+    expect(res.body).toEqual({ status: 'ok', database: 'up', redis: 'up', worker: expect.stringMatching(/^(up|down)$/) });
+    // Queue sizes and uptime are for admins only.
+    await api().get('/api/health/details').expect(401);
   });
 
   it('refuses state-changing requests sent by a page of another origin (CSRF)', async () => {
@@ -266,6 +264,21 @@ describe('API (e2e)', () => {
 
     it('forbids regular users from admin routes', async () => {
       await api().get('/api/users').set('Cookie', cookies({ wf_access: aliceAccess })).expect(403);
+      await api().get('/api/health/details').set('Cookie', cookies({ wf_access: aliceAccess })).expect(403);
+    });
+
+    it('shows admins the export queue and the uptime in the health details', async () => {
+      // The role is read from the database on every request.
+      await prisma.user.update({ where: { email: alice.email }, data: { role: 'ADMIN' } });
+      try {
+        const res = await api().get('/api/health/details').set('Cookie', cookies({ wf_access: aliceAccess })).expect(200);
+        expect(res.body).toMatchObject({ status: 'ok', uptime: expect.any(Number) });
+        expect(res.body.exportQueue).toEqual(
+          expect.objectContaining({ waiting: expect.any(Number), failed: expect.any(Number) }),
+        );
+      } finally {
+        await prisma.user.update({ where: { email: alice.email }, data: { role: 'MAKER' } });
+      }
     });
 
     it('updates the profile but rejects fields that are not editable', async () => {

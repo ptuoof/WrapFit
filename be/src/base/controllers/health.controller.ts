@@ -1,9 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Queue } from 'bullmq';
-import { Public } from '../../common';
+import { ACCESS_COOKIE, Public, Roles } from '../../common';
 import { PrismaService } from '../../shared/prisma';
 import { EXPORT_QUEUE, WORKER_HEARTBEAT_KEY } from '../../export';
 
@@ -28,17 +29,29 @@ export class HealthController {
   ) {}
 
   /**
-   * 503 only when the database is down (the API cannot serve anything). Redis down = `degraded`: everything works
-   * except print exports. The worker and the export queue are reported for monitoring, the worker being a separate
-   * process with its own health check.
+   * Public probe of Docker and the monitoring: 503 only when the database is down (the API cannot serve anything).
+   * Redis down = `degraded`: everything works except print exports. Queue sizes and uptime stay out of the public
+   * answer (see `details`).
    */
   @Public()
   @SkipThrottle()
   @Get()
-  @ApiOperation({
-    summary: 'Liveness/readiness probe: database, Redis, export worker and export queue',
-  })
+  @ApiOperation({ summary: 'Liveness/readiness probe: database, Redis and export worker (up / down)' })
   async check() {
+    const { status, database, redis, worker } = await this.inspect(false);
+    return { status, database, redis, worker };
+  }
+
+  @Get('details')
+  @Roles(Role.ADMIN)
+  @ApiCookieAuth(ACCESS_COOKIE)
+  @ApiOperation({ summary: 'Health with the export queue sizes and the uptime (admin)' })
+  details() {
+    return this.inspect();
+  }
+
+  /** The worker and the export queue are reported for monitoring, the worker being a separate process. */
+  private async inspect(withQueue = true) {
     // Reading the worker heartbeat doubles as the Redis probe.
     let heartbeat: string | null = null;
     const [database, redis] = await Promise.all([
@@ -56,7 +69,7 @@ export class HealthController {
     }
 
     let exportQueue: Record<string, number> | null = null;
-    if (redis === 'up') {
+    if (withQueue && redis === 'up') {
       exportQueue = await withTimeout(this.exportQueue.getJobCounts('waiting', 'active', 'delayed', 'failed')).catch(
         () => null, // Redis answered the first read but not this one: report the counts as unknown.
       );
