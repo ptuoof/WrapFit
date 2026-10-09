@@ -365,9 +365,11 @@ npm --workspace=be run test:e2e
 ## Triển khai production (VPS + HTTPS)
 
 1. VPS có Docker (Compose ≥ 2.24), mở cổng 80/443, bản ghi DNS `A` của domain trỏ về VPS. Clone repo vào `~/WrapFit`.
-2. `cp .env.example .env`, điền `APP_DOMAIN` (vd. `wrapfit.vn`), `ACME_EMAIL`, `JWT_*_SECRET`, các biến `STORAGE_*` của Cloudflare R2, (tùy chọn) `ANTHROPIC_API_KEY`, `GOOGLE_*`, `SEED_ADMIN_*`.
+2. `cp .env.example .env`, điền `APP_DOMAIN` (vd. `wrapfit.vn`), `ACME_EMAIL`, `JWT_*_SECRET`, `POSTGRES_PASSWORD` và `REDIS_PASSWORD` (`openssl rand -hex 32`, phải an toàn trong URL), các biến `STORAGE_*` của Cloudflare R2 (cả `STORAGE_PRIVATE_BUCKET`), `SMTP_*` / `MAIL_FROM`, (tùy chọn) `ANTHROPIC_API_KEY`, `GOOGLE_*`, `SEED_ADMIN_*`. Thiếu biến bắt buộc nào thì `docker compose` dừng trước khi thay container, không bao giờ rơi về mặc định của môi trường dev (mật khẩu `password`, Redis không mật khẩu, khóa SeaweedFS).
+   - `POSTGRES_PASSWORD` chỉ được đọc khi volume dữ liệu được tạo lần đầu. Database đã chạy với mật khẩu khác thì đổi trong Postgres **trước**, rồi mới sửa `.env`: `docker exec wrapfit-postgres psql -U postgres -c "ALTER USER postgres PASSWORD '<mật khẩu mới>'"`.
+   - Redis chỉ chạy trong mạng nội bộ của Docker, nhưng vẫn đặt mật khẩu (`--requirepass`) để container khác trên máy không đọc / sửa được hàng đợi.
 3. `bash be/deploy.sh` — có `APP_DOMAIN` thì chạy `docker-compose.yml` + `docker-compose.prod.yml`: **Caddy** tự lấy / gia hạn chứng chỉ Let's Encrypt, phục vụ frontend và `/api/*` trên **cùng một domain** (không cần CORS, cookie là first-party), đóng các cổng nội bộ (Postgres, Redis, 8080, 3000), bật `COOKIE_SECURE`, `TRUST_PROXY`, tắt Swagger.
-4. GitHub: thêm secrets `VPS_HOST`, `VPS_USERNAME`, `VPS_SSH_KEY` (hoặc `VPS_PASSWORD`), `VPS_PORT`. Workflow `Deploy WrapFit to VPS` tự chạy sau khi **CI** (build + unit + e2e) xanh trên `main`, hoặc chạy tay.
+4. GitHub: thêm secrets `VPS_HOST`, `VPS_USERNAME`, `VPS_SSH_KEY` (hoặc `VPS_PASSWORD`), `VPS_PORT`. Workflow `Deploy WrapFit to VPS` tự chạy sau khi **CI** (build + unit + e2e) xanh trên `main`, hoặc chạy tay. Action SSH được ghim theo commit SHA (bước này giữ khóa SSH của VPS); khi nâng phiên bản, thay SHA chứ không dùng tag.
 5. Google OAuth: thêm `https://<APP_DOMAIN>/api/auth/google/callback` vào *Authorized redirect URIs*. R2: thêm `https://<APP_DOMAIN>` vào CORS của bucket.
 
 ## Lưu ý khi triển khai production
