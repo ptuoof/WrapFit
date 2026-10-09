@@ -257,7 +257,7 @@ const ticket = await fetch(`${API_URL}/storage/presigned-upload`, {
   body: JSON.stringify({ purpose: 'LOGO', contentType: file.type, size: file.size, projectId }),
 }).then((r) => r.json());
 
-// 2. Upload trực tiếp (KHÔNG gửi cookie, KHÔNG thêm header nào khác)
+// 2. Upload trực tiếp với đúng ticket.headers (KHÔNG gửi cookie, KHÔNG thêm / bớt header nào)
 await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: file });
 
 // 3. Dùng ticket.fileUrl trong canvasState / thumbnailUrl / avatarUrl
@@ -272,6 +272,7 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 - Hạn mức theo gói: FREE 100 MB, STARTER 1 GB, PRO_BUSINESS 10 GB (`GET /api/storage/usage`). Vượt → `403`.
 - Gửi `projectId` khi file thuộc một dự án (thumbnail, ảnh trên canvas): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác. Nhân bản / Remix dùng chung file với dự án gốc.
 - URL upload hết hạn sau 5 phút. Hạn mức được tính ngay khi cấp URL (kể cả khi FE không upload).
+- Logo SVG / PDF được lưu kèm `Content-Disposition: attachment` (ký vào URL, nên `ticket.headers` có thêm header này): mở thẳng URL của file chỉ tải file về, script trong SVG không chạy trên domain CDN. `<img>` và worker xuất file vẫn đọc bình thường.
 
 **Local**: `docker compose up -d seaweedfs storage-init` chạy [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache 2.0, tương thích S3) ở cổng 8333, khóa dev nằm trong `docker/seaweedfs/s3.json`. MinIO không còn phát hành image Docker bản community nên không dùng.
 
@@ -282,8 +283,10 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 3. Bucket → **Settings** → **CORS Policy**:
 
    ```json
-   [{ "AllowedOrigins": ["https://wrapfit.vn", "http://localhost:3000"], "AllowedMethods": ["PUT", "GET"], "AllowedHeaders": ["content-type"], "MaxAgeSeconds": 3600 }]
+   [{ "AllowedOrigins": ["https://wrapfit.vn", "http://localhost:3000"], "AllowedMethods": ["PUT", "GET"], "AllowedHeaders": ["content-type", "content-disposition"], "MaxAgeSeconds": 3600 }]
    ```
+
+   Domain `cdn.wrapfit.vn` → **Rules** → **Transform Rules** → **Modify Response Header**, áp cho mọi request của hostname này: đặt `Content-Security-Policy: sandbox; default-src 'none'` và `X-Content-Type-Options: nosniff`. File người dùng mở thẳng trên CDN không chạy được script (kể cả file SVG upload trước khi có `Content-Disposition`); `<img>` không bị ảnh hưởng. Lâu dài nên phục vụ file người dùng từ một domain riêng (không phải subdomain của `wrapfit.vn`).
 
 4. **R2** → **Manage R2 API Tokens** → **Create API token**, quyền *Object Read & Write*, chỉ bucket `wrapfit` → lấy *Access Key ID* / *Secret Access Key*. *Account ID* nằm trong endpoint `https://<account-id>.r2.cloudflarestorage.com`.
 5. Điền vào `.env`: `STORAGE_ENDPOINT`, `STORAGE_REGION=auto`, `STORAGE_BUCKET=wrapfit`, hai khóa, `STORAGE_PUBLIC_URL`, `STORAGE_FORCE_PATH_STYLE=false`.

@@ -64,11 +64,19 @@ describe('StorageService', () => {
     const url = new URL(result.uploadUrl);
     expect(url.origin).toBe('http://cdn.local:8333');
     expect(url.pathname).toBe(`/wrapfit/${result.key}`);
-    expect(url.searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
+    // An SVG is stored as a download (scripts in it never run on the CDN domain): the disposition is signed too.
+    expect(url.searchParams.get('X-Amz-SignedHeaders')).toBe('content-disposition;content-length;content-type;host');
+    expect(result.headers).toEqual({ 'Content-Type': 'image/svg+xml', 'Content-Disposition': 'attachment' });
     expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
     expect(prisma.storedFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ userId: 'u-1', size: 2048, purpose: 'LOGO' }) }),
     );
+  });
+
+  it('lets raster images be shown inline', async () => {
+    const result = await build().presignUpload('u-1', { purpose: 'IMAGE', contentType: 'image/png', size: 100 });
+    expect(new URL(result.uploadUrl).searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
+    expect(result.headers).toEqual({ 'Content-Type': 'image/png' });
   });
 
   it('checks the format and the size of each kind of file', async () => {

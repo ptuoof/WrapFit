@@ -113,6 +113,38 @@ describe('Storage (e2e)', () => {
     });
   });
 
+  describe('SVG and PDF logos', () => {
+    const svg = new TextEncoder().encode(
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    ) as unknown as RequestInit['body'] & Uint8Array;
+    let owner: { cookie: string };
+    let ticket: { uploadUrl: string; headers: Record<string, string>; fileUrl: string };
+
+    beforeAll(async () => {
+      owner = await register('sam');
+      ticket = (await presign(owner, { purpose: 'LOGO', contentType: 'image/svg+xml', size: svg.length }).expect(200)).body;
+    });
+
+    it('signs Content-Disposition: attachment into the upload URL', async () => {
+      expect(ticket.headers).toEqual({ 'Content-Type': 'image/svg+xml', 'Content-Disposition': 'attachment' });
+      // Without the header (or with another value) the signature does not match.
+      expect((await upload(ticket, svg, { 'Content-Type': 'image/svg+xml' })).status).toBe(403);
+      expect((await upload(ticket, svg, { ...ticket.headers, 'Content-Disposition': 'inline' })).status).toBe(403);
+    });
+
+    it('serves the file as a download, so opening its URL never runs its scripts', async () => {
+      expect((await upload(ticket, svg)).status).toBe(200);
+      const file = await fetch(ticket.fileUrl);
+      expect(file.status).toBe(200);
+      expect(file.headers.get('content-disposition')).toBe('attachment');
+    });
+
+    it('keeps raster images displayable inline', async () => {
+      const raster = (await presign(owner, { purpose: 'LOGO', contentType: 'image/png', size: 10 }).expect(200)).body;
+      expect(raster.headers).toEqual({ 'Content-Type': 'image/png' });
+    });
+  });
+
   describe('rules', () => {
     it('checks the format and the size for each purpose', async () => {
       const svgImage = await presign(kim, { purpose: 'IMAGE', contentType: 'image/svg+xml', size: 10 }).expect(400);

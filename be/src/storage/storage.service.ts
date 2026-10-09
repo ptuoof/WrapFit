@@ -27,6 +27,7 @@ import { assetUrl, configureAssetBase, uploadKeyOf } from './asset-keys';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import {
   CONFIRM_UPLOADS_AFTER_MS,
+  DOWNLOAD_ONLY_TYPES,
   PENDING_UPLOAD_RESERVE_MS,
   STORAGE_QUOTA_BYTES,
   UPLOAD_RULES,
@@ -39,7 +40,8 @@ export interface PresignedUpload {
   /** PUT the raw file here, with exactly the headers below, before `expiresIn` seconds. */
   uploadUrl: string;
   method: 'PUT';
-  headers: { 'Content-Type': string };
+  /** Signed into the URL: a PUT without one of them, or with another value, is refused (403). */
+  headers: { 'Content-Type': string; 'Content-Disposition'?: string };
   /** Public URL of the file once uploaded (use it in canvasState, thumbnailUrl, avatarUrl...). */
   fileUrl: string;
   expiresIn: number;
@@ -133,10 +135,20 @@ export class StorageService implements IProjectFiles {
       });
     });
 
+    const disposition = DOWNLOAD_ONLY_TYPES.has(dto.contentType) ? 'attachment' : undefined;
     const uploadUrl = await getSignedUrl(
       this.signer,
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: dto.contentType, ContentLength: dto.size }),
-      { expiresIn: UPLOAD_URL_TTL_SECONDS, signableHeaders: new Set(['content-type', 'content-length']) },
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: dto.contentType,
+        ContentLength: dto.size,
+        ContentDisposition: disposition,
+      }),
+      {
+        expiresIn: UPLOAD_URL_TTL_SECONDS,
+        signableHeaders: new Set(['content-type', 'content-length', ...(disposition ? ['content-disposition'] : [])]),
+      },
     );
 
     return {
@@ -144,7 +156,7 @@ export class StorageService implements IProjectFiles {
       key,
       uploadUrl,
       method: 'PUT',
-      headers: { 'Content-Type': dto.contentType },
+      headers: { 'Content-Type': dto.contentType, ...(disposition && { 'Content-Disposition': disposition }) },
       fileUrl: assetUrl(key)!,
       expiresIn: UPLOAD_URL_TTL_SECONDS,
     };
