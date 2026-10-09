@@ -1,21 +1,21 @@
 import { BadRequestException, ForbiddenException, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import type { ConfigService } from '../common/providers/config.service';
 import type { PrismaService } from '../shared/prisma/prisma.service';
 import { StorageService } from './storage.service';
 
 describe('StorageService', () => {
-  const env = (overrides: Record<string, string> = {}) =>
+  const env = (overrides: Record<string, string | boolean> = {}) =>
     ({
       get: (key: string) =>
         ({
-          STORAGE_ENDPOINT: 'http://127.0.0.1:8333',
-          STORAGE_PUBLIC_ENDPOINT: 'http://cdn.local:8333',
-          STORAGE_REGION: 'us-east-1',
-          STORAGE_BUCKET: 'wrapfit',
-          STORAGE_ACCESS_KEY_ID: 'key',
-          STORAGE_SECRET_ACCESS_KEY: 'secret',
-          STORAGE_PUBLIC_URL: 'https://cdn.wrapfit.vn/',
-          STORAGE_FORCE_PATH_STYLE: 'true',
+          'storage.endpoint': 'http://127.0.0.1:8333',
+          'storage.publicEndpoint': 'http://cdn.local:8333',
+          'storage.region': 'us-east-1',
+          'storage.bucket': 'wrapfit',
+          'storage.accessKeyId': 'key',
+          'storage.secretAccessKey': 'secret',
+          'storage.publicUrl': 'https://cdn.wrapfit.vn/',
+          'storage.forcePathStyle': true,
           ...overrides,
         })[key] ?? '',
     }) as unknown as ConfigService;
@@ -28,7 +28,7 @@ describe('StorageService', () => {
     $transaction: jest.Mock;
     $executeRaw: jest.Mock;
   };
-  const build = (overrides?: Record<string, string>) => new StorageService(env(overrides), prisma as unknown as PrismaService);
+  const build = (overrides?: Record<string, string | boolean>) => new StorageService(env(overrides), prisma as unknown as PrismaService);
 
   beforeEach(() => {
     prisma = {
@@ -49,7 +49,7 @@ describe('StorageService', () => {
     jest.spyOn(service['client']!, 'send').mockImplementation(send as never);
 
   it('answers 503 while storage is not configured', async () => {
-    const service = build({ STORAGE_BUCKET: '' });
+    const service = build({ 'storage.bucket': '' });
     expect(service.enabled).toBe(false);
     await expect(service.presignUpload('u-1', { purpose: 'LOGO', contentType: 'image/png', size: 100 })).rejects.toThrow(
       ServiceUnavailableException,
@@ -200,6 +200,6 @@ describe('StorageService', () => {
     expect(service.uploadedKeyOf('https://cdn.wrapfit.vn/projects/p-1/exports/x.pdf')).toBeNull(); // not an upload
     expect(service.uploadedKeyOf('https://evil.example/users/u-1/image/a.png')).toBeNull();
     expect(service.uploadedKeyOf('https://cdn.wrapfit.vn.evil.example/users/a.png')).toBeNull();
-    expect(build({ STORAGE_BUCKET: '', STORAGE_PUBLIC_URL: '' }).uploadedKeyOf('https://cdn.wrapfit.vn/users/a.png')).toBeNull();
+    expect(build({ 'storage.bucket': '', 'storage.publicUrl': '' }).uploadedKeyOf('https://cdn.wrapfit.vn/users/a.png')).toBeNull();
   });
 });

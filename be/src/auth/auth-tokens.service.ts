@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { AuthTokenPurpose, Prisma } from '@prisma/client';
 import { uuidv7 } from '../common/utils/uuidv7';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
-import { authTokenSecret, hashAuthToken, rawAuthToken } from './auth-token.crypto';
+import { hashAuthToken, rawAuthToken } from './auth-token.crypto';
 import {
   AUTH_EMAIL_MIN_INTERVAL_MS,
   AUTH_EMAILS_PER_DAY,
@@ -36,7 +35,7 @@ export class AuthTokensService {
     private readonly prisma: PrismaService,
     config: ConfigService,
   ) {
-    this.secret = authTokenSecret(config as unknown as AppConfigService);
+    this.secret = config.get('auth.tokenSecret');
   }
 
   /**

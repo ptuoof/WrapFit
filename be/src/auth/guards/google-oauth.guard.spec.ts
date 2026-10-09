@@ -1,5 +1,5 @@
 import { ExecutionContext, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../../common/providers/config.service';
 import { GoogleOAuthGuard } from './google-oauth.guard';
 
 describe('GoogleOAuthGuard', () => {

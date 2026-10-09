@@ -5,6 +5,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { createAppLogger } from './config/logger.config';
 import { queueRootModule } from './shared/queue/queue.module';
 import { validateEnv } from './config/env.validation';
+import { configuration } from './config/configuration';
+import { CommonModule } from './common/common.module';
 import { ExportWorkerModule } from './export/export.module';
 import { MailWorkerModule } from './mail/mail.module';
 import { StorageModule } from './storage/storage.module';
@@ -16,7 +18,8 @@ import { PrismaModule } from './shared/prisma/prisma.module';
  */
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv, load: [configuration] }),
+    CommonModule,
     EventEmitterModule.forRoot(),
     PrismaModule,
     StorageModule,

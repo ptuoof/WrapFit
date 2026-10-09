@@ -1,11 +1,10 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
 import { runWithRequestId } from '../common/context/request-context';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { pruneAutomaticSnapshots } from '../projects/infrastructure/snapshot-retention';
 import { toClientCanvas } from '../storage/asset-keys';
@@ -41,7 +40,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   }
 
   onApplicationBootstrap(): void {
-    this.worker.concurrency = (this.config as unknown as AppConfigService).get('EXPORT_CONCURRENCY', { infer: true });
+    this.worker.concurrency = this.config.get('export.concurrency');
   }
 
   process(job: Job<ExportJobData>): Promise<{ storageKey: string }> {

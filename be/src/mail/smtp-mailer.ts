@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { createTransport, Transporter } from 'nodemailer';
-import { AppConfigService } from '../config/config.interface';
 import type { EmailContent } from './mail.templates';
 
 /** SMTP connection of the worker (local: Mailpit from docker-compose.yml; production: the provider's SMTP relay). */
@@ -13,18 +12,17 @@ export class SmtpMailer implements OnModuleDestroy {
   readonly target: string;
 
   constructor(config: ConfigService) {
-    const env = config as unknown as AppConfigService;
-    const user = env.get('SMTP_USER', { infer: true });
-    const host = env.get('SMTP_HOST', { infer: true });
-    const port = env.get('SMTP_PORT', { infer: true });
-    const secure = env.get('SMTP_SECURE', { infer: true }) === 'true';
-    this.from = env.get('MAIL_FROM', { infer: true });
+    const user = config.get('mail.smtp.user');
+    const host = config.get('mail.smtp.host');
+    const port = config.get('mail.smtp.port');
+    const secure = config.get('mail.smtp.secure');
+    this.from = config.get('mail.from');
     this.target = `${host}:${port} (${secure ? 'TLS' : 'STARTTLS if offered'}, ${user ? `user ${user}` : 'no auth'})`;
     this.transport = createTransport({
       host,
       port,
       secure, // implicit TLS (465); 587 upgrades with STARTTLS
-      auth: user ? { user, pass: env.get('SMTP_PASS', { infer: true }) } : undefined,
+      auth: user ? { user, pass: config.get('mail.smtp.pass') } : undefined,
       connectionTimeout: 10_000,
       greetingTimeout: 10_000,
       socketTimeout: 20_000,

@@ -1,12 +1,11 @@
 import { Body, Controller, Get, HttpCode, Logger, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { ApiCookieAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { GoogleProfile, SessionMeta } from '../common/interfaces/auth.interfaces';
-import { AppConfigService } from '../config/config.interface';
 import { SafeUser } from '../users/user.select';
 import { UsersService } from '../users/users.service';
 import { AccountRecoveryService } from './account-recovery.service';
@@ -53,8 +52,7 @@ export class AuthController {
     private readonly usersService: UsersService,
     config: ConfigService,
   ) {
-    const env = config as unknown as AppConfigService;
-    this.frontendUrl = env.get('FRONTEND_URL', { infer: true }).replace(/\/+$/, '');
+    this.frontendUrl = config.get('app.frontendUrl').replace(/\/+$/, '');
   }
 
   @Public()

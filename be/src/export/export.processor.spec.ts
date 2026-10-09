@@ -1,4 +1,4 @@
-import type { ConfigService } from '@nestjs/config';
+import type { ConfigService } from '../common/providers/config.service';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
 import type { PrismaService } from '../shared/prisma/prisma.service';

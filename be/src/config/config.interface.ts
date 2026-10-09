@@ -1,5 +1,9 @@
-import { ConfigService } from '@nestjs/config';
-import { EnvironmentVariables } from './env.validation';
+import type { config as defaults } from './envs/default';
 
-/** Typed ConfigService: `config.get('PORT', { infer: true })` returns a number. */
-export type AppConfigService = ConfigService<EnvironmentVariables, true>;
+/** Shape of the application settings, see envs/default.ts. */
+export type Config = ReturnType<typeof defaults>;
+
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
+
+/** What a NODE_ENV file (envs/production.ts, ...) may override. */
+export type ConfigOverride = DeepPartial<Config>;

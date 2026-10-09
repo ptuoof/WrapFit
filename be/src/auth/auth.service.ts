@@ -1,10 +1,9 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { AppConfigService } from '../config/config.interface';
 import { GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../common/interfaces/auth.interfaces';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -42,7 +41,6 @@ export const emailNotVerified = () =>
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly config: AppConfigService;
 
   constructor(
     private readonly usersService: UsersService,
@@ -51,10 +49,8 @@ export class AuthService {
     private readonly authTokens: AuthTokensService,
     private readonly mail: MailService,
     private readonly recovery: AccountRecoveryService,
-    config: ConfigService,
-  ) {
-    this.config = config as unknown as AppConfigService;
-  }
+    private readonly config: ConfigService,
+  ) {}
 
   /**
    * Registration answers the same way whether the address is new or not, so it never tells who has an account; only
@@ -64,7 +60,7 @@ export class AuthService {
    */
   async register(dto: RegisterDto): Promise<void> {
     // Hashed in every case: the time to answer does not tell an existing address either.
-    const passwordHash = await bcrypt.hash(dto.password, this.config.get('BCRYPT_ROUNDS', { infer: true }));
+    const passwordHash = await bcrypt.hash(dto.password, this.config.get('auth.bcryptRounds'));
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) return this.recovery.handleRepeatedSignup(existing);
 
@@ -182,7 +178,7 @@ export class AuthService {
   private async verifyRefreshToken(token: string): Promise<RefreshPayload> {
     try {
       return await this.jwtService.verifyAsync<RefreshPayload>(token, {
-        secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
+        secret: this.config.get('auth.jwt.refreshSecret'),
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
@@ -204,12 +200,8 @@ export class AuthService {
     meta: SessionMeta,
     refreshId: string = randomUUID(),
   ): Promise<TokenPair> {
-    const accessTtl = this.config.get('JWT_ACCESS_TTL_SECONDS', {
-      infer: true,
-    });
-    const refreshTtl = this.config.get('JWT_REFRESH_TTL_SECONDS', {
-      infer: true,
-    });
+    const accessTtl = this.config.get('auth.jwt.accessTtlSeconds');
+    const refreshTtl = this.config.get('auth.jwt.refreshTtlSeconds');
 
     await this.prisma.refreshToken.create({
       data: {
@@ -226,11 +218,11 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(accessPayload, {
-        secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
+        secret: this.config.get('auth.jwt.accessSecret'),
         expiresIn: accessTtl,
       }),
       this.jwtService.signAsync(refreshPayload, {
-        secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
+        secret: this.config.get('auth.jwt.refreshSecret'),
         expiresIn: refreshTtl,
       }),
     ]);

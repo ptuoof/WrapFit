@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -12,11 +12,11 @@ import { AuthTokensService } from './auth-tokens.service';
 import { AuthService } from './auth.service';
 
 const env: Record<string, unknown> = {
-  JWT_ACCESS_SECRET: 'a'.repeat(32),
-  JWT_REFRESH_SECRET: 'b'.repeat(32),
-  JWT_ACCESS_TTL_SECONDS: 900,
-  JWT_REFRESH_TTL_SECONDS: 604800,
-  BCRYPT_ROUNDS: 4,
+  'auth.jwt.accessSecret': 'a'.repeat(32),
+  'auth.jwt.refreshSecret': 'b'.repeat(32),
+  'auth.jwt.accessTtlSeconds': 900,
+  'auth.jwt.refreshTtlSeconds': 604800,
+  'auth.bcryptRounds': 4,
 };
 
 describe('AuthService', () => {
@@ -259,7 +259,7 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     const sign = (jti: string) =>
-      jwt.signAsync({ sub: safeUser.id, jti }, { secret: env.JWT_REFRESH_SECRET as string, expiresIn: 60 });
+      jwt.signAsync({ sub: safeUser.id, jti }, { secret: env['auth.jwt.refreshSecret'] as string, expiresIn: 60 });
 
     it('rejects a token that is not a valid JWT for the refresh secret', async () => {
       await expect(service.refresh('not-a-token')).rejects.toBeInstanceOf(UnauthorizedException);

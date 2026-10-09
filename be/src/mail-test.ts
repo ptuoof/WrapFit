@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from './common/providers/config.service';
 import { NestFactory } from '@nestjs/core';
-import { AppConfigService } from './config/config.interface';
 import { validateEnv } from './config/env.validation';
+import { configuration } from './config/configuration';
+import { CommonModule } from './common/common.module';
 import { testEmail } from './mail/mail.templates';
 import { maskEmail, SmtpMailer } from './mail/smtp-mailer';
 
@@ -13,7 +15,10 @@ import { maskEmail, SmtpMailer } from './mail/smtp-mailer';
  * Exit code 0 = accepted by the relay; then check that it reached the inbox, not the spam folder.
  */
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv })],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv, load: [configuration] }),
+    CommonModule,
+  ],
   providers: [SmtpMailer],
 })
 class MailTestModule {}
@@ -28,9 +33,9 @@ async function main(): Promise<number> {
   const app = await NestFactory.createApplicationContext(MailTestModule, { logger: ['error', 'warn'] });
   try {
     const mailer = app.get(SmtpMailer);
-    const config = app.get(ConfigService) as unknown as AppConfigService;
+    const config = app.get(ConfigService);
     console.log(`SMTP: ${mailer.target}`);
-    console.log(`From: ${config.get('MAIL_FROM', { infer: true })}`);
+    console.log(`From: ${config.get('mail.from')}`);
 
     const check = await mailer.verify();
     if (!check.ok) {
@@ -39,7 +44,7 @@ async function main(): Promise<number> {
     }
     console.log('Connection and login: OK');
 
-    const frontendUrl = config.get('FRONTEND_URL', { infer: true }).replace(/\/+$/, '');
+    const frontendUrl = config.get('app.frontendUrl').replace(/\/+$/, '');
     await mailer.send(to, testEmail(mailer.target, new Date(), frontendUrl));
     console.log(`Accepted for ${maskEmail(to)}. Check the inbox (and the spam folder) of that address.`);
     return 0;

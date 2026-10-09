@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { AuthTokenPurpose } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AuthTokensService } from './auth-tokens.service';
@@ -33,7 +32,7 @@ export class AccountRecoveryService {
     private readonly mail: MailService,
     config: ConfigService,
   ) {
-    this.bcryptRounds = (config as unknown as AppConfigService).get('BCRYPT_ROUNDS', { infer: true });
+    this.bcryptRounds = config.get('auth.bcryptRounds');
   }
 
   /** Marks the email as verified. Opening the same link again succeeds as long as the account is verified. */

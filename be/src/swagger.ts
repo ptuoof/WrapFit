@@ -1,13 +1,12 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from './common/providers/config.service';
 import { DocumentBuilder, getSchemaPath, SwaggerModule } from '@nestjs/swagger';
 import { ErrorResponseDto } from './common/dto/error-response.dto';
-import { AppConfigService } from './config/config.interface';
 import { ACCESS_COOKIE } from './auth/auth.constants';
 
 export function setupSwagger(app: INestApplication): void {
-  const config = app.get(ConfigService) as unknown as AppConfigService;
-  if (config.get('SWAGGER_ENABLED', { infer: true }) !== 'true') return;
+  const config = app.get(ConfigService);
+  if (!config.get('app.swaggerEnabled')) return;
 
   const document = SwaggerModule.createDocument(
     app,

@@ -1,11 +1,10 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { Job, UnrecoverableError } from 'bullmq';
 import { runWithRequestId } from '../common/context/request-context';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
-import { authTokenSecret, rawAuthToken } from '../auth/auth-token.crypto';
+import { rawAuthToken } from '../auth/auth-token.crypto';
 import { ACCOUNT_EXISTS_JOB, AccountExistsJobData, AuthEmailJobData, MAIL_QUEUE } from './mail.constants';
 import { accountExistsEmail, authEmail, EmailContent } from './mail.templates';
 import { isPermanentSmtpFailure, maskEmail, SmtpMailer } from './smtp-mailer';
@@ -33,9 +32,8 @@ export class MailProcessor extends WorkerHost {
     config: ConfigService,
   ) {
     super();
-    const env = config as unknown as AppConfigService;
-    this.secret = authTokenSecret(env);
-    this.frontendUrl = env.get('FRONTEND_URL', { infer: true }).replace(/\/+$/, '');
+    this.secret = config.get('auth.tokenSecret');
+    this.frontendUrl = config.get('app.frontendUrl').replace(/\/+$/, '');
   }
 
   process(job: Job<AuthEmailJobData | AccountExistsJobData>): Promise<{ sent: boolean }> {

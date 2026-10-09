@@ -1,4 +1,4 @@
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { Job, UnrecoverableError } from 'bullmq';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { hashAuthToken, rawAuthToken } from '../auth/auth-token.crypto';
@@ -8,7 +8,7 @@ import { isPermanentSmtpFailure, maskEmail, SmtpMailer, SmtpStartupCheck } from 
 
 describe('MailProcessor', () => {
   const secret = 'b'.repeat(32);
-  const env: Record<string, unknown> = { JWT_REFRESH_SECRET: secret, FRONTEND_URL: 'https://wrapfit.vn/' };
+  const env: Record<string, unknown> = { 'auth.tokenSecret': secret, 'app.frontendUrl': 'https://wrapfit.vn/' };
   const config = { get: (key: string) => env[key] } as unknown as ConfigService;
   const tokenId = '0192a4c0-0000-7000-8000-000000000001';
   const job = (attemptsMade = 0) =>

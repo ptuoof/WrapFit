@@ -1,9 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../../common/providers/config.service';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, StrategyOptions } from 'passport-google-oauth20';
 import type { StateStore } from 'passport-oauth2';
-import { AppConfigService } from '../../config/config.interface';
 import { GoogleProfile } from '../../common/interfaces/auth.interfaces';
 import { OAuthStateStore } from './oauth-state.store';
 
@@ -13,11 +12,10 @@ const NOT_CONFIGURED = 'google-login-not-configured';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(config: ConfigService, stateStore: OAuthStateStore) {
-    const env = config as unknown as AppConfigService;
     const options: StrategyOptions = {
-      clientID: env.get('GOOGLE_CLIENT_ID', { infer: true }) || NOT_CONFIGURED,
-      clientSecret: env.get('GOOGLE_CLIENT_SECRET', { infer: true }) || NOT_CONFIGURED,
-      callbackURL: env.get('GOOGLE_CALLBACK_URL', { infer: true }),
+      clientID: config.get('auth.google.clientId') || NOT_CONFIGURED,
+      clientSecret: config.get('auth.google.clientSecret') || NOT_CONFIGURED,
+      callbackURL: config.get('auth.google.callbackUrl'),
       scope: ['email', 'profile'],
       // passport-oauth2 dispatches on the method arity at runtime; the typings only describe the overloads.
       store: stateStore as unknown as StateStore,

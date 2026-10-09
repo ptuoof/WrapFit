@@ -1,5 +1,5 @@
 import { ConflictException } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import type { ConfigService } from '../common/providers/config.service';
 import type { PrismaService } from '../shared/prisma/prisma.service';
 import { configureAssetBase } from '../storage/asset-keys';
 import type { StorageService } from '../storage/storage.service';

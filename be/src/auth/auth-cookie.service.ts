@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import type { CookieOptions, Response } from 'express';
-import { AppConfigService } from '../config/config.interface';
 import {
   ACCESS_COOKIE,
   OAUTH_STATE_COOKIE,
@@ -29,9 +28,8 @@ export class AuthCookieService {
   private readonly secure: boolean;
 
   constructor(config: ConfigService) {
-    const env = config as unknown as AppConfigService;
-    const explicit = env.get('COOKIE_SECURE', { infer: true });
-    this.secure = explicit ? explicit === 'true' : env.get('NODE_ENV', { infer: true }) === 'production';
+    // COOKIE_SECURE, or on by default in production (src/config/envs/production.ts).
+    this.secure = config.get('auth.cookieSecure');
   }
 
   setAuthCookies(res: Response, tokens: CookieTokens): void {

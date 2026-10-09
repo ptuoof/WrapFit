@@ -1,7 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppConfigService } from '../../config/config.interface';
+import { ConfigService } from '../../common/providers/config.service';
 import { redisConnection } from '../../common/utils/redis.util';
 
 /**
@@ -14,7 +13,7 @@ export function queueRootModule(role: 'producer' | 'worker'): DynamicModule {
     inject: [ConfigService],
     useFactory: (config: ConfigService) => ({
       connection: {
-        ...redisConnection((config as unknown as AppConfigService).get('REDIS_URL', { infer: true })),
+        ...redisConnection(config.get('redis.url')),
         ...(role === 'producer' ? { enableOfflineQueue: false, maxRetriesPerRequest: 1 } : {}),
       },
     }),

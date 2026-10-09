@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { AppConfigService } from '../config/config.interface';
 import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
 import { AccountRecoveryService } from './account-recovery.service';
@@ -26,7 +25,7 @@ import { OAuthStateStore } from './strategies/oauth-state.store';
       global: true,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: (config as unknown as AppConfigService).get('JWT_ACCESS_SECRET', { infer: true }),
+        secret: config.get('auth.jwt.accessSecret'),
       }),
     }),
   ],

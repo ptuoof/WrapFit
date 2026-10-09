@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppConfigService } from '../config/config.interface';
+import { ConfigService } from '../common/providers/config.service';
 import { AiController } from './ai.controller';
 import { AI_PATTERN_GENERATOR, AiPatternService } from './ai-pattern.service';
 import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
@@ -14,13 +13,12 @@ import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
       provide: AI_PATTERN_GENERATOR,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const env = config as unknown as AppConfigService;
-        const apiKey = env.get('ANTHROPIC_API_KEY', { infer: true });
+        const apiKey = config.get('ai.anthropicApiKey');
         return apiKey
           ? new ClaudePatternGenerator({
               apiKey,
-              model: env.get('AI_MODEL', { infer: true }),
-              timeoutMs: env.get('AI_TIMEOUT_MS', { infer: true }),
+              model: config.get('ai.model'),
+              timeoutMs: config.get('ai.timeoutMs'),
             })
           : null;
       },

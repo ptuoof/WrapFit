@@ -1,18 +1,17 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from './common/providers/config.service';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { SocketIoAdapter } from './common/adapters/socket-io.adapter';
 import { requestIdMiddleware } from './common/context/request-context';
 import { parseCorsOrigins } from './common/utils/cors.util';
-import { AppConfigService } from './config/config.interface';
 
 /** Shared bootstrap configuration, used by app.ts and the e2e tests. */
 export function middleware(app: INestApplication): void {
-  const config = app.get(ConfigService) as unknown as AppConfigService;
-  const origins = parseCorsOrigins(config.get('CORS_ORIGINS', { infer: true }));
-  const swaggerEnabled = config.get('SWAGGER_ENABLED', { infer: true }) === 'true';
+  const config = app.get(ConfigService);
+  const origins = parseCorsOrigins(config.get('app.corsOrigins'));
+  const swaggerEnabled = config.get('app.swaggerEnabled');
 
   // First: everything after it (logs, errors, queued jobs) knows the request id.
   app.use(requestIdMiddleware);
@@ -36,7 +35,7 @@ export function middleware(app: INestApplication): void {
   // Canvas states (up to 300 elements) can exceed the 100 kB default. Images go to object storage, not the body.
   (app as NestExpressApplication).useBodyParser('json', { limit: '1mb' });
   // Behind Caddy every request comes from the proxy: trust one hop so req.ip is the client (rate limits, sessions).
-  if (config.get('TRUST_PROXY', { infer: true }) === 'true') (app as NestExpressApplication).set('trust proxy', 1);
+  if (config.get('app.trustProxy')) (app as NestExpressApplication).set('trust proxy', 1);
   app.enableCors({ origin: origins, credentials: origins !== '*' });
 
   // Every route lives under /api/* so the Next.js frontend can proxy it same-origin (`rewrites: /api/:path*`).

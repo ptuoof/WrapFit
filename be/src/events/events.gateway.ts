@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
@@ -13,7 +13,6 @@ import { Role } from '@prisma/client';
 import { parse as parseCookies } from 'cookie';
 import { Namespace, Socket } from 'socket.io';
 import { AuthUser, JwtPayload } from '../common/interfaces/auth.interfaces';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { ACCESS_COOKIE } from '../auth/auth.constants';
 
@@ -28,7 +27,6 @@ import { ACCESS_COOKIE } from '../auth/auth.constants';
 @WebSocketGateway({ namespace: 'events', path: '/api/socket.io' })
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
-  private readonly config: AppConfigService;
 
   @WebSocketServer()
   private server: Namespace;
@@ -36,10 +34,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-    config: ConfigService,
-  ) {
-    this.config = config as unknown as AppConfigService;
-  }
+    private readonly config: ConfigService,
+  ) {}
 
   afterInit(server: Namespace): void {
     // Handshake authentication: reject the connection before it is established.
@@ -49,7 +45,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         if (!token) throw new Error('Missing token');
 
         const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-          secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
+          secret: this.config.get('auth.jwt.accessSecret'),
         });
         const user = await this.prisma.user.findUnique({
           where: { id: payload.sub },

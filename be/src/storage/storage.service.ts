@@ -19,9 +19,8 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { randomUUID } from 'crypto';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects/application/ports/project-files.port';
 import { assetUrl, configureAssetBase, uploadKeyOf } from './asset-keys';
@@ -81,27 +80,26 @@ export class StorageService implements IProjectFiles {
     config: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    const env = config as unknown as AppConfigService;
-    this.bucket = env.get('STORAGE_BUCKET', { infer: true });
-    this.publicUrl = env.get('STORAGE_PUBLIC_URL', { infer: true }).replace(/\/+$/, '');
+    this.bucket = config.get('storage.bucket');
+    this.publicUrl = config.get('storage.publicUrl').replace(/\/+$/, '');
     // Keys are turned into URLs only while storage is enabled (no bucket = no file can exist).
     configureAssetBase(this.bucket ? this.publicUrl : '');
     if (!this.bucket) return;
 
-    const endpoint = env.get('STORAGE_ENDPOINT', { infer: true }) || undefined;
+    const endpoint = config.get('storage.endpoint') || undefined;
     const base: S3ClientConfig = {
-      region: env.get('STORAGE_REGION', { infer: true }),
-      forcePathStyle: env.get('STORAGE_FORCE_PATH_STYLE', { infer: true }) === 'true',
+      region: config.get('storage.region'),
+      forcePathStyle: config.get('storage.forcePathStyle'),
       credentials: {
-        accessKeyId: env.get('STORAGE_ACCESS_KEY_ID', { infer: true }),
-        secretAccessKey: env.get('STORAGE_SECRET_ACCESS_KEY', { infer: true }),
+        accessKeyId: config.get('storage.accessKeyId'),
+        secretAccessKey: config.get('storage.secretAccessKey'),
       },
       // Newer SDKs add CRC32 checksums by default; browsers would have to send them, and R2 / SeaweedFS do not need them.
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
     };
     this.client = new S3Client({ ...base, endpoint });
-    this.signer = new S3Client({ ...base, endpoint: env.get('STORAGE_PUBLIC_ENDPOINT', { infer: true }) || endpoint });
+    this.signer = new S3Client({ ...base, endpoint: config.get('storage.publicEndpoint') || endpoint });
   }
 
   get enabled(): boolean {

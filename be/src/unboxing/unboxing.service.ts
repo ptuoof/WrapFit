@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../common/providers/config.service';
 import { Prisma } from '@prisma/client';
-import { AppConfigService } from '../config/config.interface';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { assetUrl, toClientCanvas } from '../storage/asset-keys';
 import { StorageService } from '../storage/storage.service';
@@ -36,7 +35,7 @@ export class UnboxingService {
     private readonly storage: StorageService,
     config: ConfigService,
   ) {
-    this.frontendUrl = (config as unknown as AppConfigService).get('FRONTEND_URL', { infer: true }).replace(/\/+$/, '');
+    this.frontendUrl = config.get('app.frontendUrl').replace(/\/+$/, '');
   }
 
   /** The page the QR code opens (Next.js route /unbox/[slug]). */

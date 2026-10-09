@@ -1,7 +1,6 @@
 import { ExecutionContext, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '../../common/providers/config.service';
 import { AuthGuard } from '@nestjs/passport';
-import { AppConfigService } from '../../config/config.interface';
 
 /**
  * Starts the Google consent redirect (`GET /auth/google`) and completes it (`GET /auth/google/callback`).
@@ -15,7 +14,7 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
 
   constructor(config: ConfigService) {
     super({ session: false, prompt: 'select_account' });
-    this.enabled = !!(config as unknown as AppConfigService).get('GOOGLE_CLIENT_ID', { infer: true });
+    this.enabled = !!config.get('auth.google.clientId');
   }
 
   canActivate(context: ExecutionContext) {

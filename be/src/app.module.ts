@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from './common/providers/config.service';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -10,8 +11,9 @@ import { HttpThrottlerGuard } from './common/guards/http-throttler.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { AppConfigService } from './config/config.interface';
 import { validateEnv } from './config/env.validation';
+import { configuration } from './config/configuration';
+import { CommonModule } from './common/common.module';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { ExportModule } from './export/export.module';
@@ -29,18 +31,13 @@ import { PrismaModule } from './shared/prisma/prisma.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv, load: [configuration] }),
+    CommonModule,
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const env = config as unknown as AppConfigService;
-        return [
-          {
-            ttl: env.get('THROTTLE_TTL_SECONDS', { infer: true }) * 1000,
-            limit: env.get('THROTTLE_LIMIT', { infer: true }),
-          },
-        ];
-      },
+      useFactory: (config: ConfigService) => [
+        { ttl: config.get('throttle.ttlSeconds') * 1000, limit: config.get('throttle.limit') },
+      ],
     }),
     ScheduleModule.forRoot(), // @Cron / @Interval tasks: TrashPurgeTask, ExportReconcileTask, StorageMaintenanceTask
     EventEmitterModule.forRoot(), // internal events, e.g. project.forked
