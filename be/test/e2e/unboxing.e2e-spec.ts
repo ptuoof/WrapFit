@@ -7,6 +7,10 @@ import { qrSvg } from '../../src/unboxing/qr-code';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
+// The 1200 px PNG QR code (qrcode + pngjs) takes about 3.5 s to render inside Jest's sandbox, against 60 ms in plain
+// Node: the tests that create or download it need more than Jest's default 5 s on CI runners.
+jest.setTimeout(30_000);
+
 /** 3D unboxing & QR code (IT3-10). QR files go to the local SeaweedFS (see e2e-env.ts). */
 describe('Unboxing (e2e)', () => {
   let app: INestApplication;
