@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { BoxDimensions, MaterialSpecification } from '@wrapfit/shared';
-import { storedCanvasKeys, toStoredCanvas } from '../../storage';
+import { disallowedFileContents, fileUrlNotAllowed, storedCanvasKeys, toStoredCanvas } from '../../storage';
 import { paginate, Paginated, toSkipTake } from '../../common';
 import {
   canDeletePermanently,
@@ -72,7 +72,10 @@ export class ProjectsService {
     this.assertDimensionsFit(dimensions, template.formulaSchema);
     const canvasState = dto.canvasState ?? design?.canvasState ?? EMPTY_CANVAS;
     // A client that resized a curated design sends it back with the design's own images.
-    if (dto.canvasState) await this.files.assertCanvasUploads(canvasKeys(dto.canvasState), userId, canvasKeys(design?.canvasState));
+    if (dto.canvasState) {
+      assertOwnFileContents(dto.canvasState, design?.canvasState);
+      await this.files.assertCanvasUploads(canvasKeys(dto.canvasState), userId, canvasKeys(design?.canvasState));
+    }
 
     const project = await this.projects.create({
       userId,
@@ -125,6 +128,7 @@ export class ProjectsService {
     if (dto.version !== undefined && dto.version !== project.version) throw versionConflict(project.version);
     if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, userId);
     if (dto.canvasState) {
+      assertOwnFileContents(dto.canvasState, project.canvasState);
       await this.files.assertCanvasUploads(canvasKeys(dto.canvasState), userId, canvasKeys(project.canvasState));
     }
 
@@ -310,6 +314,17 @@ export class ProjectsService {
     const violations = findDimensionViolations(dimensions, readDimensionLimits(formulaSchema));
     if (violations.length) throw new BadRequestException(violations);
   }
+}
+
+/**
+ * Logos, images and patterns must be files of WrapFit (uploads, frontend assets): a URL of another site would be
+ * loaded by every visitor of the public pages. `current` keeps what the saved design already shows.
+ */
+function assertOwnFileContents(
+  canvas: { elements?: { type: string; content: string }[] },
+  current: { elements?: { type: string; content: string }[] } | undefined,
+): void {
+  if (disallowedFileContents(canvas, current).length) throw fileUrlNotAllowed();
 }
 
 /** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */

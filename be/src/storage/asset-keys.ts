@@ -39,8 +39,35 @@ export function uploadKeyOf(url: string): string | null {
   const base = `${strip(publicBase)}/`;
   const target = strip(url).split(/[?#]/)[0];
   if (!target.startsWith(base)) return null;
-  const key = decodeURIComponent(target.slice(base.length));
+  let key: string;
+  try {
+    key = decodeURIComponent(target.slice(base.length));
+  } catch {
+    return null; // malformed escape such as `%E0%A4%A`: not one of our URLs
+  }
   return isUploadKey(key) ? key : null;
+}
+
+/** An absolute URL (`https:`, `data:`, `javascript:`...) or a protocol-relative one (`//host`): it leaves our site. */
+function pointsElsewhere(content: string): boolean {
+  // Like browsers: tabs and newlines inside a URL, and spaces / control characters before it, are ignored.
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point here
+  const url = content.replace(/[\t\n\r]/g, '').replace(/^[\u0000- ]+/, '');
+  return /^[\\/]{2}/.test(url) || URL.canParse(url);
+}
+
+/**
+ * Whether `content` may stand in a file element of a canvas (logo, image, pattern): an upload of WrapFit (its URL or
+ * key), a path of the frontend (`/branding/logo.png`) or the label of a built-in sticker. Never another host or a
+ * data URL: the public pages (`/p/<slug>`, unboxing) would load it in the browser of every viewer.
+ */
+export function isAllowedFileContent(content: string): boolean {
+  return isUploadKey(content) || uploadKeyOf(content) !== null || !pointsElsewhere(content);
+}
+
+/** Media played by a public page (unboxing music): an upload of WrapFit or a path of the frontend. */
+export function isAllowedMediaUrl(url: string): boolean {
+  return uploadKeyOf(url) !== null || (url.startsWith('/') && !pointsElsewhere(url));
 }
 
 interface CanvasLike {
@@ -76,6 +103,22 @@ export function storedCanvasKeys(canvas: CanvasLike | null | undefined): string[
     }
   }
   return [...keys];
+}
+
+/**
+ * File contents of `canvas` that point outside WrapFit (see isAllowedFileContent), each once. Contents the saved
+ * canvas (`current`, client or stored form) already shows are kept, so a design saved before this rule still saves.
+ */
+export function disallowedFileContents(canvas: CanvasLike | null | undefined, current?: CanvasLike | null): string[] {
+  const kept = new Set((current?.elements ?? []).map((element) => element.content));
+  const disallowed = new Set<string>();
+  for (const element of canvas?.elements ?? []) {
+    const { type, content } = element;
+    if (FILE_ELEMENT_TYPES.has(type) && typeof content === 'string' && !kept.has(content) && !isAllowedFileContent(content)) {
+      disallowed.add(content);
+    }
+  }
+  return [...disallowed];
 }
 
 /** Brand kit as returned to clients: `logoKey` -> `logoUrl` (rows written before keys keep their `logoUrl`). */

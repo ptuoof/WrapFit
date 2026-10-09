@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
-import { assetUrl, StorageService, toClientCanvas } from '../storage';
+import { assetUrl, fileUrlNotAllowed, isAllowedMediaUrl, StorageService, toClientCanvas } from '../storage';
 import { authorSelect, presentAuthor } from '../users';
 import { SaveUnboxingDto } from './dto/save-unboxing.dto';
 import { qrPng, qrSvg } from './qr-code';
@@ -57,6 +57,8 @@ export class UnboxingService {
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before setting up its unboxing');
     }
+    // The recipient's browser plays it: never a file of another site (it would learn who opened the gift).
+    if (dto.audioTrackUrl && !isAllowedMediaUrl(dto.audioTrackUrl)) throw fileUrlNotAllowed();
 
     const data = {
       recipientName: dto.recipientName,

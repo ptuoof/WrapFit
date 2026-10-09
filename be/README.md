@@ -273,6 +273,7 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 - Hạn mức theo gói: FREE 100 MB, STARTER 1 GB, PRO_BUSINESS 10 GB (`GET /api/storage/usage`). Vượt → `403`.
 - Gửi `projectId` khi file thuộc một dự án (thumbnail, ảnh trên canvas): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác. Nhân bản / Remix dùng chung file với dự án gốc.
 - URL upload hết hạn sau 5 phút. Hạn mức được tính ngay khi cấp URL (kể cả khi FE không upload).
+- Phần tử `logo` / `image` / `pattern` của `canvasState` và nhạc của trải nghiệm mở hộp (`audioTrackUrl`) chỉ nhận file của WrapFit: URL upload, đường dẫn của frontend (`/branding/...`) hoặc (với canvas) nhãn sticker có sẵn. URL site khác, `//host`, `data:` → `400 FILE_URL_NOT_ALLOWED`, vì trang công khai sẽ tải chúng trên trình duyệt của mọi người xem. Nội dung thiết kế đã lưu từ trước vẫn được giữ khi lưu lại. Màu trong `style` phải là `#RGB` / `#RRGGBB` / `#RRGGBBAA`.
 - Logo SVG / PDF được lưu kèm `Content-Disposition: attachment` (ký vào URL, nên `ticket.headers` có thêm header này): mở thẳng URL của file chỉ tải file về, script trong SVG không chạy trên domain CDN. `<img>` và worker xuất file vẫn đọc bình thường.
 
 **Local**: `docker compose up -d seaweedfs storage-init` chạy [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache 2.0, tương thích S3) ở cổng 8333, khóa dev nằm trong `docker/seaweedfs/s3.json`; bucket `wrapfit` ai cũng đọc được, `wrapfit-private` thì không. MinIO không còn phát hành image Docker bản community nên không dùng.

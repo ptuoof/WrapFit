@@ -168,7 +168,7 @@ describe('Print export (e2e)', () => {
         canvasState: {
           elements: [
             // 0.5 mm from the panel edge: would be cut off when folding.
-            { id: 'logo', type: 'logo', panelId: 'panel_front', x: 0.5, y: 0.5, width: 20, height: 20, rotation: 0, content: 'https://cdn.wrapfit.vn/logo.png' },
+            { id: 'logo', type: 'logo', panelId: 'panel_front', x: 0.5, y: 0.5, width: 20, height: 20, rotation: 0, content: '/branding/wrapfit-logo.png' },
           ],
         },
       })
@@ -192,7 +192,7 @@ describe('Print export (e2e)', () => {
       width: 20,
       height: 10,
       rotation: 0,
-      content: type === 'text' ? 'Chúc mừng' : 'https://cdn.wrapfit.vn/a.png',
+      content: type === 'text' ? 'Chúc mừng' : '/branding/wrapfit-logo.png',
       ...extra,
     });
     const lidBase = (

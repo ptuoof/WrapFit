@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { trim } from '../../common';
 
 export const PARTICLE_EFFECTS = ['confetti', 'fireworks', 'hearts', 'petals', 'snow', 'none'] as const;
@@ -22,9 +22,14 @@ export class SaveUnboxingDto {
   @MaxLength(2000)
   giftNote: string;
 
-  @ApiPropertyOptional({ nullable: true, description: 'https URL of a music track (uploaded or licensed)' })
+  @ApiPropertyOptional({
+    nullable: true,
+    example: '/audio/xuan.mp3',
+    description:
+      'Music track: a file uploaded to WrapFit or a path of the frontend. URLs of other sites are refused (400 FILE_URL_NOT_ALLOWED): the recipient\'s browser would load them',
+  })
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsString()
   @MaxLength(2048)
   audioTrackUrl?: string | null;
 

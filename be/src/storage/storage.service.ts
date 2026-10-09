@@ -49,7 +49,8 @@ export interface PresignedUpload {
 
 const DELETE_BATCH = 1000; // S3 DeleteObjects limit
 
-const fileUrlNotAllowed = () =>
+/** 400 for a URL of another site where only files of WrapFit may go (thumbnail, avatar, canvas, unboxing music). */
+export const fileUrlNotAllowed = () =>
   new BadRequestException({
     code: 'FILE_URL_NOT_ALLOWED',
     message: 'Only files uploaded to WrapFit can be used here (POST /api/storage/presigned-upload)',

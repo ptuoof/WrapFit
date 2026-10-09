@@ -90,12 +90,12 @@ describe('Unboxing (e2e)', () => {
   it('replaces the configuration but keeps the slug (the QR code may already be printed)', async () => {
     const res = await as(nora)
       .post(url())
-      .send({ ...note, giftNote: 'Lời chúc mới', audioTrackUrl: 'https://cdn.wrapfit.vn/music/xuan.mp3' })
+      .send({ ...note, giftNote: 'Lời chúc mới', audioTrackUrl: '/audio/xuan.mp3' })
       .expect(200);
     expect(res.body).toMatchObject({
       slug,
       giftNote: 'Lời chúc mới',
-      audioTrackUrl: 'https://cdn.wrapfit.vn/music/xuan.mp3',
+      audioTrackUrl: '/audio/xuan.mp3',
     });
     expect((await as(nora).get(url()).expect(200)).body.giftNote).toBe('Lời chúc mới');
   });
@@ -103,7 +103,11 @@ describe('Unboxing (e2e)', () => {
   it('validates the configuration', async () => {
     await as(nora).post(url()).send({ ...note, recipientName: '' }).expect(400);
     await as(nora).post(url()).send({ ...note, particleEffect: 'lasers' }).expect(400);
-    await as(nora).post(url()).send({ ...note, audioTrackUrl: 'http://insecure.example/a.mp3' }).expect(400);
+    // The recipient's browser plays the track: no file of another site.
+    for (const audioTrackUrl of ['https://tracker.example/a.mp3', '//tracker.example/a.mp3', 'data:audio/mp3;base64,AA==']) {
+      const res = await as(nora).post(url()).send({ ...note, audioTrackUrl }).expect(400);
+      expect(res.body.code).toBe('FILE_URL_NOT_ALLOWED');
+    }
     await as(nora).post(url()).send({ ...note, slug: 'chosen-slug' }).expect(400);
   });
 
