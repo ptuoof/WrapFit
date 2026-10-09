@@ -45,6 +45,8 @@ services:
       TRUST_PROXY: "true"
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       GOOGLE_CALLBACK_URL: https://${APP_DOMAIN}/api/auth/google/callback
+      # R2 bucket without a custom domain or r2.dev URL: print exports are downloaded only through pre-signed links.
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:?Set STORAGE_PRIVATE_BUCKET to an R2 bucket without public access (be/README.md, section "Lưu trữ file")}
 
   # The worker sends the verify-email / reset-password messages: links point to the public domain, and a real SMTP
   # relay is required (accounts cannot sign in before verifying their email).
@@ -53,6 +55,7 @@ services:
       FRONTEND_URL: https://${APP_DOMAIN}
       SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST (and SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM) to the email provider in .env}
       MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM in .env, e.g. WrapFit <no-reply@wrapfit.vn> (domain with SPF + DKIM)}
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:?Set STORAGE_PRIVATE_BUCKET to an R2 bucket without public access (be/README.md, section "Lưu trữ file")}
 
   mailpit:
     ports: !reset []

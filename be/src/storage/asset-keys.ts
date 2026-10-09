@@ -9,6 +9,12 @@ const FILE_ELEMENT_TYPES = new Set(['logo', 'image', 'pattern']);
 /** Keys of user uploads: the only keys a client may point at (exports, QR codes... are never placed on a canvas). */
 const UPLOAD_KEY = /^users\/[^/?#]+\/[a-z_]+\/[^/?#]+$/;
 
+/**
+ * Keys of files that must never have a public URL (print exports): StorageService keeps them in the private bucket
+ * and hands them out only through short-lived pre-signed links.
+ */
+export const PRIVATE_KEY_PREFIX = 'private/';
+
 let publicBase = '';
 
 /** Called once by StorageService with STORAGE_PUBLIC_URL (empty while storage is disabled). */

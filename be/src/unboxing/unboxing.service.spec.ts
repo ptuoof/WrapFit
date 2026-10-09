@@ -55,7 +55,7 @@ describe('UnboxingService', () => {
     };
     storage = {
       enabled: true,
-      putGeneratedFile: jest.fn(async ({ key }: { key: string }) => `https://cdn.wrapfit.vn/${key}`),
+      putGeneratedFile: jest.fn().mockResolvedValue(true),
     };
   });
 

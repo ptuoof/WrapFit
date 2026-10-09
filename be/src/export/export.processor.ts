@@ -6,7 +6,7 @@ import { Job } from 'bullmq';
 import { ConfigService, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
-import { StorageService, toClientCanvas } from '../storage';
+import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, canEmbedInPdf, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
@@ -101,7 +101,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
         ? await renderPdf(layout, artwork)
         : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
 
-    const storageKey = `projects/${project.id}/exports/${exportJobId}.${format.extension}`;
+    // Private bucket: the file is only handed out through the 15-minute links of ExportService.
+    const storageKey = `${PRIVATE_KEY_PREFIX}projects/${project.id}/exports/${exportJobId}.${format.extension}`;
     const stored = await this.storage.putGeneratedFile({
       userId: project.userId,
       projectId: project.id,

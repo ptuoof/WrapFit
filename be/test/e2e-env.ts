@@ -11,6 +11,7 @@ const storageDefaults: Record<string, string> = {
   STORAGE_ENDPOINT: 'http://localhost:8333',
   STORAGE_REGION: 'us-east-1',
   STORAGE_BUCKET: 'wrapfit',
+  STORAGE_PRIVATE_BUCKET: 'wrapfit-private',
   STORAGE_ACCESS_KEY_ID: 'wrapfit-dev-access',
   STORAGE_SECRET_ACCESS_KEY: 'wrapfit-dev-secret-change-me',
   STORAGE_PUBLIC_URL: 'http://localhost:8333/wrapfit',

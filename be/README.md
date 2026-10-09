@@ -89,7 +89,7 @@ Yêu cầu: Node.js >= 20, Docker. Các lệnh dưới đây chạy **tại gố
 ```bash
 npm install                                  # cài toàn bộ workspace (fe, be, shared)
 docker compose up -d postgres                # chỉ chạy database (postgres / password, db: wrapfit)
-docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 8333, bucket wrapfit)
+docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 8333, bucket wrapfit + wrapfit-private)
 docker compose up -d redis                   # hàng đợi BullMQ (xuất file in, email)
 docker compose up -d mailpit                 # bắt mọi email (xác minh, quên mật khẩu): xem tại http://localhost:8025
 cp be/.env.example be/.env                   # nhớ đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
@@ -145,6 +145,7 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `TRUST_PROXY` | `app.trustProxy` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
 | `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `throttle.ttlSeconds` / `throttle.limit` | `60` / `100` | Rate limit mặc định (theo IP) |
 | `STORAGE_BUCKET` | `storage.bucket` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
+| `STORAGE_PRIVATE_BUCKET` | `storage.privateBucket` | *(= `STORAGE_BUCKET`)* | Bucket **không có URL công khai** chứa file xuất in (key `private/...`), chỉ tải qua link pre-signed 15 phút. Để trống = dùng bucket công khai (log cảnh báo); `docker-compose.prod.yml` bắt buộc đặt |
 | `STORAGE_ENDPOINT` | `storage.endpoint` | *(trống)* | R2: `https://<account-id>.r2.cloudflarestorage.com`; SeaweedFS local: `http://localhost:8333`; AWS S3: để trống |
 | `STORAGE_PUBLIC_ENDPOINT` | `storage.publicEndpoint` | *(= `STORAGE_ENDPOINT`)* | Địa chỉ ghi vào pre-signed URL khi trình duyệt truy cập storage bằng địa chỉ khác backend (Docker) |
 | `STORAGE_REGION` | `storage.region` | `auto` | `auto` cho R2, `us-east-1` cho SeaweedFS |
@@ -274,7 +275,7 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 - URL upload hết hạn sau 5 phút. Hạn mức được tính ngay khi cấp URL (kể cả khi FE không upload).
 - Logo SVG / PDF được lưu kèm `Content-Disposition: attachment` (ký vào URL, nên `ticket.headers` có thêm header này): mở thẳng URL của file chỉ tải file về, script trong SVG không chạy trên domain CDN. `<img>` và worker xuất file vẫn đọc bình thường.
 
-**Local**: `docker compose up -d seaweedfs storage-init` chạy [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache 2.0, tương thích S3) ở cổng 8333, khóa dev nằm trong `docker/seaweedfs/s3.json`. MinIO không còn phát hành image Docker bản community nên không dùng.
+**Local**: `docker compose up -d seaweedfs storage-init` chạy [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache 2.0, tương thích S3) ở cổng 8333, khóa dev nằm trong `docker/seaweedfs/s3.json`; bucket `wrapfit` ai cũng đọc được, `wrapfit-private` thì không. MinIO không còn phát hành image Docker bản community nên không dùng.
 
 **Cloudflare R2 (production)**:
 
@@ -288,8 +289,11 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 
    Domain `cdn.wrapfit.vn` → **Rules** → **Transform Rules** → **Modify Response Header**, áp cho mọi request của hostname này: đặt `Content-Security-Policy: sandbox; default-src 'none'` và `X-Content-Type-Options: nosniff`. File người dùng mở thẳng trên CDN không chạy được script (kể cả file SVG upload trước khi có `Content-Disposition`); `<img>` không bị ảnh hưởng. Lâu dài nên phục vụ file người dùng từ một domain riêng (không phải subdomain của `wrapfit.vn`).
 
-4. **R2** → **Manage R2 API Tokens** → **Create API token**, quyền *Object Read & Write*, chỉ bucket `wrapfit` → lấy *Access Key ID* / *Secret Access Key*. *Account ID* nằm trong endpoint `https://<account-id>.r2.cloudflarestorage.com`.
-5. Điền vào `.env`: `STORAGE_ENDPOINT`, `STORAGE_REGION=auto`, `STORAGE_BUCKET=wrapfit`, hai khóa, `STORAGE_PUBLIC_URL`, `STORAGE_FORCE_PATH_STYLE=false`.
+4. **Create bucket** thứ hai `wrapfit-private` cho file xuất in: **không** gắn Custom Domain, **không** bật `r2.dev`. CORS chỉ cần `GET` từ `https://wrapfit.vn` (trình duyệt tải file qua link pre-signed).
+5. **R2** → **Manage R2 API Tokens** → **Create API token**, quyền *Object Read & Write*, chỉ hai bucket `wrapfit` và `wrapfit-private` → lấy *Access Key ID* / *Secret Access Key*. *Account ID* nằm trong endpoint `https://<account-id>.r2.cloudflarestorage.com`.
+6. Điền vào `.env`: `STORAGE_ENDPOINT`, `STORAGE_REGION=auto`, `STORAGE_BUCKET=wrapfit`, `STORAGE_PRIVATE_BUCKET=wrapfit-private`, hai khóa, `STORAGE_PUBLIC_URL`, `STORAGE_FORCE_PATH_STYLE=false`.
+
+File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/exports/...`) vẫn nằm trong bucket công khai và vẫn tải được; chúng bị xóa cùng dự án như trước.
 
 ## AI sinh hoa văn
 
@@ -340,7 +344,7 @@ npm --workspace=be run test:e2e
 
 1. `POST /api/projects/:id/exports { fileType: "PDF_CMYK" | "SVG" | "DXF" }` — backend chạy lại **FitCheck** (kết quả lưu vào `fitcheckState`); có lỗi mức `error` → `422` kèm `fitCheck`. Hợp lệ → tạo `ExportJob` (PENDING), đẩy vào hàng đợi Redis, trả `202 { jobId }`.
 2. Process **worker** (`src/worker.ts`) dựng dieline từ `@wrapfit/shared`, xuất file, tải lên storage, đánh dấu `COMPLETED` và tự tạo mốc phiên bản "Bản xuất in ...". Lỗi → BullMQ thử lại 3 lần (2 s, 4 s), lần cuối mới ghi `FAILED` + `error`. Số job song song: `EXPORT_CONCURRENCY`.
-3. FE hỏi `GET /api/exports/:jobId` mỗi 2 giây; khi `COMPLETED` có `downloadUrl` (pre-signed, hết hạn 15 phút, tải về với tên `hop-nen-tet-pdf-cmyk.pdf`).
+3. FE hỏi `GET /api/exports/:jobId` mỗi 2 giây; khi `COMPLETED` có `downloadUrl` (pre-signed, hết hạn 15 phút, tải về với tên `hop-nen-tet-pdf-cmyk.pdf`). File nằm trong `STORAGE_PRIVATE_BUCKET` (key `private/projects/<id>/exports/<jobId>.<ext>`), không có URL công khai: hết 15 phút là link hết hiệu lực.
 
 | Định dạng | Dùng cho | Nội dung |
 | --- | --- | --- |

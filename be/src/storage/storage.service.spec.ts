@@ -201,6 +201,31 @@ describe('StorageService', () => {
     });
   });
 
+  describe('private bucket (print exports)', () => {
+    const exportKey = 'private/projects/p-1/exports/job-1.pdf';
+
+    it('keeps private keys in the bucket without a public URL', async () => {
+      const service = build({ 'storage.privateBucket': 'wrapfit-private' });
+      const send = mockS3(service, async () => ({}));
+      prisma.storedFile.upsert = jest.fn();
+
+      await expect(
+        service.putGeneratedFile({ userId: 'u-1', key: exportKey, purpose: 'EXPORT', contentType: 'application/pdf', body: Buffer.from('%PDF') }),
+      ).resolves.toBe(true);
+      await service.deleteObjects([exportKey, 'users/u-1/image/a.png']);
+
+      const buckets = send.mock.calls.map(([command]) => (command.input as { Bucket: string }).Bucket);
+      expect(buckets).toEqual(['wrapfit-private', 'wrapfit', 'wrapfit-private']);
+      const download = new URL(await service.presignDownload(exportKey, 'hop.pdf', 900));
+      expect(download.pathname).toBe(`/wrapfit-private/${exportKey}`);
+    });
+
+    it('falls back to the public bucket while STORAGE_PRIVATE_BUCKET is empty', async () => {
+      const download = new URL(await build().presignDownload(exportKey, 'hop.pdf', 900));
+      expect(download.pathname).toBe(`/wrapfit/${exportKey}`);
+    });
+  });
+
   it('recognizes the URLs of user uploads only (any scheme), for the print export', () => {
     const service = build();
     expect(service.uploadedKeyOf('https://cdn.wrapfit.vn/users/u-1/image/a.png')).toBe('users/u-1/image/a.png');

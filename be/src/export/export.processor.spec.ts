@@ -37,7 +37,7 @@ describe('ExportProcessor', () => {
       $executeRaw: jest.fn().mockResolvedValue(0),
     };
     storage = {
-      putGeneratedFile: jest.fn().mockResolvedValue('https://cdn/x.dxf'),
+      putGeneratedFile: jest.fn().mockResolvedValue(true),
       uploadedKeyOf: jest.fn((url: string) => (url.startsWith('https://cdn/users/') ? url.slice('https://cdn/'.length) : null)),
       getObject: jest.fn().mockResolvedValue({ body: Buffer.from([0x89, 0x50, 0x4e, 0x47]), contentType: 'image/png' }),
     };
@@ -53,15 +53,15 @@ describe('ExportProcessor', () => {
   });
 
   it('renders, stores the file, completes the job with a snapshot and emits an event', async () => {
-    await expect(processor.process(job(0))).resolves.toEqual({ storageKey: 'projects/p-1/exports/job-1.dxf' });
+    await expect(processor.process(job(0))).resolves.toEqual({ storageKey: 'private/projects/p-1/exports/job-1.dxf' });
 
     expect(prisma.exportJob.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'PROCESSING', errorLog: null } }));
     expect(storage.putGeneratedFile).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'projects/p-1/exports/job-1.dxf', purpose: 'EXPORT', contentType: 'application/dxf', projectId: 'p-1' }),
+      expect.objectContaining({ key: 'private/projects/p-1/exports/job-1.dxf', purpose: 'EXPORT', contentType: 'application/dxf', projectId: 'p-1' }),
     );
     expect(prisma.$transaction).toHaveBeenCalled();
     expect(prisma.exportJob.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'COMPLETED', storageKey: 'projects/p-1/exports/job-1.dxf' }) }),
+      expect.objectContaining({ data: expect.objectContaining({ status: 'COMPLETED', storageKey: 'private/projects/p-1/exports/job-1.dxf' }) }),
     );
     expect(prisma.projectSnapshot.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ projectId: 'p-1', name: expect.stringMatching(/^Bản xuất in DXF /), isAutomatic: true }) }),
