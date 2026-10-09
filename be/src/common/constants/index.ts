@@ -1,1 +1,1 @@
-export * from './cookies.constant';
+export * from './cookies.constants';
