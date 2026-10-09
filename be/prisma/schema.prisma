@@ -1,6 +1,6 @@
 // WrapFit — Schema v2.1 (xem tài liệu 07, Mục 4.1).
 // Khóa chính UUIDv7 (tăng dần theo thời gian: index B-tree không bị phân mảnh), trừ refresh_tokens.id = jti do code sinh.
-// Chỉ truy cập qua PrismaService (src/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
+// Chỉ truy cập qua PrismaService (src/shared/prisma/prisma.service.ts). Tên bảng/cột dạng snake_case.
 
 generator client {
   provider = "prisma-client-js"

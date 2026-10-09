@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { AppLogger } from '../logging/app-logger';
+import { AppLogger } from '../../config/logger.config';
 import { currentRequestId, requestIdMiddleware, runWithRequestId } from './request-context';
 
 describe('request context', () => {

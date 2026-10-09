@@ -4,28 +4,28 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { queueRootModule } from './common/queue.module';
+import { queueRootModule } from './shared/queue/queue.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpThrottlerGuard } from './common/guards/http-throttler.guard';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { AppConfigService } from './config/app-config.type';
+import { AppConfigService } from './config/config.interface';
 import { validateEnv } from './config/env.validation';
-import { AiModule } from './modules/ai/ai.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { ExportModule } from './modules/export/export.module';
-import { CollectionsModule } from './modules/collections/collections.module';
-import { EventsModule } from './modules/events/events.module';
-import { HealthModule } from './modules/health/health.module';
-import { ProjectsModule } from './modules/projects/projects.module';
-import { PublicShowcaseModule } from './modules/public-showcase/public-showcase.module';
-import { StorageMaintenanceModule } from './modules/storage/storage-maintenance.module';
-import { StorageModule } from './modules/storage/storage.module';
-import { TemplatesModule } from './modules/templates/templates.module';
-import { UnboxingModule } from './modules/unboxing/unboxing.module';
-import { UsersModule } from './modules/users/users.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { AiModule } from './ai/ai.module';
+import { AuthModule } from './auth/auth.module';
+import { ExportModule } from './export/export.module';
+import { CollectionsModule } from './collections/collections.module';
+import { EventsModule } from './events/events.module';
+import { BaseModule } from './base/base.module';
+import { ProjectsModule } from './projects/projects.module';
+import { PublicShowcaseModule } from './public-showcase/public-showcase.module';
+import { StorageMaintenanceModule } from './storage/storage-maintenance.module';
+import { StorageModule } from './storage/storage.module';
+import { TemplatesModule } from './templates/templates.module';
+import { UnboxingModule } from './unboxing/unboxing.module';
+import { UsersModule } from './users/users.module';
+import { PrismaModule } from './shared/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -58,7 +58,7 @@ import { PrismaModule } from './prisma/prisma.module';
     UnboxingModule,
     ExportModule,
     EventsModule,
-    HealthModule,
+    BaseModule,
   ],
   providers: [
     // Guards run in this order: rate limit -> authentication -> role check.

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { AppConfigService } from './config/app-config.type';
+import { AppConfigService } from './config/config.interface';
 import { validateEnv } from './config/env.validation';
-import { testEmail } from './modules/mail/mail.templates';
-import { maskEmail, SmtpMailer } from './modules/mail/smtp-mailer';
+import { testEmail } from './mail/mail.templates';
+import { maskEmail, SmtpMailer } from './mail/smtp-mailer';
 
 /**
  * Sends one test email with the SMTP settings of the environment, to check a relay before real users depend on it:

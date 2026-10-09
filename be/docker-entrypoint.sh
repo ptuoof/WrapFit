@@ -14,4 +14,4 @@ echo "[WrapFit Docker] Seeding box templates (idempotent)..."
 npx prisma db seed
 
 echo "[WrapFit Docker] Starting WrapFit Backend (NestJS) on port ${PORT:-8080}..."
-exec node dist/main.js
+exec node dist/app.js
