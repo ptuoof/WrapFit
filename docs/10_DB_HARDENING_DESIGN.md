@@ -340,7 +340,7 @@ The output must be empty.
     - `@Cron('0 3 * * *', {timeZone:'Asia/Ho_Chi_Minh'})`.
     - Deletes `refresh_tokens WHERE expires_at<now()` and `auth_tokens WHERE expires_at < now() - 7 days`.
     - Revoked tokens that have not yet expired are kept for theft detection.
-- **New `be/src/modules/mail/`**:
+- **New `be/src/mail/`**:
   - `MAIL_QUEUE='mail'`.
   - `MailModule` (producer): `attempts:5`, exponential backoff 10s, `jobId`, `removeOnComplete:true`, `removeOnFail:{age:3600}`.
   - `MailWorkerModule`: `MailProcessor`, `SmtpTransport` (nodemailer), and Vietnamese HTML + text templates.

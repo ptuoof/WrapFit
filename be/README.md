@@ -29,35 +29,57 @@ REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì q
 
 ## Cấu trúc thư mục
 
+Theo skeleton [CatsMiaow/nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure): mỗi module nghiệp vụ nằm thẳng dưới `src/`, hạ tầng dùng chung ở `common/` và `shared/`, cấu hình ở `config/`.
+
 ```
 prisma/
   schema.prisma            # Schema v2.1: users, packaging_projects, box_templates, collections, snapshots...
   migrations/              # SQL migration
   seed.ts                  # admin + 4 mẫu hộp (tuck-top, sleeve-drawer, lid-base, pillow) + collection/dự án mẫu
 src/
-  main.ts                  # khởi động API (HTTP)
-  worker.ts                # khởi động worker BullMQ (không mở cổng HTTP)
-  app.setup.ts             # cấu hình dùng chung (prefix /api, pipe, CORS, helmet)
-  swagger.setup.ts
+  app.ts                   # khởi động API (HTTP) -> dist/app.js
+  worker.ts                # khởi động worker BullMQ (không mở cổng HTTP) -> dist/worker.js
+  repl.ts                  # shell tương tác trên module API: npm run start:repl
+  mail-test.ts             # gửi thử 1 email bằng cấu hình SMTP hiện tại
+  app.middleware.ts        # cấu hình dùng chung (request id, helmet, CORS, prefix /api, ValidationPipe)
   app.module.ts            # ghép module + guard/filter/interceptor toàn cục
-  config/                  # validate biến môi trường
-  prisma/                  # PrismaModule (global) + PrismaService
-  common/                  # decorators, guards, filters, interceptors, dto, adapters
-  modules/
-    auth/                  # register, login, refresh, logout
-    users/                 # hồ sơ cá nhân + quản trị user (ADMIN)
-    projects/              # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
-    collections/           # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
-    public-showcase/       # trang công khai /p/[slug], Remix (fork), thả tim
-    templates/             # Thư viện mẫu Curated & Community (cache 60 s)
-    storage/               # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
-    ai/                    # sinh bảng màu + hoa văn SVG (Claude hoặc thuật toán dự phòng)
-    unboxing/              # trải nghiệm mở hộp 3D + mã QR in đáy hộp
-    export/                # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
-    events/                # WebSocket gateway (thông báo realtime)
-    health/                # GET /api/health
-test/                      # e2e test
+  swagger.ts
+  config/
+    env.validation.ts      # kiểm tra + giá trị mặc định của biến môi trường
+    envs/default.ts        # gom biến môi trường thành cấu hình lồng nhau (app, auth, storage, mail...)
+    envs/production.ts     # khác biệt theo NODE_ENV (development.ts, test.ts: chưa có gì)
+    configuration.ts       # default + file của NODE_ENV, nạp bằng ConfigModule.forRoot({ load })
+    logger.config.ts       # AppLogger (JSON ở production, kèm request id)
+  common/                  # @Global CommonModule: ConfigService có kiểu, decorators, guards, filters,
+                           # interceptors, dto, constants, utils...
+  shared/
+    prisma/                # PrismaModule (global) + PrismaService
+    queue/                 # kết nối BullMQ (Redis)
+  auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
+  base/                    # GET /api/health
+  users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
+  projects/                # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
+  collections/             # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
+  public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
+  templates/               # Thư viện mẫu Curated & Community (cache 60 s)
+  storage/                 # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
+  ai/                      # sinh bảng màu + hoa văn SVG (Claude hoặc thuật toán dự phòng)
+  unboxing/                # trải nghiệm mở hộp 3D + mã QR in đáy hộp
+  export/                  # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
+  mail/                    # MailService (đưa vào hàng đợi) + MailProcessor (worker gửi SMTP)
+  events/                  # WebSocket gateway (thông báo realtime)
+test/
+  e2e/                     # e2e test (*.e2e-spec.ts) + helpers/
 ```
+
+**Quy ước**
+
+- Module nhỏ để phẳng (`<ten>.module.ts`, `.controller.ts`, `.service.ts`, `dto/`); chỉ thêm thư mục con khi module lớn (`auth/guards`, `export/rendering`, 4 tầng của `projects/`).
+- Mỗi module có `index.ts` export class module và những gì module khác dùng. Import module khác qua thư mục: `from '../common'`, `from '../users'`. Trong cùng module import thẳng file; không import `'.'` hay `'..'`.
+- `common/` và `shared/` không import module nghiệp vụ. ESLint (`import/no-cycle`) báo lỗi nếu có vòng import.
+- Đọc cấu hình bằng `ConfigService` của `common/` (không dùng bản của `@nestjs/config`): `config.get('auth.jwt.accessTtlSeconds')` trả về `number`, đường dẫn sai thì ném lỗi. Thêm biến môi trường: khai báo trong `config/env.validation.ts`, rồi đặt vào `config/envs/default.ts`.
+
+**Khác skeleton**: dùng Prisma thay TypeORM (không có `src/entity/`, schema ở `prisma/`); có thêm entry `worker.ts` và `mail-test.ts` (cả hai chạy trong container production nên nằm trong `src/`, không ở `bin/`); `AuthController` ở `auth/` chứ không ở `base/`; `ValidationPipe` và middleware request id đăng ký trong `app.middleware.ts` để request id có mặt từ middleware đầu tiên; giữ Jest thay Vitest; không khai báo `Express.User` toàn cục vì `req.user` là `GoogleProfile` ở callback OAuth.
 
 ## Chạy nhanh (local)
 
@@ -293,7 +315,7 @@ npm --workspace=be run test:e2e
 
 ## Thêm module mới
 
-1. `npx nest g module modules/<ten>` (và `controller`, `service` tương ứng). Module nghiệp vụ phức tạp chia 4 thư mục `presentation/ application/ domain/ infrastructure/` (tài liệu 08, Mục 1.1–1.3).
+1. `npx nest g module <ten>` (và `controller`, `service` tương ứng), rồi tạo `src/<ten>/index.ts` export module. Module nghiệp vụ phức tạp chia 4 thư mục `presentation/ application/ domain/ infrastructure/` (tài liệu 08, Mục 1.1–1.3).
 2. Sửa `prisma/schema.prisma`, rồi `npm run db:migrate -- --name <ten>` (trong `be/`).
 3. Mặc định mọi route đều yêu cầu đăng nhập; dùng `@Public()` để mở, `@Roles(Role.ADMIN)` để giới hạn theo role, `@CurrentUser()` để lấy user hiện tại.
 4. DTO đặt trong `dto/`; plugin Swagger tự sinh tài liệu từ DTO có hậu tố `.dto.ts`.
@@ -310,7 +332,7 @@ npm --workspace=be run test:e2e
 | `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork` (ảnh nhúng data URI + chữ), đơn vị mm |
 | `DXF` | Máy bế CNC | R12, mm, lớp `CUT` (đỏ) và `CREASE` (xanh, nét đứt) |
 
-**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/modules/export/rendering/`.
+**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
 

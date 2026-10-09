@@ -82,9 +82,10 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (Next.js 14
 - **Trọng tâm**: CSDL, API lưu trữ, Cloud Storage, Authentication và tích hợp AI bên ngoài.
 - **Thư mục làm việc độc quyền**:
   - `be/prisma/schema.prisma` + `be/prisma/migrations/`: Thiết kế và quản trị CSDL PostgreSQL (qua migration).
-  - `be/src/modules/<tên>/`: Mỗi phân hệ là một NestJS Module (controller, service, DTO) — xem `docs/08`, Mục 1 & 7.
-  - `be/src/common/`: Guard, decorator, filter, interceptor dùng chung (JWT, RBAC, định dạng lỗi).
-  - `be/src/main.ts`: Khởi chạy NestJS REST API server (cổng 8080, prefix `/api`).
+  - `be/src/<tên>/`: Mỗi phân hệ là một NestJS Module (controller, service, DTO, `index.ts`) — xem `docs/08`, Mục 1 & 7. Cấu trúc theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure), quy ước trong `be/README.md`.
+  - `be/src/common/`: Guard, decorator, filter, interceptor, `ConfigService` dùng chung (RBAC, định dạng lỗi).
+  - `be/src/config/`: Kiểm tra biến môi trường + cấu hình theo `NODE_ENV`. `be/src/shared/`: Prisma, hàng đợi BullMQ.
+  - `be/src/app.ts`: Khởi chạy NestJS REST API server (cổng 8080, prefix `/api`).
 - **Agent Skills hỗ trợ**: `insforge-backend-flow`.
 - **Nhánh Git**: `feature/it3-backend-auth-storage`
 

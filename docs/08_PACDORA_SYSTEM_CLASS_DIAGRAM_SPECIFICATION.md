@@ -62,7 +62,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ HTTPS REST /api/* (JSON + HttpOnly Cookie JWT)
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 1. PRESENTATION LAYER — NestJS (modules/*/presentation)                     │
+│ 1. PRESENTATION LAYER — NestJS (src/*/presentation)                         │
 │    • @Controller: ProjectsController, AuthController, ECommerceController   │
 │    • Request DTO + ValidationPipe (class-validator), Swagger decorators     │
 │    • Guards: JwtAuthGuard, RolesGuard, SubscriptionTierGuard, ProjectAccess │
@@ -71,7 +71,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Calls Application Use Cases
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 2. APPLICATION SERVICES LAYER — @Injectable() (modules/*/application)       │
+│ 2. APPLICATION SERVICES LAYER — @Injectable() (src/*/application)           │
 │    • ProjectApplicationService, IdentityApplicationService, SecurityService │
 │    • PreflightAuditApplicationService, ExportApplicationService             │
 │    • SubscriptionBillingService, OrderFulfillmentService, NotificationSvc   │
@@ -81,7 +81,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Coordinates Core Entities
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 3. DOMAIN CORE LAYER — TypeScript thuần (modules/*/domain)                  │
+│ 3. DOMAIN CORE LAYER — TypeScript thuần (src/*/domain)                      │
 │    • KHÔNG import @nestjs/*, @prisma/client hay SDK bên thứ ba              │
 │    • Aggregates: PackagingProject, User, Collection, Order, SupportTicket   │
 │    • Entities: Address, RefundRequest, NewsletterSubscriber, Banner, Member │
@@ -91,7 +91,7 @@
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ Implements Interfaces / Inversion (NestJS DI)
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
-│ 4. INFRASTRUCTURE LAYER — NestJS Providers (modules/*/infrastructure)       │
+│ 4. INFRASTRUCTURE LAYER — NestJS Providers (src/*/infrastructure)           │
 │    • Database: PostgreSQL via Prisma (PrismaService + PrismaRepositories)   │
 │    • Cloud Storage: AWS S3 / Cloudflare R2 Adapter (S3StorageAdapter)       │
 │    • Payment Gateways: Stripe Adapter, VNPay Adapter, MoMo Adapter          │
@@ -106,15 +106,15 @@
 
 | Tầng | Thành phần NestJS | Thư mục | Quy tắc phụ thuộc |
 | :--- | :--- | :--- | :--- |
-| **Presentation** | `@Controller`, Request/Response DTO (`class-validator`, `@nestjs/swagger`), Guard, Pipe, Interceptor, Exception Filter, `@Processor` (BullMQ), `@Cron`, `@OnEvent` | `modules/<tên>/presentation/` | Chỉ gọi Application Service. Không gọi Prisma, không chứa logic nghiệp vụ. |
-| **Application** | Class `@Injectable()` (Use Case / Application Service), Port interface + injection token | `modules/<tên>/application/` | Phụ thuộc Domain và các Port. Không biết đến Prisma, Stripe, S3... |
-| **Domain Core** | Class TypeScript thuần: Aggregate, Entity, Value Object, Domain Event, Domain Policy; thuật toán từ `@wrapfit/shared` | `modules/<tên>/domain/` | **Không** import `@nestjs/*`, `@prisma/client`, SDK bên thứ ba → test được bằng Jest thuần, không cần khởi động Nest. |
-| **Infrastructure** | `PrismaXxxRepository`, `StripePaymentGatewayAdapter`, `S3StorageAdapter`... đăng ký bằng custom provider | `modules/<tên>/infrastructure/` | Implement các Port. Là nơi duy nhất được dùng `PrismaService` và SDK bên ngoài. |
+| **Presentation** | `@Controller`, Request/Response DTO (`class-validator`, `@nestjs/swagger`), Guard, Pipe, Interceptor, Exception Filter, `@Processor` (BullMQ), `@Cron`, `@OnEvent` | `src/<tên>/presentation/` | Chỉ gọi Application Service. Không gọi Prisma, không chứa logic nghiệp vụ. |
+| **Application** | Class `@Injectable()` (Use Case / Application Service), Port interface + injection token | `src/<tên>/application/` | Phụ thuộc Domain và các Port. Không biết đến Prisma, Stripe, S3... |
+| **Domain Core** | Class TypeScript thuần: Aggregate, Entity, Value Object, Domain Event, Domain Policy; thuật toán từ `@wrapfit/shared` | `src/<tên>/domain/` | **Không** import `@nestjs/*`, `@prisma/client`, SDK bên thứ ba → test được bằng Jest thuần, không cần khởi động Nest. |
+| **Infrastructure** | `PrismaXxxRepository`, `StripePaymentGatewayAdapter`, `S3StorageAdapter`... đăng ký bằng custom provider | `src/<tên>/infrastructure/` | Implement các Port. Là nơi duy nhất được dùng `PrismaService` và SDK bên ngoài. |
 
 Cấu trúc một module đầy đủ (ví dụ `address-book`):
 
 ```
-be/src/modules/address-book/
+be/src/address-book/
 ├── address-book.module.ts
 ├── presentation/
 │   ├── address-book.controller.ts        # @Controller('users/me/addresses')
@@ -805,7 +805,7 @@ sequenceDiagram
 
 Cột **Ưu tiên** khớp với Milestone trong tài liệu 07 (WBS). Các gói đánh dấu **Sau MVP** chưa có trong WBS hiện tại; nên triển khai sau khi hoàn thành CP4.
 
-| Gói | Phân hệ | NestJS Module (`be/src/modules/`) | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
+| Gói | Phân hệ | NestJS Module (`be/src/<module>/`) | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | Vòng đời Dự án & Aggregate Root | `projects` | `/projects`, `/projects/:id/snapshots` | State Pattern trong `domain/`, `ProjectOwnerGuard` | CP3 |
 | 2 | Động cơ Toán Hình Học CAD | *(không phải module — thư viện `@wrapfit/shared/parametric`)* | — | `projects` gọi để validate kích thước / tái tính dieline khi đổi kích thước | CP2 |

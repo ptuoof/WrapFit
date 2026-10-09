@@ -9,7 +9,7 @@
 - **Thời gian**: mọi cột `DateTime` là `timestamptz(3)` (`@db.Timestamptz(3)`), giá trị lưu theo UTC.
 - **Khóa chính**: `@default(uuid(7))` (UUIDv7, tăng dần theo thời gian). Ngoại lệ: `refresh_tokens.id` = `jti` do code sinh.
 - **Ràng buộc CHECK** (tiền tố `chk_`) chỉ nằm trong migration, Prisma không thấy chúng: khi đổi tên / đổi kiểu một cột, sửa luôn CHECK của cột đó trong migration mới. Hiện có: email viết thường, `fitcheck_score` 0–100, bộ đếm ≥ 0, `size > 0`, `version` / `formula_version` ≥ 1, `(status = 'DELETED') = (deleted_at IS NOT NULL)`, cột `*_key` chỉ chứa key `users/...`, mỗi tài khoản có `password_hash` hoặc `google_id`, tài khoản Google luôn có `email_verified_at`.
-- **File lưu bằng key, không lưu URL**: `thumbnail_key`, `preview_key`, `avatar_key`, `render_key`, `brand_kit.logoKey` và `content` của phần tử `logo` / `image` / `pattern` trong `canvas_state`. API vẫn trả URL (`thumbnailUrl`...), dựng từ `STORAGE_PUBLIC_URL` lúc đọc (`be/src/modules/storage/asset-keys.ts`).
+- **File lưu bằng key, không lưu URL**: `thumbnail_key`, `preview_key`, `avatar_key`, `render_key`, `brand_kit.logoKey` và `content` của phần tử `logo` / `image` / `pattern` trong `canvas_state`. API vẫn trả URL (`thumbnailUrl`...), dựng từ `STORAGE_PUBLIC_URL` lúc đọc (`be/src/storage/asset-keys.ts`).
 - **Ảnh dự án đang dùng** nằm ở `project_file_refs`, đồng bộ trong cùng transaction với mỗi lần ghi canvas (`syncProjectFileRefs`). Không tìm key bằng cách quét `canvas_state::text`.
 - **Công thức hộp có phiên bản**: dự án chốt `formula_version` lúc tạo; đổi công thức = thêm phiên bản mới trong `shared/src/parametric/registry.ts`, không sửa phiên bản cũ.
 - **Khóa ngoại luôn có index** (PostgreSQL không tự tạo).

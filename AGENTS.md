@@ -120,4 +120,4 @@ Whenever working on any task relating to WrapFit Frontend, UI/UX, 3D Canvas, CAD
      - `.agents/InsForge/`: Read `packages/ui/` for Radix primitives, `cva`, and `cn()` patterns.
      - `branding/mascot-system.md`: Read for exact mascot states, emotional labels, and copy.
      - `shared/src/core/contracts.ts`: Read for master domain events, project structures, and OOP models.
-     - `be/src/modules/`: Read DTOs and controller routes for exact API request/response contracts.
+     - `be/src/<module>/`: Read DTOs and controller routes for exact API request/response contracts.
