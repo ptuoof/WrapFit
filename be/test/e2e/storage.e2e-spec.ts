@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { signUp, uploadPng } from './helpers/accounts';
 
 /**

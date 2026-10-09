@@ -1,8 +1,6 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from './common/providers/config.service';
 import { DocumentBuilder, getSchemaPath, SwaggerModule } from '@nestjs/swagger';
-import { ErrorResponseDto } from './common/dto/error-response.dto';
-import { ACCESS_COOKIE } from './auth/auth.constants';
+import { ACCESS_COOKIE, ConfigService, ErrorResponseDto } from './common';
 
 export function setupSwagger(app: INestApplication): void {
   const config = app.get(ConfigService);

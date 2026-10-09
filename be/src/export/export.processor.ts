@@ -1,14 +1,12 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
-import { runWithRequestId } from '../common/context/request-context';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { pruneAutomaticSnapshots } from '../projects/infrastructure/snapshot-retention';
-import { toClientCanvas } from '../storage/asset-keys';
-import { StorageService } from '../storage/storage.service';
+import { ConfigService, runWithRequestId } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { pruneAutomaticSnapshots } from '../projects';
+import { StorageService, toClientCanvas } from '../storage';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, canEmbedInPdf, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';

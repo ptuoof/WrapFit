@@ -1,5 +1,5 @@
 import { Prisma, User } from '@prisma/client';
-import { assetUrl, toClientBrandKit } from '../storage/asset-keys';
+import { assetUrl, toClientBrandKit } from '../storage';
 
 /** Fields that are safe to return to clients (never includes `passwordHash` or `googleId`). */
 export const userSelect = {

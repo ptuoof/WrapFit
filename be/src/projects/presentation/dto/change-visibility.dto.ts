@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectVisibility } from '@prisma/client';
 import { IsBoolean, IsEnum } from 'class-validator';
-import { IsOptionalNotNull } from '../../../common/decorators/optional-not-null.decorator';
+import { IsOptionalNotNull } from '../../../common';
 
 /** Omitted fields stay unchanged. */
 export class ChangeVisibilityDto {

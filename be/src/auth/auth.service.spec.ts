@@ -1,12 +1,12 @@
 import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { MailService } from '../mail/mail.service';
-import { UsersService } from '../users/users.service';
+import { ConfigService } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { MailService } from '../mail';
+import { UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { AuthService } from './auth.service';

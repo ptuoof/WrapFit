@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ProjectsModule } from '../projects/projects.module';
+import { ProjectsModule } from '../projects';
 import { PublicUnboxingController, UnboxingController } from './unboxing.controller';
 import { UnboxingService } from './unboxing.service';
 

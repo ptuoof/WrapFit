@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import request, { Response } from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { setupSwagger } from '../../src/swagger';
 import { uploadPng } from './helpers/accounts';
 

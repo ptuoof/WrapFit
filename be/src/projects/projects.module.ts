@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { StorageService } from '../storage/storage.service';
+import { StorageService } from '../storage';
 import { PROJECT_FILES } from './application/ports/project-files.port';
 import { PROJECT_REPOSITORY } from './application/ports/project.repository.port';
 import { SNAPSHOT_REPOSITORY } from './application/ports/snapshot.repository.port';

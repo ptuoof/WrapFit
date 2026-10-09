@@ -2,8 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
-import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
-import { trim } from '../../../common/utils/transform.util';
+import { PaginationQueryDto, trim } from '../../../common';
 
 /** Value of `collectionId` that selects the projects outside any collection. */
 export const NO_COLLECTION = 'none';

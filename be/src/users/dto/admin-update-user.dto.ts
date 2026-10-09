@@ -1,6 +1,6 @@
 import { Role } from '@prisma/client';
 import { IsBoolean, IsEnum } from 'class-validator';
-import { IsOptionalNotNull } from '../../common/decorators/optional-not-null.decorator';
+import { IsOptionalNotNull } from '../../common';
 
 export class AdminUpdateUserDto {
   @IsOptionalNotNull()

@@ -1,5 +1,5 @@
 import type { Queue } from 'bullmq';
-import type { PrismaService } from '../shared/prisma/prisma.service';
+import type { PrismaService } from '../shared/prisma';
 import { WORKER_LOST_ERROR } from './export.constants';
 import { ExportReconcileTask } from './export-reconcile.task';
 

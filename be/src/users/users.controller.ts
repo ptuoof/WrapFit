@@ -11,10 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { ACCESS_COOKIE, CurrentUser, PaginationQueryDto, Roles } from '../common';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';

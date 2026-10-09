@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService, Path, PathValue } from '@nestjs/config';
-import type { Config } from '../../config/config.interface';
+import type { Config } from '../../config';
 
 /**
  * Typed settings of src/config: `config.get('auth.jwt.accessTtlSeconds')` is a number. An unknown path throws

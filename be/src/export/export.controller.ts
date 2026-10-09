@@ -1,9 +1,8 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
-import { ProjectOwnerGuard } from '../projects/presentation/project-owner.guard';
+import { ACCESS_COOKIE, CurrentUser } from '../common';
+import { ProjectOwnerGuard } from '../projects';
 import { CreateExportDto } from './dto/create-export.dto';
 import { ExportService } from './export.service';
 

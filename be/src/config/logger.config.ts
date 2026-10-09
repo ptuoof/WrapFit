@@ -1,5 +1,5 @@
 import { ConsoleLogger, LogLevel } from '@nestjs/common';
-import { currentRequestId } from '../common/context/request-context';
+import { currentRequestId } from '../common';
 
 type JsonLogOptions = {
   context: string;

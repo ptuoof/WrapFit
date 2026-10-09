@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { paginate, Paginated, toSkipTake } from '../common/dto/pagination.dto';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { MIN_COMMUNITY_FITCHECK_SCORE } from '../projects/domain/project-fitcheck';
-import { readDimensionLimits } from '../projects/domain/project.policy';
-import { assetUrl, toClientCanvas } from '../storage/asset-keys';
-import { authorSelect, presentAuthor } from '../users/user.select';
+import { paginate, Paginated, toSkipTake } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { MIN_COMMUNITY_FITCHECK_SCORE, readDimensionLimits } from '../projects';
+import { assetUrl, toClientCanvas } from '../storage';
+import { authorSelect, presentAuthor } from '../users';
 import { QueryHubDto } from './dto/query-hub.dto';
 
 const structureSelect = { select: { id: true, name: true } } as const;

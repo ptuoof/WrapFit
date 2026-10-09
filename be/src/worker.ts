@@ -2,15 +2,13 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { createAppLogger } from './config/logger.config';
-import { queueRootModule } from './shared/queue/queue.module';
-import { validateEnv } from './config/env.validation';
-import { configuration } from './config/configuration';
-import { CommonModule } from './common/common.module';
-import { ExportWorkerModule } from './export/export.module';
-import { MailWorkerModule } from './mail/mail.module';
-import { StorageModule } from './storage/storage.module';
-import { PrismaModule } from './shared/prisma/prisma.module';
+import { configuration, createAppLogger, validateEnv } from './config';
+import { queueRootModule } from './shared/queue';
+import { CommonModule } from './common';
+import { ExportWorkerModule } from './export';
+import { MailWorkerModule } from './mail';
+import { StorageModule } from './storage';
+import { PrismaModule } from './shared/prisma';
 
 /**
  * Worker process (docs 07, section 1.3): runs the BullMQ processors only, no HTTP port. Same image as the API,

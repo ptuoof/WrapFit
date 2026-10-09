@@ -1,12 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
-import { PROJECT_FORKED, ProjectForkedEvent } from '../common/events/project.events';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { ProjectsService } from '../projects/application/projects.service';
-import type { ProjectDetail } from '../projects/domain/project.types';
-import { assetUrl, toClientCanvas } from '../storage/asset-keys';
-import { authorSelect, presentAuthor } from '../users/user.select';
+import { PROJECT_FORKED, ProjectForkedEvent } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { ProjectsService } from '../projects';
+import type { ProjectDetail } from '../projects';
+import { assetUrl, toClientCanvas } from '../storage';
+import { authorSelect, presentAuthor } from '../users';
 
 const publicSelect = {
   id: true,

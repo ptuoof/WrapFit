@@ -1,10 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { assetUrl, toClientCanvas } from '../storage/asset-keys';
-import { StorageService } from '../storage/storage.service';
-import { authorSelect, presentAuthor } from '../users/user.select';
+import { ConfigService } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { assetUrl, StorageService, toClientCanvas } from '../storage';
+import { authorSelect, presentAuthor } from '../users';
 import { SaveUnboxingDto } from './dto/save-unboxing.dto';
 import { qrPng, qrSvg } from './qr-code';
 

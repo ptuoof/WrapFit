@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { trim } from '../../common/utils/transform.util';
+import { trim } from '../../common';
 
 export class GeneratePatternDto {
   @ApiProperty({ example: 'Tết Bính Ngọ, hoa đào, sang trọng' })

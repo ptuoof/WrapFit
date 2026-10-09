@@ -1,5 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { uploadKeyOf } from '../../storage/asset-keys';
+import { uploadKeyOf } from '../../storage';
 import { fitCheckOf } from '../domain/project-fitcheck';
 import { canEdit } from '../domain/project.policy';
 import { MAX_TITLE_LENGTH, ProjectDetail, SnapshotSummary } from '../domain/project.types';

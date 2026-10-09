@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import type { PrismaService } from '../shared/prisma/prisma.service';
+import type { PrismaService } from '../shared/prisma';
 import { CollectionsService, MAX_COLLECTIONS_PER_USER } from './collections.service';
 
 describe('CollectionsService', () => {

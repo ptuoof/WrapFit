@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { currentRequestId } from '../common/context/request-context';
+import { currentRequestId } from '../common';
 import {
   ACCOUNT_EXISTS_JOB,
   ACCOUNT_EXISTS_WINDOW_MS,

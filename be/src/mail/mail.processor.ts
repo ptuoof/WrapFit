@@ -1,10 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { Job, UnrecoverableError } from 'bullmq';
-import { runWithRequestId } from '../common/context/request-context';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { rawAuthToken } from '../auth/auth-token.crypto';
+import { ConfigService, rawAuthToken, runWithRequestId } from '../common';
+import { PrismaService } from '../shared/prisma';
 import { ACCOUNT_EXISTS_JOB, AccountExistsJobData, AuthEmailJobData, MAIL_QUEUE } from './mail.constants';
 import { accountExistsEmail, authEmail, EmailContent } from './mail.templates';
 import { isPermanentSmtpFailure, maskEmail, SmtpMailer } from './smtp-mailer';

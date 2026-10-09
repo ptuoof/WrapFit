@@ -1,16 +1,20 @@
 import { Body, Controller, Get, HttpCode, Logger, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { ApiCookieAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Public } from '../common/decorators/public.decorator';
-import { GoogleProfile, SessionMeta } from '../common/interfaces/auth.interfaces';
-import { SafeUser } from '../users/user.select';
-import { UsersService } from '../users/users.service';
+import {
+  ACCESS_COOKIE,
+  ConfigService,
+  CurrentUser,
+  GoogleProfile,
+  Public,
+  REFRESH_COOKIE,
+  SessionMeta,
+} from '../common';
+import { SafeUser, UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthCookieService } from './auth-cookie.service';
-import { ACCESS_COOKIE, DEFAULT_LOGIN_REDIRECT, REFRESH_COOKIE } from './auth.constants';
+import { DEFAULT_LOGIN_REDIRECT } from './auth.constants';
 import { AuthResult, AuthService } from './auth.service';
 import { EmailOnlyDto, ResetPasswordDto, VerifyEmailDto } from './dto/account-recovery.dto';
 import { LoginDto } from './dto/login.dto';

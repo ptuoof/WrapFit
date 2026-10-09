@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
@@ -12,9 +11,8 @@ import {
 import { Role } from '@prisma/client';
 import { parse as parseCookies } from 'cookie';
 import { Namespace, Socket } from 'socket.io';
-import { AuthUser, JwtPayload } from '../common/interfaces/auth.interfaces';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
+import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload } from '../common';
+import { PrismaService } from '../shared/prisma';
 
 /**
  * Real-time channel: Socket.IO namespace `/events`, served under `/api/socket.io` so that the `wf_access`

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { createTransport, Transporter } from 'nodemailer';
+import { ConfigService } from '../common';
 import type { EmailContent } from './mail.templates';
 
 /** SMTP connection of the worker (local: Mailpit from docker-compose.yml; production: the provider's SMTP relay). */

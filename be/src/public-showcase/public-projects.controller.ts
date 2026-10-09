@@ -1,11 +1,8 @@
 import { Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { OptionalAuth } from '../common/decorators/public.decorator';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
+import { ACCESS_COOKIE, CurrentUser, OptionalAuth, SlugPipe } from '../common';
 import { PublicProjectsService } from './public-projects.service';
-import { SlugPipe } from '../common/pipes/slug.pipe';
 
 const projectSlug = new SlugPipe('Project not found');
 

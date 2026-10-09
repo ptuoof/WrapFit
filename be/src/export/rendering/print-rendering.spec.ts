@@ -1,4 +1,5 @@
 import type { CanvasElement } from '@wrapfit/shared';
+import QRCode from 'qrcode';
 import { fileNameFor } from '../export.service';
 import {
   buildPrintLayout,
@@ -7,7 +8,6 @@ import {
   UnsupportedFormulaVersionError,
   UnsupportedStructureError,
 } from './print-layout';
-import QRCode from 'qrcode';
 import { Artwork, canEmbedInPdf, hexToCmyk, renderDxf, renderPdf, renderSvg } from './print-renderers';
 
 const dimensions = { length: 120, width: 80, height: 60, paperThickness: 0.4 };

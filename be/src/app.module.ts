@@ -1,33 +1,32 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ConfigService } from './common/providers/config.service';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { queueRootModule } from './shared/queue/queue.module';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import { HttpThrottlerGuard } from './common/guards/http-throttler.guard';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { RolesGuard } from './common/guards/roles.guard';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { validateEnv } from './config/env.validation';
-import { configuration } from './config/configuration';
-import { CommonModule } from './common/common.module';
-import { AiModule } from './ai/ai.module';
-import { AuthModule } from './auth/auth.module';
-import { ExportModule } from './export/export.module';
-import { CollectionsModule } from './collections/collections.module';
-import { EventsModule } from './events/events.module';
-import { BaseModule } from './base/base.module';
-import { ProjectsModule } from './projects/projects.module';
-import { PublicShowcaseModule } from './public-showcase/public-showcase.module';
-import { StorageMaintenanceModule } from './storage/storage-maintenance.module';
-import { StorageModule } from './storage/storage.module';
-import { TemplatesModule } from './templates/templates.module';
-import { UnboxingModule } from './unboxing/unboxing.module';
-import { UsersModule } from './users/users.module';
-import { PrismaModule } from './shared/prisma/prisma.module';
+import {
+  AllExceptionsFilter,
+  CommonModule,
+  ConfigService,
+  HttpThrottlerGuard,
+  LoggingInterceptor,
+  RolesGuard,
+} from './common';
+import { queueRootModule } from './shared/queue';
+import { AuthModule, JwtAuthGuard } from './auth';
+import { configuration, validateEnv } from './config';
+import { AiModule } from './ai';
+import { ExportModule } from './export';
+import { CollectionsModule } from './collections';
+import { EventsModule } from './events';
+import { BaseModule } from './base';
+import { ProjectsModule } from './projects';
+import { PublicShowcaseModule } from './public-showcase';
+import { StorageMaintenanceModule, StorageModule } from './storage';
+import { TemplatesModule } from './templates';
+import { UnboxingModule } from './unboxing';
+import { UsersModule } from './users';
+import { PrismaModule } from './shared/prisma';
 
 @Module({
   imports: [

@@ -1,9 +1,9 @@
 // Pure layout for print files: which dieline pieces a box has and where each one sits on the sheet (mm).
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
 import type { BoxDimensions, CanvasElement, DielineGeometry } from '@wrapfit/shared';
-import { dielinePieces, matchesPanel } from '../../projects/domain/project-fitcheck';
+import { dielinePieces, matchesPanel } from '../../projects';
 
-export { dielinePieces, matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '../../projects/domain/project-fitcheck';
+export { dielinePieces, matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '../../projects';
 
 /** Margin around the artwork and gap between pieces, in mm. */
 export const SHEET_MARGIN_MM = 20;

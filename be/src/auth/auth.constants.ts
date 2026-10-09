@@ -1,10 +1,3 @@
-/** Short-lived access token. Path `/api` so every API route (and the Socket.IO endpoint `/api/socket.io`) receives it. */
-export const ACCESS_COOKIE = 'wf_access';
-
-/** Long-lived refresh token. Path `/api/auth` so it is only sent to refresh / logout routes. */
-export const REFRESH_COOKIE = 'wf_refresh';
-export const REFRESH_COOKIE_PATH = '/api/auth';
-
 /**
  * A refresh token replayed within this window after it was rotated is another tab of the same browser refreshing at
  * the same moment (they share the cookie), not a stolen token: it gets its own new session instead of a logout.

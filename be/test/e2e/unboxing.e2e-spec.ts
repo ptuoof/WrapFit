@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { qrSvg } from '../../src/unboxing/qr-code';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
 /** 3D unboxing & QR code (IT3-10). QR files go to the local SeaweedFS (see e2e-env.ts). */

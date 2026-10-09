@@ -12,7 +12,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { trim } from '../../common/utils/transform.util';
+import { trim } from '../../common';
 
 /** Saves the whole brand kit (UC-02): omitted optional fields are cleared. */
 export class UpdateBrandKitDto implements BrandKit {

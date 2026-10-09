@@ -1,14 +1,12 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../common/interfaces/auth.interfaces';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { MailService } from '../mail/mail.service';
-import { presentUser, SafeUser, toSafeUser, userSelect } from '../users/user.select';
-import { UsersService } from '../users/users.service';
+import { ConfigService, GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { MailService } from '../mail';
+import { presentUser, SafeUser, toSafeUser, userSelect, UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';

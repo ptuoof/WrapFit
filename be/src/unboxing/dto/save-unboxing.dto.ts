@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
-import { trim } from '../../common/utils/transform.util';
+import { trim } from '../../common';
 
 export const PARTICLE_EFFECTS = ['confetti', 'fireworks', 'hearts', 'petals', 'snow', 'none'] as const;
 export type ParticleEffect = (typeof PARTICLE_EFFECTS)[number];

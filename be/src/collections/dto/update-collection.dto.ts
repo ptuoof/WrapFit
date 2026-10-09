@@ -1,8 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { IsOptionalNotNull } from '../../common/decorators/optional-not-null.decorator';
-import { trim } from '../../common/utils/transform.util';
+import { IsOptionalNotNull, trim } from '../../common';
 import { HEX_COLOR } from './create-collection.dto';
 
 /** Omitted fields stay unchanged; `null` clears `description`. */

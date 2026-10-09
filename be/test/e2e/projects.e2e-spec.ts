@@ -2,14 +2,14 @@ import { INestApplication } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { SchedulerRegistry } from '@nestjs/schedule';
 import { MAX_SNAPSHOTS_PER_PROJECT } from '../../src/projects/application/snapshots.service';
-import { MAX_AUTOMATIC_SNAPSHOTS } from '../../src/projects/infrastructure/snapshot-retention';
+import { MAX_AUTOMATIC_SNAPSHOTS } from '../../src/projects';
 import { FitCheckBackfillTask } from '../../src/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { signUp, uploadPng } from './helpers/accounts';
 
 /**

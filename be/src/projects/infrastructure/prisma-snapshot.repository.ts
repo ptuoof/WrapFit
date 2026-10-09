@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { FitCheckReport } from '@wrapfit/shared';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { toStoredCanvas } from '../../storage/asset-keys';
+import { PrismaService } from '../../shared/prisma';
+import { toStoredCanvas } from '../../storage';
 import type {
   ISnapshotRepository,
   NewSnapshot,

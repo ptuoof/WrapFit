@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { assetUrl, toClientCanvas } from '../../storage/asset-keys';
+import { assetUrl, toClientCanvas } from '../../storage';
 import type { ProjectDetail, ProjectSummary, SnapshotSummary } from '../domain/project.types';
 
 export const summarySelect = {

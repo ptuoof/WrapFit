@@ -11,8 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ACCESS_COOKIE } from '../../auth/auth.constants';
+import { ACCESS_COOKIE, CurrentUser } from '../../common';
 import { ProjectsService } from '../application/projects.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { ChangeVisibilityDto } from './dto/change-visibility.dto';

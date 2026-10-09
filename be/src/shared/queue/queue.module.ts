@@ -1,7 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule } from '@nestjs/common';
-import { ConfigService } from '../../common/providers/config.service';
-import { redisConnection } from '../../common/utils/redis.util';
+import { ConfigService, redisConnection } from '../../common';
 
 /**
  * BullMQ root connection (Redis from REDIS_URL).

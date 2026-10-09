@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { trim } from '../../common/utils/transform.util';
+import { trim } from '../../common';
 
 export const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 

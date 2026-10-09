@@ -1,6 +1,6 @@
 import { ExecutionContext, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '../../common/providers/config.service';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '../../common';
 
 /**
  * Starts the Google consent redirect (`GET /auth/google`) and completes it (`GET /auth/google/callback`).

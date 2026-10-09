@@ -1,8 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
+import { ACCESS_COOKIE, CurrentUser } from '../common';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { StorageService } from './storage.service';
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { PrismaService } from '../shared/prisma/prisma.service';
+import { PrismaService } from '../shared/prisma';
 
 /** Rows deleted per statement, so one run never holds long locks on the auth tables. */
 const CLEANUP_BATCH = 5000;

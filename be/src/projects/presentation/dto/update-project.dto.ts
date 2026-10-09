@@ -15,8 +15,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { IsOptionalNotNull } from '../../../common/decorators/optional-not-null.decorator';
-import { trim } from '../../../common/utils/transform.util';
+import { IsOptionalNotNull, trim } from '../../../common';
 import { normalizeTags } from './create-project.dto';
 import { MAX_TITLE_LENGTH } from '../../domain/project.types';
 import { BoxDimensionsDto, CanvasStateDto, MaterialSpecDto } from './project-spec.dto';

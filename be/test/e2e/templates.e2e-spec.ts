@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
 /**

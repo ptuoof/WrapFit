@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
-import { paginate, Paginated, PaginationQueryDto, toSkipTake } from '../common/dto/pagination.dto';
-import { GoogleProfile } from '../common/interfaces/auth.interfaces';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { StorageService } from '../storage/storage.service';
+import { GoogleProfile, paginate, Paginated, PaginationQueryDto, toSkipTake } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { StorageService } from '../storage';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';

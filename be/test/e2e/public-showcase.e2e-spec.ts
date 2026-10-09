@@ -4,8 +4,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { PROJECT_FORKED } from '../../src/common/events/project.events';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PROJECT_FORKED } from '../../src/common';
+import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
 /** Sharing, public page, remix and likes (IT3-06). Users use the `@e2e.test` domain and are removed afterwards. */

@@ -1,7 +1,7 @@
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { Controller, Get, Param, ParseUUIDPipe, Query, UseInterceptors } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../common/decorators/public.decorator';
+import { Public } from '../common';
 import { QueryHubDto } from './dto/query-hub.dto';
 import { TemplatesService } from './templates.service';
 

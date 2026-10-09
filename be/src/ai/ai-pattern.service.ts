@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { SubscriptionTier } from '@prisma/client';
-import { PrismaService } from '../shared/prisma/prisma.service';
+import { PrismaService } from '../shared/prisma';
 import { GeneratePatternDto } from './dto/generate-pattern.dto';
 import { renderPatternSvg } from './pattern/pattern-svg';
 import type { GeneratedPattern, PatternGenerator } from './pattern/pattern.types';

@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { AuthTokenPurpose } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { MailService } from '../mail/mail.service';
+import { ConfigService } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { MailService } from '../mail';
 import { AuthTokensService } from './auth-tokens.service';
 
 /** Stable error codes of the one-time links, read by the frontend to pick its message. */

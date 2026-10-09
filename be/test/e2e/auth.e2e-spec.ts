@@ -6,11 +6,11 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { AccountRecoveryService } from '../../src/auth/account-recovery.service';
-import { rawAuthToken } from '../../src/auth/auth-token.crypto';
+import { rawAuthToken } from '../../src/common';
 import { AuthMaintenanceTask, UNVERIFIED_ACCOUNT_TTL_MS } from '../../src/auth/auth-maintenance.task';
 import { AuthService } from '../../src/auth/auth.service';
 import { ACCOUNT_EXISTS_WINDOW_MS, MAIL_QUEUE } from '../../src/mail/mail.constants';
-import { PrismaService } from '../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../src/shared/prisma';
 import { accessCookie, TEST_PASSWORD } from './helpers/accounts';
 
 /**

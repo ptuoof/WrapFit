@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { configureAssetBase } from '../../storage/asset-keys';
+import { configureAssetBase } from '../../storage';
 import type { ProjectDetail } from '../domain/project.types';
 import type { IProjectFiles } from './ports/project-files.port';
 import type { ISnapshotRepository } from './ports/snapshot.repository.port';

@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { EXPORT_QUEUE } from '../export/export.constants';
+import { EXPORT_QUEUE } from '../export';
 import { HealthController } from './controllers/health.controller';
 
 @Module({

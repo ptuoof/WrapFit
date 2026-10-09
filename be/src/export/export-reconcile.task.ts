@@ -2,7 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
-import { PrismaService } from '../shared/prisma/prisma.service';
+import { PrismaService } from '../shared/prisma';
 import {
   EXPORT_QUEUE,
   ExportJobData,

@@ -1,7 +1,6 @@
-import { ConfigService } from '../common/providers/config.service';
 import { Job, UnrecoverableError } from 'bullmq';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { hashAuthToken, rawAuthToken } from '../auth/auth-token.crypto';
+import { ConfigService, hashAuthToken, rawAuthToken } from '../common';
+import { PrismaService } from '../shared/prisma';
 import { AuthEmailJobData } from './mail.constants';
 import { MailProcessor } from './mail.processor';
 import { isPermanentSmtpFailure, maskEmail, SmtpMailer, SmtpStartupCheck } from './smtp-mailer';

@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import type { PrismaService } from '../shared/prisma/prisma.service';
+import type { PrismaService } from '../shared/prisma';
 import { AiPatternService, DAILY_AI_LIMIT } from './ai-pattern.service';
 import type { PatternGenerator } from './pattern/pattern.types';
 import { ProceduralPatternGenerator } from './pattern/procedural-pattern.generator';

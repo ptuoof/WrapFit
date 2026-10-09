@@ -1,14 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import type { CookieOptions, Response } from 'express';
-import {
-  ACCESS_COOKIE,
-  OAUTH_STATE_COOKIE,
-  OAUTH_STATE_COOKIE_PATH,
-  OAUTH_STATE_TTL_MS,
-  REFRESH_COOKIE,
-  REFRESH_COOKIE_PATH,
-} from './auth.constants';
+import { ACCESS_COOKIE, ConfigService, REFRESH_COOKIE, REFRESH_COOKIE_PATH } from '../common';
+import { OAUTH_STATE_COOKIE, OAUTH_STATE_COOKIE_PATH, OAUTH_STATE_TTL_MS } from './auth.constants';
 
 export interface CookieTokens {
   accessToken: string;

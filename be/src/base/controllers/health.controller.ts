@@ -3,9 +3,9 @@ import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Queue } from 'bullmq';
-import { Public } from '../../common/decorators/public.decorator';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { EXPORT_QUEUE, WORKER_HEARTBEAT_KEY } from '../../export/export.constants';
+import { Public } from '../../common';
+import { PrismaService } from '../../shared/prisma';
+import { EXPORT_QUEUE, WORKER_HEARTBEAT_KEY } from '../../export';
 
 type Check = 'up' | 'down';
 

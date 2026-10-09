@@ -19,10 +19,10 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { randomUUID } from 'crypto';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects/application/ports/project-files.port';
+import { ConfigService } from '../common';
+import { PrismaService } from '../shared/prisma';
+import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects';
 import { assetUrl, configureAssetBase, uploadKeyOf } from './asset-keys';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import {

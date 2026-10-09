@@ -1,9 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '../../common/providers/config.service';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, StrategyOptions } from 'passport-google-oauth20';
 import type { StateStore } from 'passport-oauth2';
-import { GoogleProfile } from '../../common/interfaces/auth.interfaces';
+import { ConfigService, GoogleProfile } from '../../common';
 import { OAuthStateStore } from './oauth-state.store';
 
 // passport-oauth2 throws at construction without a client id; GoogleOAuthGuard rejects requests while unconfigured.

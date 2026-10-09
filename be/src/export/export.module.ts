@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { ProjectsModule } from '../projects/projects.module';
+import { ProjectsModule } from '../projects';
 import { ExportReconcileTask } from './export-reconcile.task';
 import { EXPORT_QUEUE } from './export.constants';
 import { ExportController } from './export.controller';

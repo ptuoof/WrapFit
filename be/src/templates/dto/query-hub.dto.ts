@@ -2,8 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Industry, Occasion } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { PaginationQueryDto } from '../../common/dto/pagination.dto';
-import { trim } from '../../common/utils/transform.util';
+import { PaginationQueryDto, trim } from '../../common';
 
 export const HUB_SECTIONS = ['curated', 'community'] as const;
 export type HubSection = (typeof HUB_SECTIONS)[number];

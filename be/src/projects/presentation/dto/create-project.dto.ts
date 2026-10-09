@@ -12,7 +12,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { trim } from '../../../common/utils/transform.util';
+import { trim } from '../../../common';
 import { MAX_TITLE_LENGTH } from '../../domain/project.types';
 import { BoxDimensionsDto, CanvasStateDto, MaterialSpecDto } from './project-spec.dto';
 

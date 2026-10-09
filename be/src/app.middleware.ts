@@ -1,11 +1,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from './common/providers/config.service';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { SocketIoAdapter } from './common/adapters/socket-io.adapter';
-import { requestIdMiddleware } from './common/context/request-context';
-import { parseCorsOrigins } from './common/utils/cors.util';
+import { ConfigService, parseCorsOrigins, requestIdMiddleware, SocketIoAdapter } from './common';
 
 /** Shared bootstrap configuration, used by app.ts and the e2e tests. */
 export function middleware(app: INestApplication): void {

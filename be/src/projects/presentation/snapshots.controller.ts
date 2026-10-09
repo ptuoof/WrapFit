@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ACCESS_COOKIE } from '../../auth/auth.constants';
+import { ACCESS_COOKIE, CurrentUser } from '../../common';
 import { SnapshotsService } from '../application/snapshots.service';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 import { ProjectOwnerGuard } from './project-owner.guard';

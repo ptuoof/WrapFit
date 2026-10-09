@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { AuthTokenPurpose, Prisma } from '@prisma/client';
-import { uuidv7 } from '../common/utils/uuidv7';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { hashAuthToken, rawAuthToken } from './auth-token.crypto';
+import { ConfigService, hashAuthToken, rawAuthToken, uuidv7 } from '../common';
+import { PrismaService } from '../shared/prisma';
 import {
   AUTH_EMAIL_MIN_INTERVAL_MS,
   AUTH_EMAILS_PER_DAY,

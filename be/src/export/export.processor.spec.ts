@@ -1,8 +1,8 @@
-import type { ConfigService } from '../common/providers/config.service';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
-import type { PrismaService } from '../shared/prisma/prisma.service';
-import type { StorageService } from '../storage/storage.service';
+import type { ConfigService } from '../common';
+import type { PrismaService } from '../shared/prisma';
+import type { StorageService } from '../storage';
 import type { ExportJobData } from './export.constants';
 import { EXPORT_COMPLETED, ExportProcessor, MAX_ARTWORK_BYTES } from './export.processor';
 

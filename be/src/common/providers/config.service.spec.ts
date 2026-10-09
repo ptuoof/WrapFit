@@ -1,6 +1,6 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { configuration } from '../../config/configuration';
+import { configuration } from '../../config';
 import { CommonModule } from '../common.module';
 import { ConfigService } from './config.service';
 

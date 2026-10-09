@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { MailModule } from '../mail/mail.module';
-import { UsersModule } from '../users/users.module';
+import { ConfigService } from '../common';
+import { MailModule } from '../mail';
+import { UsersModule } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthMaintenanceTask } from './auth-maintenance.task';
 import { AuthTokensService } from './auth-tokens.service';

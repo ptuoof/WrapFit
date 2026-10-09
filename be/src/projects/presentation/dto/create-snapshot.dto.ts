@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 import { MAX_TITLE_LENGTH } from '../../domain/project.types';
-import { trim } from '../../../common/utils/transform.util';
+import { trim } from '../../../common';
 
 export class CreateSnapshotDto {
   @ApiProperty({ example: 'Mốc 1: Logo vàng ép kim' })

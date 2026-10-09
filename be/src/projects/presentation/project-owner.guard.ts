@@ -1,7 +1,7 @@
 import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import type { Request } from 'express';
-import type { AuthUser } from '../../common/interfaces/auth.interfaces';
+import type { AuthUser } from '../../common';
 import { ProjectsService } from '../application/projects.service';
 
 /**

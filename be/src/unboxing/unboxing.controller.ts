@@ -15,11 +15,8 @@ import { ApiCookieAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler';
 import { IsIn, IsOptional } from 'class-validator';
 import type { Response } from 'express';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Public } from '../common/decorators/public.decorator';
-import { SlugPipe } from '../common/pipes/slug.pipe';
-import { ACCESS_COOKIE } from '../auth/auth.constants';
-import { ProjectOwnerGuard } from '../projects/presentation/project-owner.guard';
+import { ACCESS_COOKIE, CurrentUser, Public, SlugPipe } from '../common';
+import { ProjectOwnerGuard } from '../projects';
 import { SaveUnboxingDto } from './dto/save-unboxing.dto';
 import { UnboxingService } from './unboxing.service';
 

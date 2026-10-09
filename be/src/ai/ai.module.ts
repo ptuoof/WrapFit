@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '../common/providers/config.service';
+import { ConfigService } from '../common';
 import { AiController } from './ai.controller';
 import { AI_PATTERN_GENERATOR, AiPatternService } from './ai-pattern.service';
 import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';

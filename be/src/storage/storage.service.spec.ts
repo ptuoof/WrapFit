@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
-import type { ConfigService } from '../common/providers/config.service';
-import type { PrismaService } from '../shared/prisma/prisma.service';
+import type { ConfigService } from '../common';
+import type { PrismaService } from '../shared/prisma';
 import { StorageService } from './storage.service';
 
 describe('StorageService', () => {

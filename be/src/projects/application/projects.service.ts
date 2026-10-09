@@ -6,8 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { BoxDimensions, MaterialSpecification } from '@wrapfit/shared';
-import { storedCanvasKeys, toStoredCanvas } from '../../storage/asset-keys';
-import { paginate, Paginated, toSkipTake } from '../../common/dto/pagination.dto';
+import { storedCanvasKeys, toStoredCanvas } from '../../storage';
+import { paginate, Paginated, toSkipTake } from '../../common';
 import {
   canDeletePermanently,
   canEdit,

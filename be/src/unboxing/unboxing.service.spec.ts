@@ -1,8 +1,8 @@
 import { ConflictException } from '@nestjs/common';
-import type { ConfigService } from '../common/providers/config.service';
-import type { PrismaService } from '../shared/prisma/prisma.service';
-import { configureAssetBase } from '../storage/asset-keys';
-import type { StorageService } from '../storage/storage.service';
+import type { ConfigService } from '../common';
+import type { PrismaService } from '../shared/prisma';
+import { configureAssetBase } from '../storage';
+import type { StorageService } from '../storage';
 import { QR_PNG_WIDTH, qrPng, qrSvg } from './qr-code';
 import { UnboxingService } from './unboxing.service';
 

@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { PrismaService } from '../../../src/shared/prisma';
 
 export const TEST_PASSWORD = 'Passw0rd123';
 

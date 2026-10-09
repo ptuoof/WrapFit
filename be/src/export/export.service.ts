@@ -10,9 +10,9 @@ import {
 import { ExportFileType, Prisma } from '@prisma/client';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
-import { currentRequestId } from '../common/context/request-context';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import { StorageService } from '../storage/storage.service';
+import { currentRequestId } from '../common';
+import { PrismaService } from '../shared/prisma';
+import { StorageService } from '../storage';
 import {
   DOWNLOAD_URL_TTL_SECONDS,
   EXPORT_JOB_OPTIONS,
@@ -21,7 +21,7 @@ import {
   FILE_FORMATS,
   RENDER_JOB,
 } from './export.constants';
-import { checkProject } from '../projects/domain/project-fitcheck';
+import { checkProject } from '../projects';
 
 const jobSelect = {
   id: true,
