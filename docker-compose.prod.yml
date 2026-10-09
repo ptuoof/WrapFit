@@ -1,8 +1,30 @@
 # Production overrides: HTTPS through Caddy on one domain, internal services not published.
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-# Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, the STORAGE_* variables of Cloudflare R2 and the SMTP_* / MAIL_FROM
-# variables of the email provider.
+# Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, POSTGRES_PASSWORD, REDIS_PASSWORD, the STORAGE_* variables of
+# Cloudflare R2 and the SMTP_* / MAIL_FROM variables of the email provider. A missing one stops `docker compose`
+# before any container is replaced: production never falls back to the development defaults of docker-compose.yml
+# (password "password", Redis without a password, the SeaweedFS keys).
 # Requires Docker Compose >= 2.24 (`!reset`).
+
+# Credentials of the internal services, for the API and the worker. Both passwords go into URLs: use URL-safe values
+# (`openssl rand -hex 32`).
+x-service-urls: &service-urls
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (openssl rand -hex 32)}@postgres:5432/${POSTGRES_DB:-wrapfit}?schema=public
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env (openssl rand -hex 32)}@redis:6379
+
+# Cloudflare R2 (be/README.md, section "Lưu trữ file"), never the local SeaweedFS.
+x-storage: &storage
+  STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:?Set STORAGE_ENDPOINT to https://<account-id>.r2.cloudflarestorage.com}
+  STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-}
+  STORAGE_REGION: ${STORAGE_REGION:-auto}
+  STORAGE_BUCKET: ${STORAGE_BUCKET:?Set STORAGE_BUCKET (public R2 bucket) in .env}
+  # R2 bucket without a custom domain or r2.dev URL: print exports are downloaded only through pre-signed links.
+  STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:?Set STORAGE_PRIVATE_BUCKET to an R2 bucket without public access (be/README.md, section "Lưu trữ file")}
+  STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:?Set STORAGE_ACCESS_KEY_ID (R2 API token) in .env}
+  STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:?Set STORAGE_SECRET_ACCESS_KEY (R2 API token) in .env}
+  STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:?Set STORAGE_PUBLIC_URL, e.g. https://cdn.wrapfit.vn}
+  STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-false}
+
 services:
   caddy:
     image: caddy:2-alpine
@@ -27,11 +49,28 @@ services:
     networks:
       - wrapfit-network
 
+  # POSTGRES_PASSWORD is only read when the data volume is created: to change it on an existing database, run
+  # ALTER USER first (be/README.md, section "Triển khai production").
   postgres:
     ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (openssl rand -hex 32)}
 
   redis:
     ports: !reset []
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env (openssl rand -hex 32)}
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env (openssl rand -hex 32)}
+    healthcheck:
+      # Without the password the answer is a NOAUTH error, with exit code 0: check for PONG.
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
 
   seaweedfs:
     ports: !reset []
@@ -39,6 +78,7 @@ services:
   backend:
     ports: !reset []
     environment:
+      <<: [*service-urls, *storage]
       FRONTEND_URL: https://${APP_DOMAIN}
       CORS_ORIGINS: https://${APP_DOMAIN}
       COOKIE_SECURE: "true"
@@ -50,6 +90,7 @@ services:
   # relay is required (accounts cannot sign in before verifying their email).
   worker:
     environment:
+      <<: [*service-urls, *storage]
       FRONTEND_URL: https://${APP_DOMAIN}
       SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST (and SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM) to the email provider in .env}
       MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM in .env, e.g. WrapFit <no-reply@wrapfit.vn> (domain with SPF + DKIM)}

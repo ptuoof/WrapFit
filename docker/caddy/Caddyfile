@@ -8,6 +8,13 @@
 {$APP_DOMAIN} {
 	encode zstd gzip
 
+	# HTTPS only from the first visit on, also for subdomains (cdn.*). The other security headers come from
+	# helmet (API) and next.config.mjs (pages).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
 	# API, Swagger and Socket.IO (/api/socket.io) on the same origin as the frontend:
 	# no CORS, and the HttpOnly auth cookies are first-party.
 	handle /api/* {

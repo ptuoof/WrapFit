@@ -1,15 +1,17 @@
-import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpException, UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { ConfigService } from '../common';
+import { ConfigService, SESSIONS_REVOKED } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { MailService } from '../mail';
 import { UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { AuthService } from './auth.service';
+import { LoginAttemptsService } from './login-attempts.service';
 
 const env: Record<string, unknown> = {
   'auth.jwt.accessSecret': 'a'.repeat(32),
@@ -38,6 +40,8 @@ describe('AuthService', () => {
   const authTokens = { issue: jest.fn() };
   const mail = { sendAuthEmail: jest.fn() };
   const recovery = { handleRepeatedSignup: jest.fn() };
+  const loginAttempts = { assertAllowed: jest.fn(), recordFailure: jest.fn(), reset: jest.fn() };
+  const events = { emit: jest.fn() };
 
   const safeUser = {
     id: '11111111-1111-4111-8111-111111111111',
@@ -69,6 +73,8 @@ describe('AuthService', () => {
         { provide: AuthTokensService, useValue: authTokens },
         { provide: AccountRecoveryService, useValue: recovery },
         { provide: MailService, useValue: mail },
+        { provide: LoginAttemptsService, useValue: loginAttempts },
+        { provide: EventEmitter2, useValue: events },
         { provide: ConfigService, useValue: { get: (key: string) => env[key] } },
       ],
     }).compile();
@@ -129,6 +135,14 @@ describe('AuthService', () => {
       await expect(service.login({ email: safeUser.email, password: 'wrong-pass1' })).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+      expect(loginAttempts.recordFailure).toHaveBeenCalledWith(safeUser.email);
+      expect(loginAttempts.reset).not.toHaveBeenCalled();
+    });
+
+    it('stops before checking the password once the address used up its failed attempts', async () => {
+      loginAttempts.assertAllowed.mockRejectedValue(new HttpException({ code: 'LOGIN_RATE_LIMITED' }, 429));
+      await expect(service.login({ email: safeUser.email, password: 'right-pass1' })).rejects.toMatchObject({ status: 429 });
+      expect(users.findByEmail).not.toHaveBeenCalled();
     });
 
     it('rejects a deactivated user', async () => {
@@ -181,6 +195,7 @@ describe('AuthService', () => {
       expect(result.user).not.toHaveProperty('googleId');
       expect(result.expiresIn).toBe(900);
       expect(result.refreshExpiresIn).toBe(604800);
+      expect(loginAttempts.reset).toHaveBeenCalledWith(safeUser.email);
     });
   });
 
@@ -320,6 +335,8 @@ describe('AuthService', () => {
       await expect(service.refresh(await sign(jti))).rejects.toThrow('Refresh token reuse detected');
       expect(prisma.refreshToken.updateMany).toHaveBeenLastCalledWith(revokeAll);
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      // Its open WebSocket connections close too.
+      expect(events.emit).toHaveBeenCalledWith(SESSIONS_REVOKED, { userId: safeUser.id });
     });
 
     it('revokes every session when a logged-out token is replayed, even right away', async () => {

@@ -110,6 +110,9 @@ describe('Public showcase (e2e)', () => {
       const before = (await as(gina).get(`/api/projects/${source.id}`).expect(200)).body.updatedAt;
 
       expect((await as(hank).get(page()).expect(200)).body.viewsCount).toBe(2);
+      // Once per viewer: reloading (or a script) does not inflate the count that orders the community hub.
+      expect((await as(hank).get(page()).expect(200)).body.viewsCount).toBe(2);
+      expect((await api().get(page()).expect(200)).body.viewsCount).toBe(2);
       const own = await as(gina).get(page()).expect(200);
       expect(own.body).toMatchObject({ viewsCount: 2, viewer: { isOwner: true } });
 

@@ -1,15 +1,25 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { ConfigService, GoogleProfile, JwtPayload, RefreshPayload, SessionMeta } from '../common';
+import {
+  ConfigService,
+  GoogleProfile,
+  JwtPayload,
+  RefreshPayload,
+  SESSIONS_REVOKED,
+  SessionMeta,
+  SessionsRevokedEvent,
+} from '../common';
 import { PrismaService } from '../shared/prisma';
 import { MailService } from '../mail';
 import { presentUser, SafeUser, toSafeUser, userSelect, UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
+import { LoginAttemptsService } from './login-attempts.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -48,6 +58,8 @@ export class AuthService {
     private readonly mail: MailService,
     private readonly recovery: AccountRecoveryService,
     private readonly config: ConfigService,
+    private readonly loginAttempts: LoginAttemptsService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /**
@@ -83,16 +95,19 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, meta: SessionMeta = {}): Promise<AuthResult> {
+    await this.loginAttempts.assertAllowed(dto.email);
     const user = await this.usersService.findByEmail(dto.email);
     // Google-only accounts have no password hash: they are compared against the dummy hash and always fail.
     const passwordValid = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
 
     if (!user || !user.passwordHash || !passwordValid || !user.isActive) {
+      await this.loginAttempts.recordFailure(dto.email);
       throw new UnauthorizedException('Invalid credentials');
     }
     // Only told after the password matched: the answer reveals nothing to someone who does not know it.
     if (!user.emailVerifiedAt) throw emailNotVerified();
 
+    await this.loginAttempts.reset(dto.email);
     const safeUser = toSafeUser(user);
     return { user: safeUser, ...(await this.issueTokens(safeUser, meta)) };
   }
@@ -171,6 +186,8 @@ export class AuthService {
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    const event: SessionsRevokedEvent = { userId };
+    this.events.emit(SESSIONS_REVOKED, event);
   }
 
   private async verifyRefreshToken(token: string): Promise<RefreshPayload> {

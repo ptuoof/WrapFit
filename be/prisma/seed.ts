@@ -158,6 +158,13 @@ async function main() {
   }
 
   const email = (process.env.SEED_ADMIN_EMAIL || 'admin@wrapfit.vn').toLowerCase();
+  // Anyone may have registered this address before the operator set SEED_ADMIN_PASSWORD: never verify (and so open)
+  // such an account, and never make it an admin. The operator picks another address or deletes that account.
+  const existing = await prisma.user.findUnique({ where: { email }, select: { role: true } });
+  if (existing && existing.role !== Role.ADMIN) {
+    console.warn(`Skipped admin + demo data: ${email} already belongs to a ${existing.role} account (set SEED_ADMIN_EMAIL)`);
+    return;
+  }
   const admin = await prisma.user.upsert({
     where: { email },
     update: {},

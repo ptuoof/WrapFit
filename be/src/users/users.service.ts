@@ -1,6 +1,15 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Role, User } from '@prisma/client';
-import { GoogleProfile, paginate, Paginated, PaginationQueryDto, toSkipTake } from '../common';
+import {
+  GoogleProfile,
+  paginate,
+  Paginated,
+  PaginationQueryDto,
+  SESSIONS_REVOKED,
+  SessionsRevokedEvent,
+  toSkipTake,
+} from '../common';
 import { PrismaService } from '../shared/prisma';
 import { StorageService } from '../storage';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
@@ -15,6 +24,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Internal use only (auth): returns the full row including the password hash. */
@@ -53,9 +63,9 @@ export class UsersService {
    * address first to wait for its owner (pre-account takeover): its password is removed and its sessions revoked, so
    * only the owner of the Google account keeps access. They can set a password again with "forgot password".
    */
-  linkGoogleAccount(user: User, profile: GoogleProfile): Promise<User> {
+  async linkGoogleAccount(user: User, profile: GoogleProfile): Promise<User> {
     const unprovenPassword = user.passwordHash !== null && user.emailVerifiedAt === null;
-    return this.prisma.$transaction(async (tx) => {
+    const linked = await this.prisma.$transaction(async (tx) => {
       if (unprovenPassword) {
         const { count } = await tx.refreshToken.updateMany({
           where: { userId: user.id, revokedAt: null },
@@ -76,6 +86,8 @@ export class UsersService {
         },
       });
     });
+    if (unprovenPassword) this.sessionsRevoked(user.id);
+    return linked;
   }
 
   /** Creates a Google-only account (no password); Google only hands out verified emails here. */
@@ -153,6 +165,7 @@ export class UsersService {
           data: { revokedAt: new Date() },
         }),
       ]);
+      this.sessionsRevoked(id);
       return presentUser(user);
     }
 
@@ -163,6 +176,13 @@ export class UsersService {
     if (id === actorId) throw new BadRequestException('You cannot delete yourself');
     const keys = await this.storage.releaseUserFiles(id);
     await this.prisma.user.delete({ where: { id } });
+    this.sessionsRevoked(id);
     await this.storage.deleteObjects(keys);
+  }
+
+  /** Open WebSocket connections of the user close too (EventsGateway). */
+  private sessionsRevoked(userId: string): void {
+    const event: SessionsRevokedEvent = { userId };
+    this.events.emit(SESSIONS_REVOKED, event);
   }
 }

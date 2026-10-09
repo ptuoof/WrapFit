@@ -10,6 +10,7 @@ import {
   ConfigService,
   HttpThrottlerGuard,
   LoggingInterceptor,
+  OriginGuard,
   RolesGuard,
 } from './common';
 import { queueRootModule } from './shared/queue';
@@ -27,6 +28,7 @@ import { TemplatesModule } from './templates';
 import { UnboxingModule } from './unboxing';
 import { UsersModule } from './users';
 import { PrismaModule } from './shared/prisma';
+import { RedisModule } from './shared/redis';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { PrismaModule } from './shared/prisma';
     ScheduleModule.forRoot(), // @Cron / @Interval tasks: TrashPurgeTask, ExportReconcileTask, StorageMaintenanceTask
     EventEmitterModule.forRoot(), // internal events, e.g. project.forked
     PrismaModule,
+    RedisModule,
     StorageModule,
     StorageMaintenanceModule,
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
@@ -57,7 +60,8 @@ import { PrismaModule } from './shared/prisma';
     BaseModule,
   ],
   providers: [
-    // Guards run in this order: rate limit -> authentication -> role check.
+    // Guards run in this order: origin (CSRF) -> rate limit -> authentication -> role check.
+    { provide: APP_GUARD, useClass: OriginGuard },
     { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

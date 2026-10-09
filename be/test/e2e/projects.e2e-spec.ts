@@ -302,6 +302,24 @@ describe('Projects API (e2e)', () => {
         .send({ canvasState: { elements: [{ id: 'i', type: 'image', panelId: 'front', x: 0, y: 0, width: 10, height: 10, rotation: 0, content: othersFile }] } })
         .expect(400);
       expect(otherCanvas.body.code).toBe('FILE_NOT_OWNED');
+
+      // Public pages load the files of a canvas: no other site, no data URL; frontend paths and sticker labels are fine.
+      const canvasWith = (content: string, style?: Record<string, unknown>) => ({
+        canvasState: { elements: [{ id: 'i', type: 'logo', panelId: 'front', x: 0, y: 0, width: 10, height: 10, rotation: 0, content, style }] },
+      });
+      for (const content of ['https://tracker.example/pixel.png', '//tracker.example/p.png', 'data:image/svg+xml,<svg/>']) {
+        const res = await as(carol).patch(`/api/projects/${projectId}`).send(canvasWith(content)).expect(400);
+        expect(res.body.code).toBe('FILE_URL_NOT_ALLOWED');
+      }
+      await as(carol).patch(`/api/projects/${projectId}`).send(canvasWith('/branding/wrapfit-logo.png')).expect(200);
+      await as(carol).patch(`/api/projects/${projectId}`).send(canvasWith('Bé Gói Vẫy Tay')).expect(200);
+      // Colors and fonts end up in SVG and CSS: plain values only.
+      await as(carol).patch(`/api/projects/${projectId}`).send(canvasWith('Logo', { color: 'red;background:url(//x)' })).expect(400);
+      await as(carol).patch(`/api/projects/${projectId}`).send(canvasWith('Logo', { fontFamily: 'x;}body{' })).expect(400);
+      await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send(canvasWith('Logo', { color: '#1A362B', fillColor: '#FFF', fontFamily: "'Big Shoulders Display', sans-serif" }))
+        .expect(200);
     });
 
     it('refuses a save based on an older version instead of overwriting the newer one (409)', async () => {
@@ -389,7 +407,7 @@ describe('Projects API (e2e)', () => {
           width: 30,
           height: 30,
           rotation: 0,
-          content: 'https://cdn.wrapfit.vn/logo.png',
+          content: '/branding/wrapfit-logo.png',
         },
       ],
     };

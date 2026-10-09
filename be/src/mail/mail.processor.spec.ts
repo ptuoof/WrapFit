@@ -48,6 +48,19 @@ describe('MailProcessor', () => {
     expect(hashAuthToken(token)).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it('greets by name only an account whose address is verified (the name of an unverified one is anybody\'s text)', async () => {
+    prisma.authToken.findUnique.mockResolvedValue(usable({ user: { email: 'an@x.vn', fullName: 'Click https://evil.example', emailVerifiedAt: null } }));
+    await processor.process(job());
+    expect(mailer.send.mock.calls[0][1].text).toMatch(/^Chào bạn,/);
+    expect(mailer.send.mock.calls[0][1].html).not.toContain('evil.example');
+
+    prisma.authToken.findUnique.mockResolvedValue(
+      usable({ purpose: 'RESET_PASSWORD', user: { email: 'an@x.vn', fullName: 'An', emailVerifiedAt: new Date() } }),
+    );
+    await processor.process(job());
+    expect(mailer.send.mock.calls[1][1].text).toMatch(/^Chào An,/);
+  });
+
   it('links the email of a repeated registration to the page that sets the password', async () => {
     prisma.authToken.findUnique.mockResolvedValue(usable({ purpose: 'COMPLETE_SIGNUP' }));
     await processor.process(job());

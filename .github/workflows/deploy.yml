@@ -29,7 +29,8 @@ jobs:
 
       - name: Execute deployment commands via SSH
         if: steps.check_secrets.outputs.configured == 'true'
-        uses: appleboy/ssh-action@v1.0.3
+        # Pinned to the commit of v1.0.3: this step holds the SSH key of the VPS, a moved tag must not change its code.
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}

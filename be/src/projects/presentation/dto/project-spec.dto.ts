@@ -91,10 +91,17 @@ export class MaterialSpecDto implements MaterialSpecification {
   finish: MaterialSpecification['finish'];
 }
 
+/** `#RGB`, `#RRGGBB` or `#RRGGBBAA`: a public page or a print file never receives CSS / SVG syntax as a color. */
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const HEX_COLOR_MESSAGE = '$property must be a #RGB, #RRGGBB or #RRGGBBAA color';
+/** A CSS font-family list (`'Big Shoulders Display', sans-serif`): names, commas and quotes only. */
+const FONT_FAMILY = /^[\p{L}\p{N} ,'"_-]+$/u;
+
 export class CanvasElementStyleDto implements NonNullable<CanvasElement['style']> {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @Matches(FONT_FAMILY, { message: '$property must be a list of font names' })
   fontFamily?: string;
 
   @IsOptional()
@@ -104,13 +111,11 @@ export class CanvasElementStyleDto implements NonNullable<CanvasElement['style']
   fontSize?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @Matches(HEX_COLOR, { message: HEX_COLOR_MESSAGE })
   color?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @Matches(HEX_COLOR, { message: HEX_COLOR_MESSAGE })
   fillColor?: string;
 
   @IsOptional()
@@ -149,7 +154,10 @@ export class CanvasElementDto implements CanvasElement {
   @IsNumber({ allowNaN: false, allowInfinity: false })
   rotation: number;
 
-  /** Text, or the URL of an uploaded image. Images must be uploaded to storage, not inlined as data URLs. */
+  /**
+   * Text, or for a logo / image / pattern the URL of a file uploaded to WrapFit, a path of the frontend or a built-in
+   * sticker label. URLs of other sites and data URLs are refused (400 FILE_URL_NOT_ALLOWED, ProjectsService).
+   */
   @IsString()
   @MaxLength(5000)
   content: string;

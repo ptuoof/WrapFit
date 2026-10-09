@@ -11,6 +11,7 @@ import { AuthCookieService } from './auth-cookie.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
+import { LoginAttemptsService } from './login-attempts.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OAuthStateStore } from './strategies/oauth-state.store';
@@ -36,6 +37,7 @@ import { OAuthStateStore } from './strategies/oauth-state.store';
     AccountRecoveryService,
     AuthMaintenanceTask,
     AuthCookieService,
+    LoginAttemptsService,
     JwtStrategy,
     GoogleStrategy,
     GoogleOAuthGuard,

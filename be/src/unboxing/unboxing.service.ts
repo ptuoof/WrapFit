@@ -1,8 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
-import { assetUrl, StorageService, toClientCanvas } from '../storage';
+import { isFirstView, REDIS, Viewer } from '../shared/redis';
+import { assetUrl, fileUrlNotAllowed, isAllowedMediaUrl, StorageService, toClientCanvas } from '../storage';
 import { authorSelect, presentAuthor } from '../users';
 import { SaveUnboxingDto } from './dto/save-unboxing.dto';
 import { qrPng, qrSvg } from './qr-code';
@@ -33,6 +35,7 @@ export class UnboxingService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     config: ConfigService,
+    @Inject(REDIS) private readonly redis: Redis,
   ) {
     this.frontendUrl = config.get('app.frontendUrl').replace(/\/+$/, '');
   }
@@ -57,6 +60,8 @@ export class UnboxingService {
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before setting up its unboxing');
     }
+    // The recipient's browser plays it: never a file of another site (it would learn who opened the gift).
+    if (dto.audioTrackUrl && !isAllowedMediaUrl(dto.audioTrackUrl)) throw fileUrlNotAllowed();
 
     const data = {
       recipientName: dto.recipientName,
@@ -101,7 +106,7 @@ export class UnboxingService {
   }
 
   /** Data for the public unboxing page. The slug is the secret: it works even when the design itself is PRIVATE. */
-  async publicView(slug: string) {
+  async publicView(slug: string, viewer: Viewer = {}) {
     const row = await this.prisma.unboxingExperience.findUnique({
       where: { slug },
       select: {
@@ -122,11 +127,14 @@ export class UnboxingService {
     });
     if (!row || row.project.status === 'DELETED') throw new NotFoundException('Unboxing not found');
 
-    const { viewsCount } = await this.prisma.unboxingExperience.update({
-      where: { slug },
-      data: { viewsCount: { increment: 1 } },
-      select: { viewsCount: true },
-    });
+    // One view per viewer every VIEW_DEDUP_SECONDS: reopening the page does not count again.
+    const { viewsCount } = (await isFirstView(this.redis, `unboxing:${slug}`, viewer))
+      ? await this.prisma.unboxingExperience.update({
+          where: { slug },
+          data: { viewsCount: { increment: 1 } },
+          select: { viewsCount: true },
+        })
+      : row;
     const { status: _status, user, thumbnailKey, canvasState, ...box } = row.project;
     return {
       recipientName: row.recipientName,

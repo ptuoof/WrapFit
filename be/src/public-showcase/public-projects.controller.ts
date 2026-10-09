@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, HttpCode, Ip, Param, Post } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser, OptionalAuth, SlugPipe } from '../common';
@@ -15,8 +15,13 @@ export class PublicProjectsController {
   @Get()
   @OptionalAuth()
   @ApiOperation({ summary: 'Public 3D page / embed data of a PUBLIC or UNLISTED project (counts a view)' })
-  view(@Param('slug', projectSlug) slug: string, @CurrentUser('id') viewerId?: string) {
-    return this.publicProjects.view(slug, viewerId);
+  view(
+    @Param('slug', projectSlug) slug: string,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+    @CurrentUser('id') viewerId?: string,
+  ) {
+    return this.publicProjects.view(slug, viewerId, { ip, userAgent });
   }
 
   @Post('fork')

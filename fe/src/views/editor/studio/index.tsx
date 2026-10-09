@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -64,7 +65,9 @@ import { Step4Model3DWithEnvironments } from "@/features/studio/components/Step4
 import { apiClient, ApiError, ExportJobStatus, SnapshotDto } from "@/api";
 import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 
-export default function PackagingStudioPage({ params }: { params: { id: string } }) {
+export default function PackagingStudioPage() {
+  // Next.js 15 passes route params to pages as a Promise; a client component reads them with useParams().
+  const params = useParams<{ id: string }>();
   // Stepper State: Step 1 (Template) -> Step 2 (Dimensions) -> Step 3 (2D Studio) -> Step 4 (3D Environments)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(
     params.id === "new" ? 1 : 3

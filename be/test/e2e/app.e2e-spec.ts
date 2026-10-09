@@ -81,12 +81,22 @@ describe('API (e2e)', () => {
 
   it('GET /api/health reports the database as up', async () => {
     const res = await api().get('/api/health').expect(200);
-    expect(res.body).toMatchObject({ status: 'ok', database: 'up', redis: 'up' });
     // Reported for monitoring only: an export worker may or may not be running next to the tests.
-    expect(['up', 'down']).toContain(res.body.worker);
-    expect(res.body.exportQueue).toEqual(
-      expect.objectContaining({ waiting: expect.any(Number), failed: expect.any(Number) }),
-    );
+    expect(res.body).toEqual({ status: 'ok', database: 'up', redis: 'up', worker: expect.stringMatching(/^(up|down)$/) });
+    // Queue sizes and uptime are for admins only.
+    await api().get('/api/health/details').expect(401);
+  });
+
+  it('refuses state-changing requests sent by a page of another origin (CSRF)', async () => {
+    const res = await api().post('/api/auth/logout').set('Origin', 'https://cdn.evil.example').expect(403);
+    expect(res.body).toMatchObject({ statusCode: 403, code: 'ORIGIN_NOT_ALLOWED' });
+    // A browser that sends no Origin still tells where the request comes from.
+    await api().post('/api/auth/logout').set('Sec-Fetch-Site', 'same-site').expect(403);
+
+    await api().post('/api/auth/logout').set('Origin', 'http://localhost:3000').expect(204); // CORS_ORIGINS
+    await api().post('/api/auth/logout').set('Origin', 'http://frontend.e2e').expect(204); // FRONTEND_URL
+    await api().post('/api/auth/logout').expect(204); // not a browser
+    await api().get('/api/health').set('Origin', 'https://cdn.evil.example').expect(200); // reads stay open
   });
 
   it('rejects unauthenticated access to protected routes', async () => {
@@ -254,6 +264,21 @@ describe('API (e2e)', () => {
 
     it('forbids regular users from admin routes', async () => {
       await api().get('/api/users').set('Cookie', cookies({ wf_access: aliceAccess })).expect(403);
+      await api().get('/api/health/details').set('Cookie', cookies({ wf_access: aliceAccess })).expect(403);
+    });
+
+    it('shows admins the export queue and the uptime in the health details', async () => {
+      // The role is read from the database on every request.
+      await prisma.user.update({ where: { email: alice.email }, data: { role: 'ADMIN' } });
+      try {
+        const res = await api().get('/api/health/details').set('Cookie', cookies({ wf_access: aliceAccess })).expect(200);
+        expect(res.body).toMatchObject({ status: 'ok', uptime: expect.any(Number) });
+        expect(res.body.exportQueue).toEqual(
+          expect.objectContaining({ waiting: expect.any(Number), failed: expect.any(Number) }),
+        );
+      } finally {
+        await prisma.user.update({ where: { email: alice.email }, data: { role: 'MAKER' } });
+      }
     });
 
     it('updates the profile but rejects fields that are not editable', async () => {
@@ -327,6 +352,28 @@ describe('API (e2e)', () => {
       const pong = new Promise<{ timestamp: string }>((resolve) => socket.once('pong', resolve));
       socket.emit('ping', {});
       expect(await pong).toEqual({ timestamp: expect.any(String) });
+      socket.close();
+    });
+
+    it('rejects WebSocket handshakes sent by a page of another origin, even with a valid cookie', async () => {
+      const socket = connect({
+        extraHeaders: { cookie: cookies({ wf_access: bobAccess }), origin: 'https://evil.example' },
+      });
+      await new Promise<Error>((resolve) => socket.once('connect_error', resolve));
+      expect(socket.connected).toBe(false);
+      socket.close();
+    });
+
+    it('closes the WebSocket connections of a user who signs out everywhere', async () => {
+      const socket: Socket = connect({ extraHeaders: { cookie: cookies({ wf_access: bobAccess }) } });
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', resolve);
+        socket.once('connect_error', reject);
+      });
+      const closed = new Promise<string>((resolve) => socket.once('disconnect', resolve));
+
+      await api().post('/api/auth/logout-all').set('Cookie', cookies({ wf_access: bobAccess })).expect(204);
+      expect(await closed).toBe('io server disconnect');
       socket.close();
     });
   });

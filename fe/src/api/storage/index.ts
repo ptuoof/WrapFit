@@ -1,45 +1,37 @@
-/** S3 / R2 pre-signed uploads (`be/src/modules/storage`). */
+/** S3 / R2 pre-signed uploads (`be/src/storage`). */
 
 import { request } from "@/services/api";
 
+export type UploadPurpose = "LOGO" | "IMAGE" | "THUMBNAIL" | "AVATAR";
+
+interface PresignedUpload {
+  fileId: string;
+  key: string;
+  uploadUrl: string;
+  method: "PUT";
+  /** Signed into the URL: the PUT must send exactly these headers. */
+  headers: Record<string, string>;
+  fileUrl: string;
+  expiresIn: number;
+}
+
+/**
+ * Uploads a file straight to object storage and returns its public URL (to use in canvasState, thumbnailUrl...).
+ * Throws when the API or the upload fails: the API only accepts files uploaded to WrapFit, so there is no
+ * offline fallback.
+ */
 export async function uploadFileToStorage(
   file: File,
-  purpose: "CANVAS_IMAGE" | "PROJECT_THUMBNAIL" = "CANVAS_IMAGE",
+  purpose: UploadPurpose = "IMAGE",
   projectId?: string
 ): Promise<{ fileUrl: string }> {
-  try {
-    // 1. Get pre-signed URL from NestJS
-    const presign = await request<{
-      uploadUrl: string;
-      fileUrl: string;
-      method?: string;
-    }>("/storage/presigned-upload", {
-      method: "POST",
-      body: JSON.stringify({
-        purpose,
-        contentType: file.type || "image/png",
-        size: file.size,
-        projectId,
-      }),
-    });
+  const presign = await request<PresignedUpload>("/storage/presigned-upload", {
+    method: "POST",
+    body: JSON.stringify({ purpose, contentType: file.type, size: file.size, projectId }),
+  });
 
-    // 2. Direct upload to object storage
-    await fetch(presign.uploadUrl, {
-      method: presign.method || "PUT",
-      headers: {
-        "Content-Type": file.type || "image/png",
-      },
-      body: file,
-    });
+  const res = await fetch(presign.uploadUrl, { method: presign.method, headers: presign.headers, body: file });
+  if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
 
-    return { fileUrl: presign.fileUrl };
-  } catch (err: any) {
-    // Offline fallback: convert to base64 Data URL for client rendering
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ fileUrl: reader.result as string });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
+  return { fileUrl: presign.fileUrl };
 }

@@ -99,7 +99,9 @@ jobs:
             docker exec wrapfit-storage wget -q -O /dev/null http://127.0.0.1:9333/cluster/status && break
             sleep 2
           done
-          echo 's3.bucket.create -name wrapfit' | docker exec -i wrapfit-storage weed shell -master=127.0.0.1:9333
+          for b in wrapfit wrapfit-private; do
+            echo "s3.bucket.create -name $b" | docker exec -i wrapfit-storage weed shell -master=127.0.0.1:9333
+          done
 
       - name: Install Dependencies
         run: npm ci

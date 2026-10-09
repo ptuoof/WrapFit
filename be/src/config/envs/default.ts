@@ -45,6 +45,8 @@ export const config = (env: EnvironmentVariables) => ({
     publicEndpoint: env.STORAGE_PUBLIC_ENDPOINT,
     region: env.STORAGE_REGION,
     bucket: env.STORAGE_BUCKET,
+    /** No public URL: print exports. Empty = `bucket`. */
+    privateBucket: env.STORAGE_PRIVATE_BUCKET,
     accessKeyId: env.STORAGE_ACCESS_KEY_ID,
     secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL,

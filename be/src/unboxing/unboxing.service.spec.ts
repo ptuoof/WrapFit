@@ -1,4 +1,5 @@
 import { ConflictException } from '@nestjs/common';
+import type { Redis } from 'ioredis';
 import type { ConfigService } from '../common';
 import type { PrismaService } from '../shared/prisma';
 import { configureAssetBase } from '../storage';
@@ -41,8 +42,9 @@ describe('UnboxingService', () => {
   };
   let storage: { enabled: boolean; putGeneratedFile: jest.Mock };
   const config = { get: () => 'https://wrapfit.vn/' } as unknown as ConfigService;
+  const redis = { set: jest.fn().mockResolvedValue('OK') } as unknown as Redis;
   const service = () =>
-    new UnboxingService(prisma as unknown as PrismaService, storage as unknown as StorageService, config);
+    new UnboxingService(prisma as unknown as PrismaService, storage as unknown as StorageService, config, redis);
 
   beforeEach(() => {
     prisma = {
@@ -55,7 +57,7 @@ describe('UnboxingService', () => {
     };
     storage = {
       enabled: true,
-      putGeneratedFile: jest.fn(async ({ key }: { key: string }) => `https://cdn.wrapfit.vn/${key}`),
+      putGeneratedFile: jest.fn().mockResolvedValue(true),
     };
   });
 

@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { ConfigService, parseCorsOrigins, requestIdMiddleware, SocketIoAdapter } from './common';
+import { allowedOrigins, ConfigService, parseCorsOrigins, requestIdMiddleware, SocketIoAdapter } from './common';
 
 /** Shared bootstrap configuration, used by app.ts and the e2e tests. */
 export function middleware(app: INestApplication): void {
@@ -46,6 +46,8 @@ export function middleware(app: INestApplication): void {
     }),
   );
 
-  app.useWebSocketAdapter(new SocketIoAdapter(app, origins));
+  app.useWebSocketAdapter(
+    new SocketIoAdapter(app, origins, allowedOrigins(config.get('app.corsOrigins'), config.get('app.frontendUrl'))),
+  );
   app.enableShutdownHooks();
 }

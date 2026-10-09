@@ -111,6 +111,13 @@ export class EnvironmentVariables {
   @IsString()
   STORAGE_BUCKET: string = '';
 
+  /**
+   * Bucket without any public URL for print exports, downloaded only through short-lived pre-signed links. Empty =
+   * exports go to STORAGE_BUCKET, where anyone who learns their key can read them (a warning is logged at startup).
+   */
+  @IsString()
+  STORAGE_PRIVATE_BUCKET: string = '';
+
   @IsString()
   STORAGE_ACCESS_KEY_ID: string = '';
 

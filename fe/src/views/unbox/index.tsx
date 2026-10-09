@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Gift,
   Sparkles,
@@ -20,11 +21,9 @@ import { GoiMascot } from "@/components/common/GoiMascot";
 
 import { apiClient, PublicUnboxingData } from "@/api";
 
-export default function VirtualUnboxingPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default function VirtualUnboxingPage() {
+  // Next.js 15 passes route params to pages as a Promise; a client component reads them with useParams().
+  const params = useParams<{ slug: string }>();
   const [data, setData] = useState<PublicUnboxingData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isOpened, setIsOpened] = useState<boolean>(false);

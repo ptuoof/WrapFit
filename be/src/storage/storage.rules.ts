@@ -17,6 +17,13 @@ export const UPLOAD_RULES: Record<UploadPurpose, { types: Record<string, string>
   AVATAR: { types: IMAGE_TYPES, maxBytes: 2 * MB },
 };
 
+/**
+ * Formats a browser would open as a page that can run scripts (SVG) or a viewer (PDF). They are stored with
+ * `Content-Disposition: attachment`: opening their public URL downloads the file instead of running it on our CDN
+ * domain, while `<img>` and the export worker still read them.
+ */
+export const DOWNLOAD_ONLY_TYPES: ReadonlySet<string> = new Set(['image/svg+xml', 'application/pdf']);
+
 /** Total storage per user, by subscription tier. */
 export const STORAGE_QUOTA_BYTES: Record<SubscriptionTier, number> = {
   FREE: 100 * MB,

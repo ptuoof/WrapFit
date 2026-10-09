@@ -101,6 +101,12 @@ describe('Print export (e2e)', () => {
     const pdf = Buffer.from(await file.arrayBuffer());
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.toString('latin1')).toContain('BeVietnamPro');
+
+    // The file sits in the private bucket: only the signed link reads it, never a public URL.
+    expect(url.pathname).toMatch(/^\/wrapfit-private\/private\/projects\/[0-9a-f-]{36}\/exports\/[0-9a-f-]{36}\.pdf$/);
+    expect((await fetch(`${url.origin}${url.pathname}`)).status).toBe(403);
+    const key = url.pathname.replace(/^\/wrapfit-private\//, '');
+    expect((await fetch(`http://localhost:8333/wrapfit/${key}`)).status).toBe(404);
   });
 
   it('renders SVG and DXF too', async () => {
@@ -162,7 +168,7 @@ describe('Print export (e2e)', () => {
         canvasState: {
           elements: [
             // 0.5 mm from the panel edge: would be cut off when folding.
-            { id: 'logo', type: 'logo', panelId: 'panel_front', x: 0.5, y: 0.5, width: 20, height: 20, rotation: 0, content: 'https://cdn.wrapfit.vn/logo.png' },
+            { id: 'logo', type: 'logo', panelId: 'panel_front', x: 0.5, y: 0.5, width: 20, height: 20, rotation: 0, content: '/branding/wrapfit-logo.png' },
           ],
         },
       })
@@ -186,7 +192,7 @@ describe('Print export (e2e)', () => {
       width: 20,
       height: 10,
       rotation: 0,
-      content: type === 'text' ? 'Chúc mừng' : 'https://cdn.wrapfit.vn/a.png',
+      content: type === 'text' ? 'Chúc mừng' : '/branding/wrapfit-logo.png',
       ...extra,
     });
     const lidBase = (
@@ -241,11 +247,11 @@ describe('Print export (e2e)', () => {
 
   it('deletes the exported files with the project', async () => {
     const [latest] = (await as(pia).get(`/api/projects/${projectId}/exports`).expect(200)).body;
-    const key = `projects/${projectId}/exports/${latest.id}.dxf`;
-    expect((await fetch(`http://localhost:8333/wrapfit/${key}`)).status).toBe(200);
+    // Read through the signed link: the private bucket has no public URL.
+    expect((await fetch(latest.downloadUrl)).status).toBe(200);
 
     await as(pia).patch(`/api/projects/${projectId}/status`).send({ status: 'DELETED' }).expect(200);
     await as(pia).delete(`/api/projects/${projectId}`).expect(204);
-    expect((await fetch(`http://localhost:8333/wrapfit/${key}`)).status).toBe(404);
+    expect((await fetch(latest.downloadUrl)).status).toBe(404);
   });
 });

@@ -3,7 +3,9 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
+  Ip,
   Param,
   Post,
   Query,
@@ -80,7 +82,11 @@ export class PublicUnboxingController {
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Unboxing page data when the recipient scans the QR code (counts a view)' })
-  view(@Param('slug', new SlugPipe('Unboxing not found')) slug: string) {
-    return this.unboxing.publicView(slug);
+  view(
+    @Param('slug', new SlugPipe('Unboxing not found')) slug: string,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.unboxing.publicView(slug, { ip, userAgent });
   }
 }

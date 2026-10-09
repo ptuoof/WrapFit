@@ -74,7 +74,8 @@ services:
     networks:
       - wrapfit-network
 
-  # Creates the `wrapfit` bucket once SeaweedFS is up (skipped when it already exists), then exits.
+  # Creates the buckets once SeaweedFS is up (each skipped when it already exists), then exits:
+  # `wrapfit` is readable by anyone (docker/seaweedfs/s3.json), `wrapfit-private` (print exports) is not.
   storage-init:
     image: chrislusf/seaweedfs:4.48
     container_name: wrapfit-storage-init
@@ -82,9 +83,11 @@ services:
       - sh
       - -c
       - >-
-        echo 's3.bucket.list' | weed shell -master=seaweedfs:9333 | grep -qw wrapfit
-        && echo 'bucket wrapfit already exists'
-        || (echo 's3.bucket.create -name wrapfit' | weed shell -master=seaweedfs:9333)
+        for b in wrapfit wrapfit-private; do
+        echo 's3.bucket.list' | weed shell -master=seaweedfs:9333 | grep -qE "^[[:space:]]*$$b[[:space:]]"
+        && echo "bucket $$b already exists"
+        || (echo "s3.bucket.create -name $$b" | weed shell -master=seaweedfs:9333);
+        done
     restart: "no"
     depends_on:
       seaweedfs:
@@ -150,6 +153,7 @@ services:
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-wrapfit}
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:-wrapfit-private}
       STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:-wrapfit-dev-access}
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
@@ -213,6 +217,7 @@ services:
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-wrapfit}
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:-wrapfit-private}
       STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:-wrapfit-dev-access}
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}

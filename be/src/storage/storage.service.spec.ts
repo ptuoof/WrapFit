@@ -64,11 +64,19 @@ describe('StorageService', () => {
     const url = new URL(result.uploadUrl);
     expect(url.origin).toBe('http://cdn.local:8333');
     expect(url.pathname).toBe(`/wrapfit/${result.key}`);
-    expect(url.searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
+    // An SVG is stored as a download (scripts in it never run on the CDN domain): the disposition is signed too.
+    expect(url.searchParams.get('X-Amz-SignedHeaders')).toBe('content-disposition;content-length;content-type;host');
+    expect(result.headers).toEqual({ 'Content-Type': 'image/svg+xml', 'Content-Disposition': 'attachment' });
     expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
     expect(prisma.storedFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ userId: 'u-1', size: 2048, purpose: 'LOGO' }) }),
     );
+  });
+
+  it('lets raster images be shown inline', async () => {
+    const result = await build().presignUpload('u-1', { purpose: 'IMAGE', contentType: 'image/png', size: 100 });
+    expect(new URL(result.uploadUrl).searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
+    expect(result.headers).toEqual({ 'Content-Type': 'image/png' });
   });
 
   it('checks the format and the size of each kind of file', async () => {
@@ -190,6 +198,31 @@ describe('StorageService', () => {
           data: expect.objectContaining({ lastError: 'AccessDenied' }),
         }),
       );
+    });
+  });
+
+  describe('private bucket (print exports)', () => {
+    const exportKey = 'private/projects/p-1/exports/job-1.pdf';
+
+    it('keeps private keys in the bucket without a public URL', async () => {
+      const service = build({ 'storage.privateBucket': 'wrapfit-private' });
+      const send = mockS3(service, async () => ({}));
+      prisma.storedFile.upsert = jest.fn();
+
+      await expect(
+        service.putGeneratedFile({ userId: 'u-1', key: exportKey, purpose: 'EXPORT', contentType: 'application/pdf', body: Buffer.from('%PDF') }),
+      ).resolves.toBe(true);
+      await service.deleteObjects([exportKey, 'users/u-1/image/a.png']);
+
+      const buckets = send.mock.calls.map(([command]) => (command.input as { Bucket: string }).Bucket);
+      expect(buckets).toEqual(['wrapfit-private', 'wrapfit', 'wrapfit-private']);
+      const download = new URL(await service.presignDownload(exportKey, 'hop.pdf', 900));
+      expect(download.pathname).toBe(`/wrapfit-private/${exportKey}`);
+    });
+
+    it('falls back to the public bucket while STORAGE_PRIVATE_BUCKET is empty', async () => {
+      const download = new URL(await build().presignDownload(exportKey, 'hop.pdf', 900));
+      expect(download.pathname).toBe(`/wrapfit/${exportKey}`);
     });
   });
 
