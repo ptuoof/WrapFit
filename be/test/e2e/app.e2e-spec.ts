@@ -89,6 +89,18 @@ describe('API (e2e)', () => {
     );
   });
 
+  it('refuses state-changing requests sent by a page of another origin (CSRF)', async () => {
+    const res = await api().post('/api/auth/logout').set('Origin', 'https://cdn.evil.example').expect(403);
+    expect(res.body).toMatchObject({ statusCode: 403, code: 'ORIGIN_NOT_ALLOWED' });
+    // A browser that sends no Origin still tells where the request comes from.
+    await api().post('/api/auth/logout').set('Sec-Fetch-Site', 'same-site').expect(403);
+
+    await api().post('/api/auth/logout').set('Origin', 'http://localhost:3000').expect(204); // CORS_ORIGINS
+    await api().post('/api/auth/logout').set('Origin', 'http://frontend.e2e').expect(204); // FRONTEND_URL
+    await api().post('/api/auth/logout').expect(204); // not a browser
+    await api().get('/api/health').set('Origin', 'https://cdn.evil.example').expect(200); // reads stay open
+  });
+
   it('rejects unauthenticated access to protected routes', async () => {
     await api().get('/api/users').expect(401);
     const res = await api().get('/api/users/me').expect(401);
@@ -327,6 +339,15 @@ describe('API (e2e)', () => {
       const pong = new Promise<{ timestamp: string }>((resolve) => socket.once('pong', resolve));
       socket.emit('ping', {});
       expect(await pong).toEqual({ timestamp: expect.any(String) });
+      socket.close();
+    });
+
+    it('rejects WebSocket handshakes sent by a page of another origin, even with a valid cookie', async () => {
+      const socket = connect({
+        extraHeaders: { cookie: cookies({ wf_access: bobAccess }), origin: 'https://evil.example' },
+      });
+      await new Promise<Error>((resolve) => socket.once('connect_error', resolve));
+      expect(socket.connected).toBe(false);
       socket.close();
     });
   });

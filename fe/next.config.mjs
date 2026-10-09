@@ -1,11 +1,31 @@
+/**
+ * Security headers of every page (the API under /api/* sets its own with helmet).
+ * The CSP only covers framing, <base> and plugins for now: blocking inline scripts needs a per-request nonce
+ * (middleware), a later step. A future embed route (UC-10) needs its own frame-ancestors.
+ */
+const securityHeaders = [
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'",
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  poweredByHeader: false,
   // Tối ưu hoá bundling đồ hoạ 3D & shared packages
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei", "@wrapfit/shared"],
   // Tắt source maps trong production để tiết kiệm RAM build
   productionBrowserSourceMaps: false,
+  async headers() {
+    return [{ source: "/((?!api/).*)", headers: securityHeaders }];
+  },
   async rewrites() {
     const backendUrl = process.env.BACKEND_INTERNAL_URL || 'http://localhost:8080';
     return [

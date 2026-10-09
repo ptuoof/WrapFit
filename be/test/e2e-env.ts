@@ -4,6 +4,8 @@ process.env.GOOGLE_CLIENT_ID = 'e2e-client-id.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'e2e-client-secret';
 process.env.GOOGLE_CALLBACK_URL = 'http://localhost:8080/api/auth/google/callback';
 process.env.FRONTEND_URL = 'http://frontend.e2e';
+// A list (not "*") turns the CSRF origin check on, like production.
+process.env.CORS_ORIGINS = 'http://localhost:3000';
 
 // Object storage: the local SeaweedFS of docker-compose.yml (`docker compose up -d seaweedfs storage-init`).
 // Values already present in the environment (CI, another S3) win.

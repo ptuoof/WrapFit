@@ -10,6 +10,7 @@ import {
   ConfigService,
   HttpThrottlerGuard,
   LoggingInterceptor,
+  OriginGuard,
   RolesGuard,
 } from './common';
 import { queueRootModule } from './shared/queue';
@@ -57,7 +58,8 @@ import { PrismaModule } from './shared/prisma';
     BaseModule,
   ],
   providers: [
-    // Guards run in this order: rate limit -> authentication -> role check.
+    // Guards run in this order: origin (CSRF) -> rate limit -> authentication -> role check.
+    { provide: APP_GUARD, useClass: OriginGuard },
     { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

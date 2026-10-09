@@ -218,7 +218,7 @@ if (res.status === 401) {
 - Server Component (RSC) gọi API phải tự chuyển tiếp cookie: `headers: { cookie: cookies().toString() }`.
 - Nút "Đăng nhập bằng Google" là **link điều hướng**: `window.location.href = '/api/auth/google?redirect=/p/abc'`.
 - Khi đăng nhập Google thất bại, trình duyệt quay về `FRONTEND_URL/login?error=google_auth_failed` (hoặc `google_account_rejected` nếu tài khoản bị khoá / email đã gắn với tài khoản Google khác).
-- **CSRF**: `SameSite=Lax` chặn cookie trên request POST/PATCH/DELETE từ site khác. Vì vậy route `GET` **không được** thay đổi dữ liệu.
+- **CSRF**: `SameSite=Lax` chặn cookie trên request POST/PATCH/DELETE từ site khác, nhưng vẫn cho qua từ subdomain cùng site (vd. file mở trên `cdn.wrapfit.vn`). Vì vậy `OriginGuard` (`src/common/guards/origin.guard.ts`) chặn thêm (`403 ORIGIN_NOT_ALLOWED`) mọi request khác `GET`/`HEAD`/`OPTIONS` có header `Origin` không thuộc `CORS_ORIGINS`, `FRONTEND_URL` hay chính API; không có `Origin` thì xét `Sec-Fetch-Site`. Tool không phải trình duyệt (không gửi hai header này) không bị ảnh hưởng. Tắt khi `CORS_ORIGINS=*`. Route `GET` vẫn **không được** thay đổi dữ liệu.
 - Tool không phải trình duyệt vẫn có thể gửi `Authorization: Bearer <wf_access>`.
 
 ### Luồng token
@@ -321,6 +321,8 @@ socket.emit('ping', {});
 ```
 
 Mỗi kết nối tự vào room `user:<id>` (và `admins` với ADMIN). Từ service khác, inject `EventsGateway` và gọi `emitToAll` / `emitToUser`.
+
+Handshake từ trình duyệt có `Origin` ngoài `CORS_ORIGINS` / `FRONTEND_URL` bị từ chối (`allowRequest` trong `src/common/adapters/socket-io.adapter.ts`): CORS của Socket.IO không áp dụng cho transport WebSocket.
 
 ## Chạy test
 
