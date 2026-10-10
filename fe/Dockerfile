@@ -8,7 +8,7 @@ WORKDIR /app
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 # Layer 1: Copy workspace descriptors for caching
-COPY package.json package-lock.json tsconfig.json ./
+COPY package.json package-lock.json ./
 COPY shared/package.json ./shared/
 COPY be/package.json ./be/
 COPY fe/package.json ./fe/

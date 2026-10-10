@@ -14,20 +14,24 @@ out/
 build/
 dist/
 
-# Misc
-.DS_Store
-*.pem
+# Uploads stored locally in development
 uploads/
 
-# Debug logs
+# Debug logs & tool caches
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.eslintcache
+.turbo/
 
 # Environment variables
 .env
 .env*.local
 !.env.example
+
+# Secrets
+*.pem
 
 # Vercel
 .vercel
@@ -42,31 +46,25 @@ next-env.d.ts
 *.swp
 *.swo
 
-# Temporary scratch & OS files
+# OS files
+.DS_Store
 Thumbs.db
 desktop.ini
 
-# Course materials & local drafts
-*.docx
-*.xlsx
-*.pptx
-*.pdf
-resourse IDEA/
-/Templates/
-"Research Tools, Sites [Recommended]/"
-
-# Scratch & Temporary Scripts
-temp_docx/
-tmp/
-*.txt
-DESIGN_MD.b64
-test_pages.ps1
-check_word_stats.ps1
-generate_docx_report.js
-generate_tight_docx_report.js
-index.html
-
+# Course materials & local drafts (repository root only)
+/*.docx
+/*.xlsx
+/*.pptx
+/*.pdf
+/*.txt
+/index.html
+/scratch/
+/tmp/
 
 # Stitch visual parity output (fe/scripts/stitch/visual-parity.mjs)
 .visual-parity/
+
+# AI agent tooling: keep the project skills, ignore local tool state and vendored repositories
 .claude/
+.agents/*
+!.agents/skills/

@@ -119,7 +119,7 @@ Whenever working on any task relating to WrapFit Frontend, UI/UX, 3D Canvas, CAD
      - `.agents/pretext/`: Read implementation for canvas text measurement without DOM reflow.
      - `.agents/impeccable/`: Read `skill/SKILL.src.md` and references for craft floor and UX audits.
      - `.agents/InsForge/`: Read `packages/ui/` for Radix primitives, `cva`, and `cn()` patterns.
-     - `branding/mascot-system.md`: Read for exact mascot states, emotional labels, and copy.
+     - `fe/src/components/common/GoiMascot/`: Read for the mascot states and how each one is rendered.
      - `shared/src/core/contracts.ts`: Read for master domain events, project structures, and OOP models.
      - `be/src/<module>/`: Read DTOs and controller routes for exact API request/response contracts.
      - `be/README.md` (section "Cấu trúc thư mục") and `be/src/config/envs/default.ts`: Read before adding a backend module, an import between modules, or an environment variable.
