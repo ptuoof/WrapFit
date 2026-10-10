@@ -115,7 +115,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6 animate-fadeIn font-sans">
+    <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 py-6 space-y-6 animate-fadeIn font-sans">
       {/* Step Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>

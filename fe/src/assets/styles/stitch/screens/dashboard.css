@@ -195,12 +195,12 @@ body:has([data-stitch="dashboard"]) {
 }
 
 body:has([data-stitch="dashboard"]) {
-      background-color: #ededed;
+      background-color: #f5f6f8;
 }
     
     :where([data-stitch="dashboard"]) {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #ededed;
+      background-color: #f5f6f8;
       color: #1e293b;
       -webkit-font-smoothing: antialiased;
     }

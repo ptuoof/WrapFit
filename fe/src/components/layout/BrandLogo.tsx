@@ -1,0 +1,104 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+
+export interface BrandLogoProps {
+  /** Variant of the logo display */
+  variant?: 'default' | 'compact' | 'light' | 'dark';
+  /** Size scale */
+  size?: 'sm' | 'md' | 'lg';
+  /** Optional CAD or sub-tier badge (e.g. "CAD CADRE v4.2") */
+  badge?: string;
+  /** Link target, default to '/' */
+  href?: string;
+  /** Custom extra classes */
+  className?: string;
+}
+
+export function BrandLogo({
+  variant = 'default',
+  size = 'md',
+  badge,
+  href = '/',
+  className = '',
+}: BrandLogoProps) {
+  const isLight = variant === 'light';
+  const isCompact = variant === 'compact';
+
+  const sizeBox = {
+    sm: 'w-7 h-7 text-xs',
+    md: 'w-9 h-9 text-sm',
+    lg: 'w-11 h-11 text-base',
+  }[size];
+
+  const sizeText = {
+    sm: 'text-base',
+    md: 'text-lg',
+    lg: 'text-2xl',
+  }[size];
+
+  const content = (
+    <div className={`flex items-center gap-2.5 select-none group ${className}`}>
+      {/* Tactile Origami Box Cube Mark */}
+      <div
+        className={`${sizeBox} rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-xs ${
+          isLight
+            ? 'bg-white/20 border border-white/30 text-white'
+            : 'bg-[#122e20] border border-[#1c422d] text-white'
+        }`}
+      >
+        <svg
+          className="w-5 h-5 transition-transform duration-500 group-hover:rotate-6"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.9"
+          viewBox="0 0 24 24"
+        >
+          {/* Isometric Packaging Box outline */}
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          {/* Internal Origami crease lines */}
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          <line x1="12" x2="12" y1="22.08" y2="12" />
+        </svg>
+      </div>
+
+      {/* Typography Wordmark */}
+      {!isCompact && (
+        <div className="flex items-center gap-2 leading-none">
+          <span
+            className={`font-['Plus_Jakarta_Sans'] font-bold tracking-tight transition-colors ${sizeText} ${
+              isLight ? 'text-white' : 'text-[#122e20] group-hover:text-[#1a382b]'
+            }`}
+          >
+            WrapFit
+          </span>
+
+          {badge && (
+            <span
+              className={`hidden sm:inline-block font-['JetBrains_Mono'] text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
+                isLight
+                  ? 'bg-white/10 text-white/90 border-white/20'
+                  : 'bg-stone-100 text-stone-600 border-stone-200/80'
+              }`}
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="inline-flex items-center focus:outline-hidden">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
+}

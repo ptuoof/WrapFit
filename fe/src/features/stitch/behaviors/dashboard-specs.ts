@@ -188,13 +188,13 @@ export default defineStitchBehavior((scope) => {
         closeProjectDetail();
       },
       /* click */ "9": function (event) {
-        alert('Đang mở dự án ' + currentProjectData().name + ' trong môi trường WrapFit CAD Studio...');
+        window.location.href = '/editor';
       },
       /* click */ "10": function (event) {
         toggleDetailPreview();
       },
       /* click */ "11": function (event) {
-        alert('Đang mở trình tạo mẫu bao bì khuôn hộp mới...');
+        window.location.href = '/editor/step-1';
       },
     },
   };

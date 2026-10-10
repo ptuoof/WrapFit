@@ -13,29 +13,29 @@ export default defineStitchBehavior((scope) => {
   let isRegisterMode;
   function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
-    const topLabel = document.getElementById('top-switch-label');
-    const topBtn = document.getElementById('top-switch-btn');
+    const switchLabel = document.getElementById('bottom-switch-label') || document.getElementById('top-switch-label');
+    const switchBtn = document.getElementById('bottom-switch-btn') || document.getElementById('top-switch-btn');
     const authTitle = document.getElementById('auth-title');
     const authDesc = document.getElementById('auth-desc');
     const fieldFullname = document.getElementById('field-fullname');
     const forgotContainer = document.getElementById('forgot-password-container');
     const submitBtn = document.getElementById('submit-btn');
     if (isRegisterMode) {
-      topLabel.textContent = 'Đã có tài khoản?';
-      topBtn.textContent = 'Đăng nhập';
-      authTitle.innerHTML = 'Tạo tài khoản <span class="text-brand font-extrabold">WrapFit</span>';
-      authDesc.textContent = 'Khởi tạo tài khoản miễn phí để thiết kế khuôn bế & mô phỏng 3D ngay lập tức.';
-      fieldFullname.classList.remove('hidden');
-      forgotContainer.classList.add('hidden');
-      submitBtn.innerHTML = '<span>Bắt đầu miễn phí</span>';
+      if (switchLabel) switchLabel.textContent = 'Đã có tài khoản? ';
+      if (switchBtn) switchBtn.textContent = 'Đăng nhập ngay';
+      if (authTitle) authTitle.innerHTML = 'Tạo tài khoản <span class="text-brand font-extrabold">WrapFit</span>';
+      if (authDesc) authDesc.textContent = 'Khởi tạo tài khoản miễn phí để thiết kế khuôn bế & mô phỏng 3D ngay lập tức.';
+      if (fieldFullname) fieldFullname.classList.remove('hidden');
+      if (forgotContainer) forgotContainer.classList.add('hidden');
+      if (submitBtn) submitBtn.innerHTML = '<span>Bắt đầu miễn phí</span>';
     } else {
-      topLabel.textContent = 'Chưa có tài khoản?';
-      topBtn.textContent = 'Đăng ký';
-      authTitle.innerHTML = 'Đăng nhập vào <span class="text-brand font-extrabold">WrapFit</span>';
-      authDesc.textContent = 'Chào mừng bạn trở lại, vui lòng nhập thông tin để truy cập không gian CAD & 3D Studio.';
-      fieldFullname.classList.add('hidden');
-      forgotContainer.classList.remove('hidden');
-      submitBtn.innerHTML = '<span>Đăng nhập</span>';
+      if (switchLabel) switchLabel.textContent = 'Chưa có tài khoản? ';
+      if (switchBtn) switchBtn.textContent = 'Đăng ký ngay';
+      if (authTitle) authTitle.innerHTML = 'Đăng nhập vào <span class="text-brand font-extrabold">WrapFit</span>';
+      if (authDesc) authDesc.textContent = 'Chào mừng bạn trở lại, vui lòng nhập thông tin để truy cập không gian CAD & 3D Studio.';
+      if (fieldFullname) fieldFullname.classList.add('hidden');
+      if (forgotContainer) forgotContainer.classList.remove('hidden');
+      if (submitBtn) submitBtn.innerHTML = '<span>Đăng nhập</span>';
     }
   }
   function togglePassword() {
@@ -55,6 +55,9 @@ export default defineStitchBehavior((scope) => {
     toastText.textContent = isRegisterMode ? 'Đăng ký thành công! Đang kích hoạt tài khoản studio...' : 'Đăng nhập thành công! Đang nạp không gian CAD...';
     toast.classList.remove('translate-y-20', 'opacity-0');
     toast.classList.add('translate-y-0', 'opacity-100');
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 800);
     setTimeout(() => {
       toast.classList.add('translate-y-20', 'opacity-0');
       toast.classList.remove('translate-y-0', 'opacity-100');

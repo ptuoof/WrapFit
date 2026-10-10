@@ -1,187 +1,300 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GoiMascot } from '@/components/common/GoiMascot';
+import { MainHeader, MainFooter } from '@/components/layout';
+import { InteractiveFoldingBox3D, BoxMaterialTheme, BoxStructureType } from '@/features/studio/components/three/InteractiveFoldingBox3D';
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+const coverflowCards = [
+  {
+    id: 0,
+    title: "Hộp Nam Châm Nắp Gập",
+    app: "Ứng dụng: Trang sức & Quà tặng Luxury",
+    material: "Ivory 350gsm + Ép kim",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA2zKm10lZA5_uLx_XiKNiDdyCMqwBqAr0jyQUcyg6tebSpZJVIrZ8gavZi33lsz0hzmpyiU8WDJl4IAOeySEiAJjjnVaaz3QTNPhOuKP4nZHJtfwhMWlx9IMsRKKGuxovEaWPX-35mP5x3tozWyVOLhu10LTo-PF6diJwTSW6L15XpwxXjz5frM9_yt0VS8uV9JcILni4Mc235pxwtkAgI72LdG1e1P6pBZsO7i4ujn22m0YCZG_PQbA",
+  },
+  {
+    id: 1,
+    title: "Hộp Nắp Gài Đáy Khóa (Tuck Top)",
+    app: "Ứng dụng: Mỹ phẩm & Chai tinh chất",
+    material: "Giấy Kraft / Duplex 300gsm",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg",
+  },
+  {
+    id: 2,
+    title: "Hộp Bao Diêm (Sleeve & Drawer)",
+    app: "Ứng dụng: Bánh kẹo & Quà lưu niệm",
+    material: "Ivory 300gsm + Cửa sổ mica",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeDih3Kv05iOmH3UmFllzTASy6mCuhpML5nSPIJNUQTBGpWaXDc5itsd9Fpwm6WRNSIFYTBNacVqFUTRTcPwdWshWLNtVgpaP1YSbDpS_bLPgHdp-L6xZe-yYlADodxg9StnvNgSRVup4t2oJyVK-TJwJMaqL_f36N9ooeUgQ84nPqkgxiRO5vut8xHH0aq99s3dI6vBI1Uc9nliHN9UHatOpxrwTtmwhHf831XQIBqIiYLcwDUQ77Wg",
+  },
+  {
+    id: 3,
+    title: "Hộp Âm Dương (Lid & Base)",
+    app: "Ứng dụng: Hộp quà cao cấp & Set trà",
+    material: "Carton cứng bồi C150 cán mờ",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCPvp8dvLTHkSlJZOjnxFBsmkLsp2I-4WavB8GnWYReakxzXHve6yoSunol_OGKcKNnSBYsm8DQdDQy1mMDPoMgLWBjxWGqqx_SpZNnOpIdRDenDPhj2kiHHaX3JbH_ukVueiz7IKaGKco3zi8ZOeYQTEv7iR1t7JCMLZk_-cwNWnoXB9EgkkkSFEN6YLG2TB9hJJGGbyGwyQcJK5myX4chVVfJ2JB8AYucY0Yds0SehKHMRMPnDSsG1w",
+  },
+  {
+    id: 4,
+    title: "Hộp Gối (Pillow Box)",
+    app: "Ứng dụng: Phụ kiện thời trang & Khăn lụa",
+    material: "Mỹ thuật dập chìm gân giấy",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg",
+  },
+];
 
 export default function Page() {
   const [activeCover, setActiveCover] = useState(0);
   const [pipelineStep, setPipelineStep] = useState(3);
+  const [heroFoldProgress, setHeroFoldProgress] = useState(0.85);
+  const [heroRotationY, setHeroRotationY] = useState(0.45);
+  const [heroRotationX, setHeroRotationX] = useState(0.12);
+  const [heroTheme, setHeroTheme] = useState<BoxMaterialTheme>("ivory");
+  const [heroBoxType, setHeroBoxType] = useState<BoxStructureType>("tuck-top");
+
+  // GSAP ScrollTrigger: Page scroll smoothly steers 3D box yaw rotation, pitch tilt, and fold stages
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const heroEl = document.getElementById("hero-section");
+    const pipelineEl = document.getElementById("pipeline");
+
+    const st = ScrollTrigger.create({
+      trigger: heroEl || document.body,
+      start: "top top",
+      endTrigger: pipelineEl || document.body,
+      end: "bottom center",
+      scrub: 1.2, // Smooth interpolation lag
+      onUpdate: (self) => {
+        const p = self.progress; // 0.0 -> 1.0
+
+        // 1. Continuous smooth 360° rotation driven by scroll
+        const rotY = p * Math.PI * 2.5 + 0.45;
+        // 2. Subtle organic pitch tilt
+        const rotX = Math.sin(p * Math.PI) * 0.22;
+        // 3. Dynamic physical folding timeline
+        const fold = Math.min(1.0, Math.max(0.15, p * 1.15 + 0.15));
+
+        setHeroRotationY(rotY);
+        setHeroRotationX(rotX);
+        setHeroFoldProgress(fold);
+
+        // 4. Milestone synchronization with the Precision Pipeline
+        if (p >= 0.75) {
+          setPipelineStep(3);
+        } else if (p >= 0.5) {
+          setPipelineStep(2);
+        } else if (p >= 0.25) {
+          setPipelineStep(1);
+        } else {
+          setPipelineStep(0);
+        }
+      },
+    });
+
+    return () => {
+      st.kill();
+    };
+  }, []);
 
   return (
     <>
-      
-<header className="fixed top-0 left-0 right-0 z-50 pointer-events-none"><div className="max-w-7xl mx-auto px-gutter py-6 flex items-center justify-between pointer-events-auto"><div className="flex items-center gap-3 cursor-pointer"><div className="w-9 h-9 rounded-lg border-2 border-[#152e22] bg-[#1a382b] flex items-center justify-center text-white shadow-xs"><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" x2="12" y1="22.08" y2="12" /></svg></div><span className="font-['Plus_Jakarta_Sans'] text-xl font-bold tracking-tight text-[#152e22]">WrapFit</span></div><div className="flex items-center gap-8"><nav className="hidden md:flex items-center gap-7"><a className="text-sm font-medium text-[#2d3a33] hover:text-[#152e22] transition-colors" href="#thu-vien-mau">How it works</a><a className="text-sm font-medium text-[#2d3a33] hover:text-[#152e22] transition-colors" href="#pipeline">Studio</a></nav><a className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#133020] text-white text-sm font-medium hover:bg-[#1c422d] transition-all shadow-sm active:scale-95" href="#pipeline"><span className="">Start a box</span><span className="material-symbols-outlined text-base">arrow_forward</span></a></div></div></header>
+      <MainHeader />
 <main className="w-full pt-24 bg-surface min-h-screen"><div className="flex flex-col w-full">
-{/*  HERO SECTION  */}
-<section className="relative w-full max-w-7xl mx-auto px-gutter pt-space-lg pb-space-xl overflow-hidden min-h-[580px] lg:min-h-[640px] flex items-center" style={{"backgroundColor":"rgb(255, 248, 245)","backgroundImage":"url(\"https://lh3.googleusercontent.com/aida/AEtjO1X2Cm_ujP0UdEarmxsBpmrld8nLuSsOqZoodco6iWxp3QkLQMNohbvtMqxgZa6y_dyg22gBHKhNuIx2P81ofNTzWVPn3PkAS9NjcgKwB-UZe59FwFSKWmAeC20HXZCO5sZDJZ79WycgcanWT8bCcoVlgvJqZJKqUPKOUEJerOIIB53CmLlm42QaUT-uTKCm53iZ42Ut6YgKEleshKf3OBFPxmB0YyDxrITNBu1qSEb56ShuS4ZDSAHzDA7f\")","backgroundRepeat":"no-repeat","backgroundPosition":"right 0% center","backgroundSize":"contain"}}><div className="absolute inset-0 pointer-events-none overflow-hidden -z-0"><div className="absolute -top-24 -right-16 w-[560px] h-[560px] rounded-full filter blur-[120px] opacity-40 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(254, 215, 170, 0.6) 0%, rgba(251, 191, 36, 0.15) 50%, transparent 75%)"}}></div><div className="absolute top-20 left-[-10%] w-[520px] h-[520px] rounded-full filter blur-[130px] opacity-35" style={{"background":"radial-gradient(circle, rgba(202, 234, 217, 0.55) 0%, rgba(72, 100, 88, 0.1) 60%, transparent 80%)"}}></div><div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[680px] h-[360px] rounded-full filter blur-[140px] opacity-30" style={{"background":"radial-gradient(circle, rgba(255, 237, 213, 0.7) 0%, rgba(245, 239, 228, 0) 70%)"}}></div></div><div className="relative z-10 w-full py-8 lg:py-16"><div className="flex flex-col lg:flex-row items-center justify-between"><div className="max-w-xl flex flex-col items-start max-w-lg"><h1 className="font-headline-lg text-[48px] sm:text-[58px] lg:text-[66px] leading-[1.08] text-[#122e20] tracking-tight font-medium mb-6 font-['Playfair_Display']">A better fit<br />for every<br />thoughtful<br />gift.</h1><p className="font-body-lg text-[17px] text-[#485950] max-w-lg mb-10 leading-relaxed font-['Plus_Jakarta_Sans']">WrapFit turns one little object into a considered unboxing moment. Enter the gift, choose a structure, then watch every fold find its place.</p><div className="flex flex-wrap items-center gap-4 pt-1"><a className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#133020] text-white text-sm font-medium hover:bg-[#1c422d] transition-all shadow-sm active:scale-95 group" href="#pipeline"><span className="">Khám phá 3D Studio</span><span className="material-symbols-outlined text-base transition-transform group-hover:translate-x-0.5">arrow_forward</span></a><a className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/80 hover:bg-white text-[#152e22] text-sm font-medium border border-[#e3ded6] shadow-xs transition-all active:scale-95" href="#thu-vien-mau"><span className="material-symbols-outlined text-base text-[#486458]">grid_view</span><span className="">Xem thư viện mẫu dieline</span></a></div></div><div className="hidden lg:flex items-center justify-center relative"><GoiMascot pose="waving" size={240} className="mr-20" /></div></div></div><div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{"background":"linear-gradient(to bottom, transparent 20%, #fff8f5 100%)"}}></div></section>
+{/*  HERO SECTION (Matching Reference Model)  */}
+<section id="hero-section" className="relative w-full max-w-7xl 2xl:max-w-[1560px] mx-auto px-6 sm:px-10 lg:px-12 pt-8 sm:pt-12 pb-14 lg:pb-20 overflow-hidden flex items-center">
+  <div className="relative z-10 w-full py-4 lg:py-8">
+    <div className="flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-14">
+      {/* Left Column: Editorial Headline & Actions */}
+      <div className="w-full lg:w-1/2 max-w-xl flex flex-col items-start">
+        <h1 className="font-['Playfair_Display'] text-[46px] sm:text-[58px] lg:text-[68px] 2xl:text-[74px] leading-[1.06] text-[#122e20] tracking-tight font-medium mb-6">
+          A better fit<br />
+          for every<br />
+          thoughtful<br />
+          gift.
+        </h1>
+        <p className="font-['Plus_Jakarta_Sans'] text-[16px] sm:text-[17px] text-[#485950] max-w-lg mb-10 leading-relaxed font-normal">
+          WrapFit turns one little object into a considered unboxing moment. Enter the gift, choose a structure, then watch every fold find its place.
+        </p>
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          <Link
+            className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#133020] text-white text-sm font-medium hover:bg-[#1c422d] transition-all shadow-sm active:scale-95 group"
+            href="/editor/step-1"
+          >
+            <span>Khám phá 3D Studio</span>
+            <span className="material-symbols-outlined text-base transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+          </Link>
+          <a
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full bg-white/80 hover:bg-white text-[#152e22] text-sm font-medium border border-[#e3ded6] shadow-xs transition-all active:scale-95"
+            href="#thu-vien-mau"
+          >
+            <span className="material-symbols-outlined text-base text-[#486458]">grid_view</span>
+            <span>Xem thư viện mẫu dieline</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Right Column: Considered Packaging Still Artwork */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center lg:justify-end select-none">
+        <img
+          src="/branding/hero-art.png"
+          alt="WrapFit Considered Packaging Collection"
+          className="w-full max-w-[560px] lg:max-w-[660px] 2xl:max-w-[740px] h-auto object-contain mix-blend-multiply select-none pointer-events-none drop-shadow-xs"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
 {/*  RE-ENGINEERED 360° CONTINUOUS CIRCULAR 3D CAROUSEL SECTION  */}
-<section className="w-full max-w-7xl mx-auto px-gutter pt-8 pb-14 overflow-hidden relative" id="thu-vien-mau"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[520px] rounded-full filter blur-[135px] opacity-40 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(202, 234, 217, 0.45) 0%, rgba(238, 244, 241, 0.25) 45%, transparent 70%)"}}></div><div className="absolute -bottom-20 right-[-5%] w-[460px] h-[460px] rounded-full filter blur-[120px] opacity-35" style={{"background":"radial-gradient(circle, rgba(245, 230, 202, 0.5) 0%, rgba(254, 243, 199, 0.1) 50%, transparent 75%)"}}></div></div>
-{/*  Minimalist Title Header  */}
-<div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
-<div>
-<div className="flex items-center gap-2 mb-1.5">
-<span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
-<span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">INTERACTIVE 3D STACKED DECK</span>
-</div>
-<h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#122e20] font-['Playfair_Display'] font-medium tracking-tight">
-  Thư Viện Cấu Trúc Mẫu
-</h2>
-<p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-['Plus_Jakarta_Sans']">
-  Khám phá các kết cấu hộp chuẩn công nghiệp trong không gian 3D xếp lớp vô tận.
-</p>
-</div>
-{/*  Apple-style Navigation Controls  */}
-<div className="flex items-center gap-3 self-end md:self-auto">
-<button aria-label="Previous Slide" onClick={() => setActiveCover(prev => Math.max(0, prev - 1))} className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90">
-<span className="material-symbols-outlined text-xl">arrow_back</span>
-</button>
-<button aria-label="Next Slide" onClick={() => setActiveCover(prev => Math.min(4, prev + 1))} className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90">
-<span className="material-symbols-outlined text-xl">arrow_forward</span>
-</button>
-</div>
-</div>
-{/*  Continuous Circular Carousel Stage  */}
-<div className="relative w-full py-2 select-none">
-<div className="relative w-full h-[500px] md:h-[530px] flex items-center justify-center overflow-visible" id="coverflowContainer">
-{/*  Card 0: Hộp Nam Châm Nắp Gập  */}
-<div className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center" data-index="0" onClick={() => setActiveCover(0)} style={{
-    willChange: 'transform, opacity, filter',
-    transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-    transform: activeCover === 0 ? 'translate(-50%, -50%) scale(1.05)' : (activeCover < 0 ? 'translate(calc(-50% + ' + ((0 - activeCover) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (0 - activeCover)*0.15) + ')' : 'translate(calc(-50% - ' + ((activeCover - 0) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (activeCover - 0)*0.15) + ')'),
-    left: '50%',
-    zIndex: activeCover === 0 ? 35 : 25 - Math.abs(activeCover - 0) * 10,
-    opacity: activeCover === 0 ? 1 : Math.max(0.3, 1 - Math.abs(activeCover - 0) * 0.25),
-    filter: activeCover === 0 ? 'blur(0px)' : 'blur(' + (Math.abs(activeCover - 0) * 1.5) + 'px)',
-    pointerEvents: 'auto'
-  }}>
-<div className="coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 border-[#cfc4b0] shadow-md shadow-2xl bg-white/95">
-<div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-<img alt="Hộp Nam Châm Nắp Gập" className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2zKm10lZA5_uLx_XiKNiDdyCMqwBqAr0jyQUcyg6tebSpZJVIrZ8gavZi33lsz0hzmpyiU8WDJl4IAOeySEiAJjjnVaaz3QTNPhOuKP4nZHJtfwhMWlx9IMsRKKGuxovEaWPX-35mP5x3tozWyVOLhu10LTo-PF6diJwTSW6L15XpwxXjz5frM9_yt0VS8uV9JcILni4Mc235pxwtkAgI72LdG1e1P6pBZsO7i4ujn22m0YCZG_PQbA" />
-</div>
-<div className="card-caption w-full pt-4 flex flex-col items-center">
-<h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">Hộp Nam Châm Nắp Gập</h3>
-<div className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300" style={{"maxHeight":"80px","opacity":"1","transform":"translateY(0px)","pointerEvents":"auto"}}>
-<span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">Ứng dụng: Trang sức &amp; Quà tặng Luxury</span>
-<span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">Ivory 350gsm + Ép kim</span>
-</div>
-</div>
-</div>
-</div>
-{/*  Card 1: Hộp Cài Đáy Khóa  */}
-<div className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center" data-index="1" onClick={() => setActiveCover(1)} style={{
-    willChange: 'transform, opacity, filter',
-    transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-    transform: activeCover === 1 ? 'translate(-50%, -50%) scale(1.05)' : (activeCover < 1 ? 'translate(calc(-50% + ' + ((1 - activeCover) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (1 - activeCover)*0.15) + ')' : 'translate(calc(-50% - ' + ((activeCover - 1) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (activeCover - 1)*0.15) + ')'),
-    left: '50%',
-    zIndex: activeCover === 1 ? 35 : 25 - Math.abs(activeCover - 1) * 10,
-    opacity: activeCover === 1 ? 1 : Math.max(0.3, 1 - Math.abs(activeCover - 1) * 0.25),
-    filter: activeCover === 1 ? 'blur(0px)' : 'blur(' + (Math.abs(activeCover - 1) * 1.5) + 'px)',
-    pointerEvents: 'auto'
-  }}>
-<div className="coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 shadow-md border-[#cfc4b0] bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80">
-<div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-<img alt="Hộp Cài Đáy Khóa" className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg" />
-</div>
-<div className="card-caption w-full pt-4 flex flex-col items-center">
-<h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">Hộp Cài Đáy Khóa</h3>
-<div className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300" style={{"maxHeight":"0px","opacity":"0","transform":"translateY(6px)","pointerEvents":"none"}}>
-<span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">Ứng dụng: Mỹ phẩm &amp; Chai tinh chất</span>
-<span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">Giấy Kraft / Duplex 300gsm</span>
-</div>
-</div>
-</div>
-</div>
-{/*  Card 2: Túi Kraft Doypack  */}
-<div className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center" data-index="2" onClick={() => setActiveCover(2)} style={{
-    willChange: 'transform, opacity, filter',
-    transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-    transform: activeCover === 2 ? 'translate(-50%, -50%) scale(1.05)' : (activeCover < 2 ? 'translate(calc(-50% + ' + ((2 - activeCover) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (2 - activeCover)*0.15) + ')' : 'translate(calc(-50% - ' + ((activeCover - 2) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (activeCover - 2)*0.15) + ')'),
-    left: '50%',
-    zIndex: activeCover === 2 ? 35 : 25 - Math.abs(activeCover - 2) * 10,
-    opacity: activeCover === 2 ? 1 : Math.max(0.3, 1 - Math.abs(activeCover - 2) * 0.25),
-    filter: activeCover === 2 ? 'blur(0px)' : 'blur(' + (Math.abs(activeCover - 2) * 1.5) + 'px)',
-    pointerEvents: 'auto'
-  }}>
-<div className="coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 shadow-md border-[#cfc4b0] shadow-xs bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80">
-<div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-<img alt="Túi Kraft Doypack" className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeDih3Kv05iOmH3UmFllzTASy6mCuhpML5nSPIJNUQTBGpWaXDc5itsd9Fpwm6WRNSIFYTBNacVqFUTRTcPwdWshWLNtVgpaP1YSbDpS_bLPgHdp-L6xZe-yYlADodxg9StnvNgSRVup4t2oJyVK-TJwJMaqL_f36N9ooeUgQ84nPqkgxiRO5vut8xHH0aq99s3dI6vBI1Uc9nliHN9UHatOpxrwTtmwhHf831XQIBqIiYLcwDUQ77Wg" />
-</div>
-<div className="card-caption w-full pt-4 flex flex-col items-center">
-<h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">Túi Kraft Doypack Đáy Đứng</h3>
-<div className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300" style={{"maxHeight":"0px","opacity":"0","transform":"translateY(6px)","pointerEvents":"none"}}>
-<span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">Ứng dụng: Cà phê specialty &amp; Hạt sấy</span>
-<span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">Màng ghép phức hợp + Van khí</span>
-</div>
-</div>
-</div>
-</div>
-{/*  Card 3: Hộp Gối Uốn Mỹ Thuật  */}
-<div className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center" data-index="3" onClick={() => setActiveCover(3)} style={{
-    willChange: 'transform, opacity, filter',
-    transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-    transform: activeCover === 3 ? 'translate(-50%, -50%) scale(1.05)' : (activeCover < 3 ? 'translate(calc(-50% + ' + ((3 - activeCover) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (3 - activeCover)*0.15) + ')' : 'translate(calc(-50% - ' + ((activeCover - 3) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (activeCover - 3)*0.15) + ')'),
-    left: '50%',
-    zIndex: activeCover === 3 ? 35 : 25 - Math.abs(activeCover - 3) * 10,
-    opacity: activeCover === 3 ? 1 : Math.max(0.3, 1 - Math.abs(activeCover - 3) * 0.25),
-    filter: activeCover === 3 ? 'blur(0px)' : 'blur(' + (Math.abs(activeCover - 3) * 1.5) + 'px)',
-    pointerEvents: 'auto'
-  }}>
-<div className="coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 shadow-md border-[#cfc4b0] bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80 shadow-xs">
-<div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-<img alt="Hộp Gối Uốn Mỹ Thuật" className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPvp8dvLTHkSlJZOjnxFBsmkLsp2I-4WavB8GnWYReakxzXHve6yoSunol_OGKcKNnSBYsm8DQdDQy1mMDPoMgLWBjxWGqqx_SpZNnOpIdRDenDPhj2kiHHaX3JbH_ukVueiz7IKaGKco3zi8ZOeYQTEv7iR1t7JCMLZk_-cwNWnoXB9EgkkkSFEN6YLG2TB9hJJGGbyGwyQcJK5myX4chVVfJ2JB8AYucY0Yds0SehKHMRMPnDSsG1w" />
-</div>
-<div className="card-caption w-full pt-4 flex flex-col items-center">
-<h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">Hộp Gối Uốn Mỹ Thuật</h3>
-<div className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300" style={{"maxHeight":"0px","opacity":"0","transform":"translateY(6px)","pointerEvents":"none"}}>
-<span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">Ứng dụng: Phụ kiện thời trang &amp; Khăn lụa</span>
-<span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">Mỹ thuật dập chìm gân giấy</span>
-</div>
-</div>
-</div>
-</div>
-{/*  Card 4: Hộp Nắp Trượt Khay Rút (Additional item for complete continuous ring)  */}
-<div className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center" data-index="4" onClick={() => setActiveCover(4)} style={{
-    willChange: 'transform, opacity, filter',
-    transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-    transform: activeCover === 4 ? 'translate(-50%, -50%) scale(1.05)' : (activeCover < 4 ? 'translate(calc(-50% + ' + ((4 - activeCover) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (4 - activeCover)*0.15) + ')' : 'translate(calc(-50% - ' + ((activeCover - 4) * 310) + 'px), -50%) scale(' + Math.max(0.7, 1.05 - (activeCover - 4)*0.15) + ')'),
-    left: '50%',
-    zIndex: activeCover === 4 ? 35 : 25 - Math.abs(activeCover - 4) * 10,
-    opacity: activeCover === 4 ? 1 : Math.max(0.3, 1 - Math.abs(activeCover - 4) * 0.25),
-    filter: activeCover === 4 ? 'blur(0px)' : 'blur(' + (Math.abs(activeCover - 4) * 1.5) + 'px)',
-    pointerEvents: 'auto'
-  }}>
-<div className="coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 shadow-md border-[#cfc4b0] bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80 shadow-xs">
-<div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-<img alt="Hộp Nắp Trượt Khay Rút" className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg" />
-</div>
-<div className="card-caption w-full pt-4 flex flex-col items-center">
-<h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">Hộp Nắp Trượt Khay Rút</h3>
-<div className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300" style={{"maxHeight":"0px","opacity":"0","transform":"translateY(6px)","pointerEvents":"none"}}>
-<span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">Ứng dụng: Thiết bị công nghệ &amp; Quà tặng</span>
-<span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">Carton cứng bồi C150 cán mờ</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-{/*  Apple-style Minimal Pagination Dots  */}
-<div className="flex items-center justify-center gap-2 mt-6" id="coverflowDots">
-  {[0, 1, 2, 3, 4].map((idx) => (
-    <button
-      key={idx}
-      aria-label={`Go to slide ${idx + 1}`}
-      onClick={() => setActiveCover(idx)}
-      className={`transition-all duration-300 rounded-full ${
-        activeCover === idx
-          ? "h-2.5 w-7 bg-[#133020]"
-          : "w-2.5 h-2.5 bg-[#cfc5b3] hover:bg-[#8e8574]"
-      }`}
-    />
-  ))}
-</div>
-</div>
+<section className="w-full max-w-7xl 2xl:max-w-[1560px] mx-auto px-gutter pt-8 pb-14 overflow-hidden relative" id="thu-vien-mau">
+  <div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[520px] rounded-full filter blur-[135px] opacity-40 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(202, 234, 217, 0.45) 0%, rgba(238, 244, 241, 0.25) 45%, transparent 70%)"}} />
+    <div className="absolute -bottom-20 right-[-5%] w-[460px] h-[460px] rounded-full filter blur-[120px] opacity-35" style={{"background":"radial-gradient(circle, rgba(245, 230, 202, 0.5) 0%, rgba(254, 243, 199, 0.1) 50%, transparent 75%)"}} />
+  </div>
+
+  {/*  Minimalist Title Header  */}
+  <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
+        <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">INTERACTIVE 3D STACKED DECK</span>
+      </div>
+      <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#122e20] font-['Playfair_Display'] font-medium tracking-tight">
+        Thư Viện Cấu Trúc Mẫu
+      </h2>
+      <p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-['Plus_Jakarta_Sans']">
+        Khám phá các cấu trúc bao bì tiêu chuẩn ECMA/FEFCO được dựng sẵn. Xoay 3D trực quan và tải dieline vector sẵn sàng sản xuất.
+      </p>
+    </div>
+
+    {/*  Apple-style Navigation Controls (Infinite Wrap) */}
+    <div className="flex items-center gap-3 self-end md:self-auto">
+      <button
+        aria-label="Previous Slide"
+        onClick={() => setActiveCover(prev => (prev === 0 ? coverflowCards.length - 1 : prev - 1))}
+        className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90"
+      >
+        <span className="material-symbols-outlined text-xl">arrow_back</span>
+      </button>
+      <button
+        aria-label="Next Slide"
+        onClick={() => setActiveCover(prev => (prev === coverflowCards.length - 1 ? 0 : prev + 1))}
+        className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90"
+      >
+        <span className="material-symbols-outlined text-xl">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  {/*  Continuous Circular Carousel Stage  */}
+  <div className="relative w-full py-2 select-none">
+    <div className="relative w-full h-[500px] md:h-[530px] flex items-center justify-center overflow-visible" id="coverflowContainer">
+      {coverflowCards.map((card, idx) => {
+        const isSelected = activeCover === idx;
+        const offset = idx - activeCover;
+        return (
+          <div
+            key={card.id}
+            className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center"
+            data-index={idx}
+            onClick={() => setActiveCover(idx)}
+            style={{
+              willChange: 'transform, opacity, filter',
+              transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
+              transform: isSelected
+                ? 'translate(-50%, -50%) scale(1.05)'
+                : `translate(calc(-50% + ${offset * 310}px), -50%) scale(${Math.max(0.7, 1.05 - Math.abs(offset) * 0.15)})`,
+              left: '50%',
+              zIndex: isSelected ? 35 : 25 - Math.abs(offset) * 10,
+              opacity: isSelected ? 1 : Math.max(0.3, 1 - Math.abs(offset) * 0.25),
+              filter: isSelected ? 'blur(0px)' : `blur(${Math.abs(offset) * 1.5}px)`,
+              pointerEvents: 'auto',
+            }}
+          >
+            <div
+              className={`coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 ${
+                isSelected
+                  ? 'border-[#cfc4b0] shadow-2xl bg-white/95'
+                  : 'border-[#e3d7c5] shadow-md bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80'
+              }`}
+            >
+              {/* Subtle Browser Window Bar for active card */}
+              {isSelected && (
+                <div className="w-full flex items-center justify-between pb-3.5 mb-2 border-b border-[#e8ded0]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                  </div>
+                  <div className="px-3.5 py-1 rounded-full bg-[#f4eee3] border border-[#e3d7c5] text-[11px] font-mono text-[#526359] flex items-center gap-1.5 shadow-2xs">
+                    <span className="material-symbols-outlined text-[13px] text-[#486458]">lock</span>
+                    <span>wrapfit.studio/cad-preview</span>
+                  </div>
+                  <div className="w-10" />
+                </div>
+              )}
+
+              <div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
+                <img
+                  alt={card.title}
+                  className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none"
+                  src={card.image}
+                />
+              </div>
+
+              <div className="card-caption w-full pt-4 flex flex-col items-center">
+                <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">
+                  {card.title}
+                </h3>
+                <div
+                  className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300"
+                  style={{
+                    maxHeight: isSelected ? '80px' : '0px',
+                    opacity: isSelected ? 1 : 0,
+                    transform: isSelected ? 'translateY(0px)' : 'translateY(6px)',
+                    pointerEvents: isSelected ? 'auto' : 'none',
+                  }}
+                >
+                  <span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">
+                    {card.app}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">
+                    {card.material}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/*  Apple-style Minimal Pagination Dots  */}
+    <div className="flex items-center justify-center gap-2 mt-6" id="coverflowDots">
+      {coverflowCards.map((_, idx) => (
+        <button
+          key={idx}
+          aria-label={`Go to slide ${idx + 1}`}
+          onClick={() => setActiveCover(idx)}
+          className={`transition-all duration-300 rounded-full ${
+            activeCover === idx
+              ? 'h-2.5 w-7 bg-[#133020]'
+              : 'w-2.5 h-2.5 bg-[#cfc5b3] hover:bg-[#8e8574]'
+          }`}
+        />
+      ))}
+    </div>
+  </div>
 </section>
 {/*  REDESIGNED PRECISION PIPELINE: CONTINUOUS CHART LINE & INTERACTIVE 4-STAGE SHOWCASE  */}
-<section className="w-full max-w-7xl mx-auto px-gutter py-space-xl relative" id="pipeline"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-12 left-[10%] w-[580px] h-[340px] rounded-full filter blur-[130px] opacity-45" style={{"background":"radial-gradient(circle, rgba(219, 225, 255, 0.4) 0%, rgba(202, 234, 217, 0.2) 50%, transparent 75%)"}}></div><div className="absolute bottom-8 right-[5%] w-[640px] h-[400px] rounded-full filter blur-[140px] opacity-35 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(254, 243, 199, 0.5) 0%, rgba(202, 234, 217, 0.3) 45%, transparent 70%)"}}></div></div>
+<section className="w-full max-w-7xl 2xl:max-w-[1560px] mx-auto px-gutter py-space-xl relative overflow-hidden" id="pipeline"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-12 left-[10%] w-[580px] h-[340px] rounded-full filter blur-[130px] opacity-45" style={{"background":"radial-gradient(circle, rgba(219, 225, 255, 0.4) 0%, rgba(202, 234, 217, 0.2) 50%, transparent 75%)"}}></div><div className="absolute bottom-8 right-[5%] w-[640px] h-[400px] rounded-full filter blur-[140px] opacity-35 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(254, 243, 199, 0.5) 0%, rgba(202, 234, 217, 0.3) 45%, transparent 70%)"}}></div></div>
 {/*  Minimal Header & Realtime Stage Selector  */}
 <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
 <div className="max-w-xl">
@@ -384,38 +497,49 @@ export default function Page() {
 </div>
 {/*  Stage 03: 3D PBR Studio (Initially Hidden)  */}
 <div className={`stage-panel transition-opacity duration-500 ${pipelineStep === 2 ? "contents" : "hidden"}`} id="stage-panel-2">
-<div className="lg:col-span-7 bg-[#212429] rounded-2xl border border-[#3b414a] p-5 shadow-xs relative overflow-hidden flex flex-col justify-between text-white">
-<div className="flex items-center justify-between pb-3 border-b border-white/10">
+<div className="lg:col-span-7 bg-[#1c1f24] rounded-2xl border border-[#343a42] p-4 sm:p-5 shadow-xs relative overflow-hidden flex flex-col justify-between text-white">
+<div className="flex flex-wrap items-center justify-between pb-3 border-b border-white/10 gap-2">
 <div className="flex items-center gap-2">
 <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
 <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
 <span className="font-cad-dimension text-xs font-medium text-slate-300 ml-2">WrapFit_PBR_Viewport.4k</span>
 </div>
-<span className="font-cad-spec-micro bg-emerald-500/20 text-emerald-300 font-semibold px-2 py-0.5 rounded">Raytracing 60 FPS</span>
-</div>
-{/*  3D Gold Foil Simulation Mock  */}
-<div className="py-5 flex items-center justify-center relative">
-<div className="w-60 h-40 rounded-xl bg-gradient-to-tr from-[#1b1c1e] to-[#2d3036] border border-white/15 p-4 flex flex-col justify-between shadow-2xl relative overflow-hidden">
-{/*  Gold foil shine effect line  */}
-<div className="absolute -inset-full bg-gradient-to-r from-transparent via-[#ffe58f]/20 to-transparent rotate-45 pointer-events-none"></div>
-<div className="flex justify-between items-start">
-<span className="font-cad-spec-micro text-[#d4af37] tracking-widest uppercase">HOT FOIL 24K</span>
-<span className="material-symbols-outlined text-[#ffe088] text-sm">wb_sunny</span>
-</div>
-<div className="text-center my-auto">
-<div className="font-['Playfair_Display'] text-xl font-medium tracking-wider text-[#fceec5] drop-shadow-sm">WRAPFIT LUXE</div>
-<div className="font-cad-dimension text-[10px] text-slate-400 tracking-widest mt-1">EMBOSS 0.35MM DEPTH</div>
-</div>
-<div className="flex justify-between text-[10px] font-cad-dimension text-slate-400">
-<span className="">MATTE SOFT TOUCH</span>
-<span className="">IOR 1.48</span>
+{/* Material theme selector */}
+<div className="flex items-center gap-1">
+{([ { id: "ivory", label: "Ivory", color: "#FAF6EE" }, { id: "kraft", label: "Kraft", color: "#D9B897" }, { id: "forest", label: "Rừng Sâu", color: "#162E24" }, { id: "gold_foil", label: "Ép Kim", color: "#D4AF37" } ] as const).map((m) => (
+<button key={m.id} type="button" onClick={() => setHeroTheme(m.id)} className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition flex items-center gap-1 ${heroTheme === m.id ? "bg-white text-stone-900 border-white font-semibold shadow-xs" : "bg-white/10 border-white/20 text-stone-300 hover:bg-white/20"}`}>
+<span className="w-2 h-2 rounded-full border border-black/10" style={{ backgroundColor: m.color }} />
+<span>{m.label}</span>
+</button>
+))}
 </div>
 </div>
+{/* Live 3D Folding Box with Cotton Bump Map */}
+<div className="py-3 flex items-center justify-center relative">
+<div className="w-full aspect-[16/10] min-h-[280px] rounded-xl overflow-hidden bg-[#111315] border border-white/10 shadow-inner relative">
+<InteractiveFoldingBox3D
+  dimensions={{ length: 180, width: 120, height: 70, paperThickness: 0.35 }}
+  foldProgress={heroFoldProgress}
+  rotationY={heroRotationY}
+  rotationX={heroRotationX}
+  theme={heroTheme}
+  boxType={heroBoxType}
+  autoRotate={false}
+  enableMacroZoom={true}
+  className="w-full h-full min-h-[280px]"
+/>
 </div>
-<div className="flex items-center justify-between pt-3 border-t border-white/10 font-cad-dimension text-xs text-slate-400">
-<span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Gập mở nắp 360° tương tác thực</span>
-<span className="text-[#ffe088] font-semibold">Phủ Kim Loại Chuẩn HDR</span>
+</div>
+{/* Interactive Fold Slider & Guidance */}
+<div className="flex flex-wrap items-center justify-between pt-3 border-t border-white/10 font-cad-dimension text-xs text-slate-300 gap-2">
+<div className="flex items-center gap-2">
+<span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+<span>Độ gập nắp:</span>
+<input type="range" min="0" max="1" step="0.01" value={heroFoldProgress} onChange={(e) => setHeroFoldProgress(parseFloat(e.target.value))} className="w-24 sm:w-32 accent-emerald-400 h-1.5 bg-stone-700 rounded-lg cursor-pointer" aria-label="Điều chỉnh độ gập nắp" />
+<span className="font-mono text-emerald-400 min-w-[32px]">{Math.round(heroFoldProgress * 100)}%</span>
+</div>
+<span className="text-[#ffe088] font-semibold text-[11px]">Sợi Bông Cotton 4K · PBR 60fps</span>
 </div>
 </div>
 <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-5">
@@ -493,7 +617,7 @@ export default function Page() {
 </div>
 </section>
 {/*  BOTTOM CALL-TO-ACTION (Apple Aesthetic Minimal Card with Mascot)  */}
-<section className="w-full max-w-7xl mx-auto px-gutter pt-space-lg pb-space-xl relative"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-1/2 right-[12%] -translate-y-1/2 w-[480px] h-[480px] rounded-full filter blur-[130px] opacity-40 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(202, 234, 217, 0.6) 0%, rgba(72, 100, 88, 0.15) 55%, transparent 75%)"}}></div><div className="absolute top-1/2 left-[5%] -translate-y-1/2 w-[540px] h-[380px] rounded-full filter blur-[135px] opacity-35" style={{"background":"radial-gradient(circle, rgba(254, 240, 215, 0.6) 0%, rgba(245, 239, 228, 0) 70%)"}}></div></div>
+<section className="w-full max-w-7xl 2xl:max-w-[1560px] mx-auto px-gutter pt-space-lg pb-space-xl relative overflow-hidden"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-1/2 right-[12%] -translate-y-1/2 w-[480px] h-[480px] rounded-full filter blur-[130px] opacity-40 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(202, 234, 217, 0.6) 0%, rgba(72, 100, 88, 0.15) 55%, transparent 75%)"}}></div><div className="absolute top-1/2 left-[5%] -translate-y-1/2 w-[540px] h-[380px] rounded-full filter blur-[135px] opacity-35" style={{"background":"radial-gradient(circle, rgba(254, 240, 215, 0.6) 0%, rgba(245, 239, 228, 0) 70%)"}}></div></div>
 <div className="relative w-full rounded-[38px] bg-[#f2ecdf]/50 p-space-xl overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-space-xl">
 {/*  Left CTA Text  */}
 <div className="flex flex-col items-start max-w-2xl z-10">
@@ -507,13 +631,13 @@ export default function Page() {
         Chuẩn hóa quy trình thiết kế khuôn bế cùng WrapFit ngay hôm nay.
       </p>
 <div className="flex flex-wrap items-center gap-space-md mt-space-lg">
-<a className="inline-flex items-center justify-center px-6 py-3 bg-[#133020] text-white text-sm font-medium rounded-full hover:bg-[#1c422d] transition-all active:scale-95 shadow-xs" data-path="3d-workspace" href="#pipeline">
+<Link className="inline-flex items-center justify-center px-6 py-3 bg-[#133020] text-white text-sm font-medium rounded-full hover:bg-[#1c422d] transition-all active:scale-95 shadow-xs" href="/editor/step-1">
 <span className="">Mở Studio Miễn Phí</span>
 <span className="material-symbols-outlined text-base ml-2">arrow_forward</span>
-</a>
-<a className="inline-flex items-center justify-center px-6 py-3 text-[#152e22] text-sm font-medium hover:text-black transition-all" data-path="bang-gia" href="#">
+</Link>
+<Link className="inline-flex items-center justify-center px-6 py-3 text-[#152e22] text-sm font-medium hover:text-black transition-all" href="/pricing">
           Xem Bảng Giá
-        </a>
+        </Link>
 </div>
 </div>
 {/*  Right Visual Mascot  */}
@@ -524,7 +648,7 @@ export default function Page() {
 </section>
 </div>
 </main>
-<footer className="w-full bg-surface-container-low"><div className="max-w-7xl mx-auto px-gutter py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-lg"><div className="flex items-center gap-space-sm"><div className="w-7 h-7 rounded-full bg-primary-container/10 flex items-center justify-center text-primary-container"><span className="material-symbols-outlined text-base">inventory_2</span></div><span className="font-label-ui text-label-ui text-on-surface font-semibold">WrapFit Studio</span><span className="text-outline font-cad-spec-micro text-cad-spec-micro ml-space-xs">• Nền tảng thiết kế bao bì chuẩn CAD</span></div><div className="flex flex-wrap items-center justify-center gap-space-lg font-body-sm text-body-sm text-on-surface-variant"><a className="hover:text-on-surface transition-colors" data-path="thu-vien-mau" href="#">Quy chuẩn Dieline</a><a className="hover:text-on-surface transition-colors" data-path="vat-lieu" href="#">Thư viện Giấy &amp; Màng ép</a><a className="hover:text-on-surface transition-colors" data-path="bang-gia" href="#">Chính sách Doanh nghiệp</a><a className="hover:text-on-surface transition-colors" data-path="trang-chu" href="#">Bảo mật &amp; Bản quyền CAD</a></div><div className="font-cad-dimension text-cad-dimension text-on-surface-variant">© 2025 WrapFit Inc. All rights reserved.</div></div></footer>
+<MainFooter />
 
 
 

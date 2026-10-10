@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { MainHeader, MainFooter } from '@/components/layout';
 import { GoiMascot } from '@/components/common/GoiMascot';
 
 export default function Step1BoxStructurePage() {
@@ -43,11 +44,13 @@ export default function Step1BoxStructurePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between p-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
-      {/* Top Floating Header & Stepper */}
-      <header className="flex items-center justify-between">
+    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+      <MainHeader />
+      <main className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-between">
+        {/* Top Floating Header & Stepper */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-4 border-b border-[#e8ded0]/60 gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/editor" className="w-10 h-10 rounded-full bg-white/80 border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-white shadow-xs transition-all">
+          <Link href="/" title="Về Trang Chủ" className="w-10 h-10 rounded-full bg-white border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-[#f7f2ef] shadow-xs transition-all">
             <span className="material-symbols-outlined text-lg">arrow_back</span>
           </Link>
           <div>
@@ -57,11 +60,11 @@ export default function Step1BoxStructurePage() {
         </div>
 
         {/* Stepper indicator pill */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-md rounded-full border border-[#e8ded0] shadow-xs text-xs font-semibold">
-          <span className="px-4 py-1.5 rounded-full bg-[#122e20] text-white">1. Cấu Trúc</span>
-          <Link href="/editor/step-2" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors">2. Kích Thước</Link>
-          <Link href="/editor/step-3" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors">3. Đồ Họa</Link>
-          <Link href="/editor/step-4" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors">4. Xuất File</Link>
+        <div className="flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-md rounded-full border border-[#e8ded0] shadow-xs text-xs font-semibold overflow-x-auto">
+          <span className="px-4 py-1.5 rounded-full bg-[#122e20] text-white">1. Mẫu Hộp</span>
+          <Link href="/editor/step-2" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors whitespace-nowrap">2. Kích Thước</Link>
+          <Link href="/editor/step-3" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors whitespace-nowrap">3. Phối Cảnh 3D</Link>
+          <Link href="/editor/step-4" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors whitespace-nowrap">4. FitCheck™</Link>
         </div>
       </header>
 
@@ -131,6 +134,8 @@ export default function Step1BoxStructurePage() {
           <span className="material-symbols-outlined text-base">arrow_forward</span>
         </Link>
       </footer>
+      </main>
+      <MainFooter />
     </div>
   );
 }

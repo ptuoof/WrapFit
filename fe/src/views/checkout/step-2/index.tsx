@@ -2,14 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { MainHeader, MainFooter } from '@/components/layout';
 import { GoiMascot } from '@/components/common/GoiMascot';
 
 export default function CheckoutStep2Page() {
   const [method, setMethod] = useState('card');
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between p-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
-      <header className="flex items-center justify-between">
+    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+      <MainHeader />
+      <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10 flex-1 flex flex-col justify-between">
+      <header className="w-full max-w-6xl 2xl:max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/checkout/step-1" className="w-10 h-10 rounded-full bg-white/80 border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-white shadow-xs transition-all">
             <span className="material-symbols-outlined text-lg">arrow_back</span>
@@ -28,7 +31,7 @@ export default function CheckoutStep2Page() {
       </header>
 
       {/* Main Payment Stage with 3D Holographic Card */}
-      <main className="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-8 my-auto py-6 items-center">
+      <main className="max-w-6xl 2xl:max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-8 my-auto py-6 items-center">
         {/* Holographic 3D Card Display */}
         <div className="md:col-span-5 flex flex-col items-center">
           <div className="w-80 h-52 rounded-3xl bg-gradient-to-tr from-[#122e20] via-[#1c422d] to-[#2563eb] p-6 text-white shadow-[0_20px_40px_rgba(18,46,32,0.25)] flex flex-col justify-between relative overflow-hidden transform hover:scale-105 transition-transform duration-500">
@@ -98,13 +101,15 @@ export default function CheckoutStep2Page() {
         </div>
       </main>
 
-      <footer className="flex items-center justify-between p-4 px-6 rounded-3xl bg-white/90 backdrop-blur-lg border border-[#e8ded0] shadow-sm">
+      <footer className="w-full max-w-6xl 2xl:max-w-7xl mx-auto flex items-center justify-between p-4 px-6 rounded-3xl bg-white/90 backdrop-blur-lg border border-[#e8ded0] shadow-sm">
         <div className="flex items-center gap-3">
           <GoiMascot pose="delivery" size={48} />
           <span className="text-xs font-semibold text-[#122e20]">Bảo chứng thanh toán ngân hàng chuẩn PCI-DSS Level 1.</span>
         </div>
         <span className="text-xs text-[#717971] font-['JetBrains_Mono']">Stripe B2B &bull; Napas 24/7 Verified</span>
       </footer>
+      </div>
+      <MainFooter />
     </div>
   );
 }
