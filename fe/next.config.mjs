@@ -26,6 +26,15 @@ const nextConfig = {
   async headers() {
     return [{ source: "/((?!api/).*)", headers: securityHeaders }];
   },
+    async redirects() {
+    return [
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const backendUrl = process.env.BACKEND_INTERNAL_URL || 'http://localhost:8080';
     return [
