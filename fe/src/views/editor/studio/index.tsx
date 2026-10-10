@@ -374,17 +374,23 @@ export default function PackagingStudioPage() {
     <div className="min-h-screen bg-paper-grain flex flex-col font-sans select-none overflow-x-hidden">
       {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           {/* Left: Back & Project Title */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              onClick={() => {}}
-              className="w-8 h-8 rounded-full border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition"
-              title="Quay lại Dashboard"
+            <button
+              type="button"
+              onClick={() => {
+                if (currentStep > 1) {
+                  setCurrentStep((prev) => (prev - 1) as any);
+                } else {
+                  window.location.href = "/dashboard";
+                }
+              }}
+              className="w-8 h-8 rounded-full border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition cursor-pointer"
+              title={currentStep > 1 ? `Quay lại Bước ${currentStep - 1}` : "Quay lại Dashboard"}
             >
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </button>
 
             <div className="hidden sm:block">
               <input
@@ -511,7 +517,7 @@ export default function PackagingStudioPage() {
 
         {/* STEP 3: XƯỞNG BẢN VẼ BẾ 2D TOÀN MÀN HÌNH VỚI DOCK CÔNG CỤ & KÉO THẢ TỰ DO */}
         {currentStep === 3 && (
-          <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-5 flex flex-col gap-4 animate-fadeIn">
+          <div className="flex-1 w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 py-5 flex flex-col gap-4 animate-fadeIn">
             {/* Step 3 Subheader: Panel Navigator + Quick Navigation to Step 4 */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2.5 rounded-squircle-lg border border-stone-200 shadow-tactile">
               <PanelNavigator
@@ -595,7 +601,7 @@ export default function PackagingStudioPage() {
               </div>
 
               {/* RIGHT INSPECTOR DRAWER (3 cols) */}
-              <div className="lg:col-span-3 bg-white rounded-squircle-lg border border-stone-200 shadow-tactile p-4 flex flex-col gap-4 overflow-y-auto max-h-[700px]">
+              <div className="lg:col-span-3 bg-white rounded-squircle-lg border border-stone-200 shadow-tactile p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
                 {/* Inspector Tabs */}
                 <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-squircle text-xs font-semibold">
                   {[

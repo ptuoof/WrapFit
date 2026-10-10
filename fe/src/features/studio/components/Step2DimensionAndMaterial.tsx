@@ -131,7 +131,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const estSheetH = dimensions.height + dimensions.width * 2 + 40;
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
+    <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
       {/* Heading */}
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-brand-forest">

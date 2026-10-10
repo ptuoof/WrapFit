@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
 
-import { Sparkles, Eye, RotateCw } from "lucide-react";
+import { Sparkles, Eye, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
 
 export type BoxMaterialTheme = "kraft" | "ivory" | "forest" | "gold_foil";
 export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
@@ -23,6 +23,9 @@ interface InteractiveFoldingBox3DProps {
   autoRotate?: boolean;
   environment?: "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow";
   interactiveOpenState?: boolean;
+  rotationY?: number; // External yaw rotation (radians) driven by GSAP ScrollTrigger
+  rotationX?: number; // External pitch tilt (radians) driven by GSAP ScrollTrigger
+  enableMacroZoom?: boolean;
 }
 
 export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = ({
@@ -38,10 +41,15 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   autoRotate = false,
   environment = "studio",
   interactiveOpenState: propOpenState,
+  rotationY,
+  rotationX,
+  enableMacroZoom = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const [macroZoom, setMacroZoom] = useState<boolean>(false);
 
   // Group refs for hierarchical transforms
   const groupsRef = useRef<{
@@ -264,6 +272,120 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     [dimensions]
   );
 
+  // High-fidelity procedural 1024x1024 cotton ivory paper fiber bump texture for 4K desktop close-up
+  const createPaperFiberBumpTexture = useCallback(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // Base neutral mid-gray (128, 128, 128) representing flat elevation
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, 1024, 1024);
+
+    // Layer 1: High-frequency stochastic micro-porosity (paper bulk tooth)
+    const imgData = ctx.getImageData(0, 0, 1024, 1024);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * 36;
+      const val = Math.min(255, Math.max(0, 128 + noise));
+      data[i] = val;
+      data[i + 1] = val;
+      data[i + 2] = val;
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    // Layer 2: Natural Unbleached Cellulose Pulp & Cotton Fibers
+    ctx.save();
+    ctx.lineCap = "round";
+
+    // 2a. Fine micro-fibers (cotton pulp strands)
+    for (let f = 0; f < 3600; f++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const len = 6 + Math.random() * 24;
+      const angle = Math.random() * Math.PI * 2;
+      const curve = (Math.random() - 0.5) * 16;
+      const isHighlight = Math.random() > 0.45;
+
+      ctx.strokeStyle = isHighlight ? "rgba(225, 225, 225, 0.45)" : "rgba(40, 40, 40, 0.4)";
+      ctx.lineWidth = 0.8 + Math.random() * 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(
+        x + Math.cos(angle) * (len * 0.5) + curve,
+        y + Math.sin(angle) * (len * 0.5) + curve,
+        x + Math.cos(angle) * len,
+        y + Math.sin(angle) * len
+      );
+      ctx.stroke();
+    }
+
+    // 2b. Long interlocking structural fibers (linen & kraft hemp strands)
+    for (let lf = 0; lf < 550; lf++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const len = 25 + Math.random() * 60;
+      const angle = Math.random() * Math.PI * 2;
+      const isHighlight = Math.random() > 0.5;
+
+      ctx.strokeStyle = isHighlight ? "rgba(240, 240, 240, 0.38)" : "rgba(30, 30, 30, 0.35)";
+      ctx.lineWidth = 1.2 + Math.random() * 2.0;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(
+        x + Math.cos(angle) * (len * 0.33) + (Math.random() - 0.5) * 14,
+        y + Math.sin(angle) * (len * 0.33) + (Math.random() - 0.5) * 14,
+        x + Math.cos(angle) * (len * 0.66) + (Math.random() - 0.5) * 14,
+        y + Math.sin(angle) * (len * 0.66) + (Math.random() - 0.5) * 14,
+        x + Math.cos(angle) * len,
+        y + Math.sin(angle) * len
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(4, 4); // Seamless micro-detail for 4K desktop screens
+    texture.generateMipmaps = true;
+    return texture;
+  }, []);
+
+  // Micro-variation in surface specular reflection
+  const createPaperFiberRoughnessTexture = useCallback(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    ctx.fillStyle = "#E4E4E4";
+    ctx.fillRect(0, 0, 512, 512);
+
+    const imgData = ctx.getImageData(0, 0, 512, 512);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * 32;
+      const val = Math.min(255, Math.max(0, 228 + noise));
+      data[i] = val;
+      data[i + 1] = val;
+      data[i + 2] = val;
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(4, 4);
+    texture.generateMipmaps = true;
+    return texture;
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
@@ -290,6 +412,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const camera = new THREE.PerspectiveCamera(40, width / height, 1, 3000);
     camera.position.set(maxDim * 1.8, maxDim * 1.8, maxDim * 2.2);
     camera.lookAt(0, H / 2, 0);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -312,7 +435,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     controls.dampingFactor = 0.06;
     controls.target.set(0, H / 2, 0);
     controls.maxPolarAngle = Math.PI / 2 - 0.02;
-    controls.minDistance = maxDim * 0.8;
+    controls.minDistance = maxDim * 0.35;
     controls.maxDistance = maxDim * 5;
     controls.autoRotate = autoRotate;
     controls.autoRotateSpeed = 1.2;
@@ -350,8 +473,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // 4. Materials
+    // 4. Materials & Fiber Shaders (img2threejs tactile bump mapping)
     const artworkTexture = createMaterialTexture(theme, customLogoText, elements, backgroundPatternSvg);
+    const fiberBumpTexture = createPaperFiberBumpTexture();
+    const fiberRoughnessTexture = createPaperFiberRoughnessTexture();
+
     const paperColor =
       theme === "kraft"
         ? 0xd9b897
@@ -363,15 +489,21 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
     const paperMaterial = new THREE.MeshStandardMaterial({
       color: paperColor,
-      roughness: theme === "gold_foil" ? 0.35 : 0.85,
-      metalness: theme === "gold_foil" ? 0.7 : 0.05,
+      roughness: theme === "gold_foil" ? 0.32 : 0.88,
+      metalness: theme === "gold_foil" ? 0.72 : 0.04,
+      bumpMap: fiberBumpTexture,
+      bumpScale: theme === "gold_foil" ? 0.02 : (theme === "kraft" ? 0.075 : 0.052),
+      roughnessMap: theme === "gold_foil" ? null : fiberRoughnessTexture,
       side: THREE.DoubleSide,
     });
 
     const printedMaterial = new THREE.MeshStandardMaterial({
       map: artworkTexture,
-      roughness: theme === "gold_foil" ? 0.35 : 0.85,
-      metalness: theme === "gold_foil" ? 0.7 : 0.05,
+      roughness: theme === "gold_foil" ? 0.32 : 0.86,
+      metalness: theme === "gold_foil" ? 0.72 : 0.04,
+      bumpMap: fiberBumpTexture,
+      bumpScale: theme === "gold_foil" ? 0.02 : (theme === "kraft" ? 0.068 : 0.048),
+      roughnessMap: theme === "gold_foil" ? null : fiberRoughnessTexture,
       side: THREE.DoubleSide,
     });
 
@@ -639,6 +771,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       controls.dispose();
       renderer.dispose();
       artworkTexture?.dispose();
+      fiberBumpTexture?.dispose();
+      fiberRoughnessTexture?.dispose();
       paperMaterial.dispose();
       printedMaterial.dispose();
       groundGeo.dispose();
@@ -647,7 +781,35 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         container.removeChild(renderer.domElement);
       }
     };
-  }, [dimensions, boxType, theme, customLogoText, elements, backgroundPatternSvg, autoRotate, createMaterialTexture, onFlapClick]);
+  }, [dimensions, boxType, theme, customLogoText, elements, backgroundPatternSvg, autoRotate, createMaterialTexture, createPaperFiberBumpTexture, createPaperFiberRoughnessTexture, onFlapClick]);
+
+  // Rotation updates driven externally (e.g. GSAP ScrollTrigger)
+  useEffect(() => {
+    if (groupsRef.current.rootGroup && rotationY !== undefined) {
+      groupsRef.current.rootGroup.rotation.y = rotationY;
+    }
+  }, [rotationY]);
+
+  useEffect(() => {
+    if (groupsRef.current.rootGroup && rotationX !== undefined) {
+      groupsRef.current.rootGroup.rotation.x = rotationX;
+    }
+  }, [rotationX]);
+
+  // Macro 4K Close-up Zoom for inspecting cotton paper fiber bump texture
+  useEffect(() => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const { length: L, width: W, height: H } = dimensions;
+    const maxDim = Math.max(L, W, H);
+    if (macroZoom) {
+      cameraRef.current.position.set(maxDim * 0.42, maxDim * 0.45, maxDim * 0.52);
+      controlsRef.current.target.set(0, H * 0.35, 0);
+    } else {
+      cameraRef.current.position.set(maxDim * 1.8, maxDim * 1.8, maxDim * 2.2);
+      controlsRef.current.target.set(0, H / 2, 0);
+    }
+    controlsRef.current.update();
+  }, [macroZoom, dimensions]);
 
   // Transform updates based on foldProgress and interactiveOpenState
   useEffect(() => {
@@ -730,6 +892,22 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       </div>
 
       <div className="absolute top-4 right-4 flex items-center gap-2">
+        {enableMacroZoom && (
+          <button
+            type="button"
+            onClick={() => setMacroZoom((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition border shadow-tactile flex items-center gap-1.5 ${
+              macroZoom
+                ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                : "bg-white/95 text-stone-700 hover:bg-white border-stone-200"
+            }`}
+            title="Soi cận cảnh thớ sợi giấy cotton kẹp bông 4K"
+          >
+            {macroZoom ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
+            <span>{macroZoom ? "Góc Xa Studio" : "Soi Thớ Sợi 4K"}</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => {
@@ -775,6 +953,9 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         </div>
 
         <div className="flex items-center gap-2 text-[11px] text-stone-500">
+          <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/70 font-mono text-[10px] font-semibold">
+            Bump Map 4K
+          </span>
           <span>Chất liệu:</span>
           <span className="font-semibold capitalize text-stone-800">
             {theme === "kraft"
