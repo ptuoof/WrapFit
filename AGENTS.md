@@ -114,11 +114,12 @@ Whenever working on any task relating to WrapFit Frontend, UI/UX, 3D Canvas, CAD
      - `scroll-storytelling`: ScrollTrigger storytelling structure.
      - `insforge-backend-flow`: Backend NestJS API contracts and storage flows.
 
-2. **Tier 2 — Deep Source Code Inspection (`.agents/<library>/` & Project Source)**:
+2. **Tier 2 — Deep Source Code Inspection (Library Source & Project Source)**:
    - Do NOT stop at summary text in `SKILL.md`. When implementing specific functionality, proactively open, inspect, and extract logic from the actual source files:
-     - `.agents/pretext/`: Read implementation for canvas text measurement without DOM reflow.
-     - `.agents/impeccable/`: Read `skill/SKILL.src.md` and references for craft floor and UX audits.
-     - `.agents/InsForge/`: Read `packages/ui/` for Radix primitives, `cva`, and `cn()` patterns.
+     - `node_modules/@chenglou/pretext/src/`: Read implementation for canvas text measurement without DOM reflow (installed with `npm install`).
+     - `.agents/impeccable/` *(optional local clone of [pbakaus/impeccable](https://github.com/pbakaus/impeccable))*: Read `skill/SKILL.src.md` and references for craft floor and UX audits.
+     - `.agents/InsForge/` *(optional local clone of [InsForge/InsForge](https://github.com/InsForge/InsForge))*: Read `packages/ui/` for Radix primitives, `cva`, and `cn()` patterns.
+     - Everything in `.agents/` except `skills/` is ignored by git. Clone a reference repository there when you need it; if it is missing, skip it.
      - `fe/src/components/common/GoiMascot/`: Read for the mascot states and how each one is rendered.
      - `shared/src/core/contracts.ts`: Read for master domain events, project structures, and OOP models.
      - `be/src/<module>/`: Read DTOs and controller routes for exact API request/response contracts.
