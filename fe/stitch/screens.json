@@ -1,0 +1,468 @@
+{
+  "project": "15490463943889996451",
+  "screens": [
+    {
+      "id": "1c24590034664885b91471cffe4c0d75",
+      "slug": "intro-blueprint",
+      "route": "/intro/blueprint",
+      "title": "WrapFit — Trải Nghiệm 3D Intro Bàn Làm Việc CAD (Smooth & Clean Product View)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "93b051a5dca94de5bd0ed7ed759b4f7a",
+      "slug": "intro-minimal",
+      "route": "/intro/minimal",
+      "title": "WrapFit — Trải Nghiệm 3D Intro Bàn Làm Việc (Gấp Mở Mượt Mà & Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "2f24a2213dd74cd788a227223a8190c9",
+      "slug": "not-found",
+      "route": "not-found",
+      "title": "WrapFit — Khôi Phục Bản Vẽ & Trạng Thái 404 (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1224
+      }
+    },
+    {
+      "id": "583071fa9dec46e9884ca06cbdef850c",
+      "slug": "editor",
+      "route": "/editor",
+      "title": "WrapFit — Studio Thiết Kế Bản Vẽ Dieline CAD & Không Gian Gập Mở 3D Chuẩn In",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "64ae8cc2065f4cada9892a1fcd1a0dc1",
+      "slug": "editor-export",
+      "route": "/editor/export",
+      "title": "WrapFit — Xuất File & Chia Sẻ (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "e54f17a8714b4cda91525b4c4720ae9e",
+      "slug": "editor-inspect-fefco",
+      "route": "/editor/inspect/fefco",
+      "title": "WrapFit — Giải Phẫu Bóc Tách Cấu Trúc Bao Bì CAD Chuẩn In FEFCO",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "d49107077c4245a2bfb98fa622de346e",
+      "slug": "editor-materials-backdrop",
+      "route": "/editor/materials/backdrop",
+      "title": "WrapFit — Chi Tiết Vật Liệu & Bộ Sưu Tập Backdrop Động (Behance Style)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1321
+      }
+    },
+    {
+      "id": "e200b7af01a1449a85d689d5b7fbc071",
+      "slug": "dashboard",
+      "route": "/dashboard",
+      "title": "WrapFit Platform — Dashboard Quản Lý Toàn Diện (Alta Bento Style)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "9453d3217514482d8c12036305d3c024",
+      "slug": "dashboard-projects",
+      "route": "/dashboard/projects",
+      "title": "WrapFit — Không Gian Dự Án Tối Giản",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1325
+      }
+    },
+    {
+      "id": "0460ce4b82164674ac5f8930e9d737bd",
+      "slug": "dashboard-brand-kit",
+      "route": "/dashboard/brand-kit",
+      "title": "WrapFit — Brand Kit & Vật Liệu Ký Gửi (Ultra Minimalist Studio)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "5d6cc8b46f2640d49209c8b3973f093c",
+      "slug": "dashboard-materials",
+      "route": "/dashboard/materials",
+      "title": "WrapFit — Thư Viện Vật Liệu & Bảng Điều Khiển Tinh Gọn (Apple Minimal Workspace)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1189
+      }
+    },
+    {
+      "id": "d934fa86862742b4a873e9e9fee5126d",
+      "slug": "dashboard-specs",
+      "route": "/dashboard/specs",
+      "title": "WrapFit — Quản Lý Dự Án & Chi Tiết Thông Số Kỹ Thuật (Table Specs Style)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "2bdc15fac5b0482ca1d7169df1357979",
+      "slug": "dashboard-settings",
+      "route": "/dashboard/settings",
+      "title": "WrapFit — Dashboard Cài Đặt & Tài Khoản Chuyên Biệt (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "c07e6191b5894077a0e34fc5088a141e",
+      "slug": "pricing",
+      "route": "/pricing",
+      "title": "WrapFit — Bảng Giá & Nâng Cấp (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "689a394a749743c18b0620e14392455d",
+      "slug": "checkout-step-1",
+      "route": "/checkout/step-1",
+      "title": "WrapFit — Bước 1: Chọn Gói Cước & Tài Nguyên (Visual-First Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1076
+      }
+    },
+    {
+      "id": "bc597412e48e4660b2cdbcb2cac292a1",
+      "slug": "checkout-step-3",
+      "route": "/checkout/step-3",
+      "title": "WrapFit — Bước 4: Xác Nhận & Cấp Phép Studio (Visual-First Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1267
+      }
+    },
+    {
+      "id": "0637e61ecb1d4c458105b0f92c79b505",
+      "slug": "auth-login",
+      "route": "/auth/login",
+      "title": "WrapFit — Xác Thực & Tài Khoản (Jobsly Mosaic Bento Style)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "5880d8d9915f4a66b008c59381278cd0",
+      "slug": "team",
+      "route": "/team",
+      "title": "WrapFit — Cổng Hợp Tác Đối Tác & Quản Lý Team (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1462
+      }
+    },
+    {
+      "id": "ba6c0fce8eb847a8a45264725b4b998c",
+      "slug": "notifications",
+      "route": "/notifications",
+      "title": "WrapFit — Trung Tâm Thông Báo Tương Tác Phân Loại (Interactive Bento Focus)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "4381d704e493424fa6ac99d748c04765",
+      "slug": "support",
+      "route": "/support",
+      "title": "WrapFit — Trung Tâm Hỗ Trợ Ma Trận Tinh Chuẩn (Hyperchain Minimal Grid)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "49731e481c8c41258c83713c4069d851",
+      "slug": "admin",
+      "route": "/admin",
+      "title": "WrapFit Admin — Command Center Lướt Chart Tương Tác Kéo Thả (Apple Minimal)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "8562c9c91936427aac61b7a163bf4d8e",
+      "slug": "admin-accounts",
+      "route": "/admin/accounts",
+      "title": "WrapFit Admin — Danh Sách & Phân Hạng Tài Khoản (Section 1)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1092
+      }
+    },
+    {
+      "id": "76f2b2975700422e959e32b50f888aa3",
+      "slug": "admin-vault-quotas",
+      "route": "/admin/vault-quotas",
+      "title": "WrapFit Admin — Cấp Quyền & Hạn Mức CAD Vault (Section 2)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1050
+      }
+    },
+    {
+      "id": "35d57ad577324aa4b5123df2aa449482",
+      "slug": "admin-security",
+      "route": "/admin/security",
+      "title": "WrapFit Admin — Bảo Mật Zero-Trust & RBAC (Section 3)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1192
+      }
+    },
+    {
+      "id": "e5d224bd9f99441886fd6dd6673727f5",
+      "slug": "admin-dieline-vault",
+      "route": "/admin/dieline-vault",
+      "title": "WrapFit Admin — Dieline Vault & Kiểm Duyệt CAD (Apple Minimal Smart Deck)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "81b3b87bc0194e90a9fe6252ae67d02e",
+      "slug": "admin-print-shops",
+      "route": "/admin/print-shops",
+      "title": "WrapFit Admin — Quản Lý Xưởng In (Apple Minimal Smart Deck)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1280
+      }
+    },
+    {
+      "id": "569eb21b763443c6935e7de719542dbf",
+      "slug": "admin-studio-monitoring",
+      "route": "/admin/studio-monitoring",
+      "title": "WrapFit Admin — WrapFit 3D Studio (Apple Minimal Smart Deck)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1254
+      }
+    },
+    {
+      "id": "99b7a9adc53a4f7db69c3d8b98fc9b2e",
+      "slug": "admin-revenue",
+      "route": "/admin/revenue",
+      "title": "WrapFit Admin — Doanh Thu MRR & Quyết Toán Thuế VAT (Apple Minimal Smart Deck)",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "ee872d035ca94c58862ba67ebf210aff",
+      "slug": "admin-media",
+      "route": "/admin/media",
+      "title": "WrapFit Admin — Quản Trị Đa Phương Tiện Thống Nhất & Tinh Chuẩn",
+      "status": "converted",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "e299c592c3644deeafecfad736bef1a3",
+      "slug": "home",
+      "route": "/",
+      "title": "WrapFit Platform — Thư Viện Vòng Lặp Căn Chỉnh Chuẩn Trung Tâm",
+      "status": "manual",
+      "note": "Integrated by hand into src/app/page.tsx (mixes Stitch markup with app components); not generated.",
+      "viewport": {
+        "width": 1280,
+        "height": 2799
+      }
+    },
+    {
+      "id": "8d9287b4ff7240f4a601b782541b68c6",
+      "slug": "editor-step-1",
+      "route": "/editor/step-1",
+      "title": "WrapFit — Bước 1: Chọn Cấu Trúc Bao Bì (Visual-First Minimal Studio)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "6da510f2dbd0410b806ff3242603de1b",
+      "slug": "editor-step-2",
+      "route": "/editor/step-2",
+      "title": "WrapFit — Bước 2: Kích Thước Tương Tác 3D Real-time (Parametric Packaging Studio)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "7f6f2ade56ac4385aa41d73452908fea",
+      "slug": "editor-step-3",
+      "route": "/editor/step-3",
+      "title": "WrapFit — Trình Trải Phẳng & Áp Đồ Họa Artwork (Bento Interactive Studio)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "f56c668bcd2b483495abc443175f9c99",
+      "slug": "editor-step-4",
+      "route": "/editor/step-4",
+      "title": "WrapFit — Bước 4: Kiểm Định FitCheck™ & Xuất Bản In (Visual-First Studio)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "c12fc256bc7144dcae5a30489a397843",
+      "slug": "checkout-step-2",
+      "route": "/checkout/step-2",
+      "title": "WrapFit — Bước 2: Phương Thức Thanh Toán (Visual-First Minimal)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1171
+      }
+    },
+    {
+      "id": "95d2b72f3f3b4e17883a05b79461230a",
+      "slug": "auth-2fa",
+      "route": "/auth/2fa",
+      "title": "WrapFit — Bước 3: Xác Thực 2FA & OTP (Visual-First Minimal)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1118
+      }
+    },
+    {
+      "id": "c17ade8c05024794a48a2d3b03103d62",
+      "slug": "dashboard-orders",
+      "route": "/dashboard/orders",
+      "title": "WrapFit — Lịch Sử Đơn Hàng & Hóa Đơn VAT (Interactive Bento Focus)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1080
+      }
+    },
+    {
+      "id": "cee7ae4dc7424d39969d900666af9203",
+      "slug": "dashboard-profile",
+      "route": "/dashboard/profile",
+      "title": "WrapFit — Hồ Sơ Cá Nhân & Cấu Hình Đo Đạc (Interactive Bento Focus)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1170
+      }
+    },
+    {
+      "id": "93f274f45d0040a2b053d9247643e75d",
+      "slug": "admin-appraisal",
+      "route": "/admin/appraisal",
+      "title": "WrapFit Admin — Trung Tâm Thẩm Định Mẫu Hộp Ký Gửi",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "f894125a32994970a1bf50c5f0ed9930",
+      "slug": "admin-gpu-cluster",
+      "route": "/admin/gpu-cluster",
+      "title": "WrapFit Admin — Bảo Mật Zero-Trust & Cụm GPU (Apple Minimal Smart Deck)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "f7633d09f5b34e669ab3e08a5e0be16a",
+      "slug": "admin-ledger",
+      "route": "/admin/ledger",
+      "title": "WrapFit Admin — Sổ Cái Giao Dịch & Quyết Toán Doanh Thu",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1024
+      }
+    },
+    {
+      "id": "7911c6892ae446d4b3796a6d647664bc",
+      "slug": "admin-system-config",
+      "route": "/admin/system-config",
+      "title": "WrapFit Admin — Cấu Hình Hệ Thống (Apple Minimal Smart Deck)",
+      "status": "approximation",
+      "viewport": {
+        "width": 1280,
+        "height": 1518
+      }
+    }
+  ]
+}

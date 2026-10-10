@@ -8,7 +8,27 @@ description: >-
 
 This skill instructs the agent on implementing an agent-ready backend architecture for WrapFit, leveraging patterns from `InsForge`.
 
+## 0. Backend Code Layout (`be/src/`)
+
+The backend follows [CatsMiaow/nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure). Full rules: `be/README.md` ("Cấu trúc thư mục") and `docs/07`, sections 1.3–1.5. Before writing backend code:
+
+- **Where things go**: one feature module per folder at `be/src/<module>/` (`auth`, `users`, `projects`, `export`, ...). Cross-cutting pieces (decorators, guards, filters, DTO helpers, constants used by several modules) go to `be/src/common/`; infrastructure Nest modules to `be/src/shared/` (`prisma`, `queue`); settings to `be/src/config/`. `common/` and `shared/` never import a feature module.
+- **Module shape**: small modules stay flat (`<name>.module.ts`, `.controller.ts`, `.service.ts`, `dto/`). Add sub-folders only when the module grows (`auth/guards`, `export/rendering`). `projects` uses 4 layers (`presentation/application/domain/infrastructure`) with ports + injection tokens (`docs/08`, section 1).
+- **Imports**: every module has an `index.ts` barrel. Import another module through its folder (`from '../projects'`, `from '../common'`, `from '../shared/prisma'`); inside a module import files directly; never import `'.'` or `'..'`. No import cycles: `npm --workspace=be run lint` runs `import/no-cycle`. For a reverse dependency, add a port in the owning module (example: `PROJECT_FILES` implemented by `StorageService`) or move the shared piece to `common/`.
+- **Configuration**: inject `ConfigService` from `../common` (not the one of `@nestjs/config`) and read typed nested keys: `config.get('storage.bucket')`. A new environment variable goes to `config/env.validation.ts`, then `config/envs/default.ts` (and `envs/production.ts` if production needs another default). Only `be/src/config/` reads `process.env`.
+- **API vs worker**: jobs run only in `be/src/worker.ts`. A module with background work declares `XModule` (API side, queues jobs) and `XWorkerModule` (the `@Processor`), like `ExportModule` / `ExportWorkerModule`. `@Cron` tasks register in the API process only.
+- **Tests**: unit tests `*.spec.ts` next to the file; e2e tests in `be/test/e2e/*.e2e-spec.ts`.
+
 ## 1. Relational Database Schema (PostgreSQL)
+
+> The SQL below is the original sketch. The source of truth is `be/prisma/schema.prisma`, and these rules apply to
+> every change (see `docs/02_DATABASE_DESIGN.md` and `docs/10_DB_HARDENING_DESIGN.md`):
+> - `timestamptz(3)` for every timestamp, `@default(uuid(7))` for primary keys, an index on every foreign key.
+> - CHECK constraints (`chk_*`) live in migrations only; keep them when renaming or retyping a column.
+> - Store object keys (`users/...`), never public URLs: the API builds URLs with `storage/asset-keys.ts`.
+> - Write a canvas through the repositories so `project_file_refs` stays in sync; never search keys in `canvas_state::text`.
+> - Projects are pinned to a `formula_version`; change a dieline formula by adding a version in `shared/src/parametric/registry.ts`.
+> - Accounts sign in only with a verified email (`users.email_verified_at`).
 
 ```sql
 -- 1. Users & Shop Profiles

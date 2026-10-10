@@ -1,0 +1,564 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Playfair+Display:ital,wght@0,500;0,600;1,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+.dot-pattern {
+  background-image: radial-gradient(rgba(72, 100, 88, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.tab-content.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-bright":"#fff8f5","primary-fixed-dim":"#b4c5ff","on-surface-variant":"#535a64","surface":"#fff8f5","secondary-container":"#caead9","surface-container-lowest":"#ffffff","secondary-fixed-dim":"#aecebe","secondary-fixed":"#caead9","surface-dim":"#e0d8d5","surface-container-highest":"#e9e1dd","on-secondary-fixed":"#032016","inverse-primary":"#b4c5ff","secondary":"#245a44","tertiary-container":"#cca72f","tertiary":"#735c00","surface-container":"#f7f0eb","primary":"#0f48b9","tertiary-fixed":"#ffe088","surface-container-high":"#eee7e3","outline":"#737686","on-secondary-container":"#1a3d2e","on-primary-container":"#eeefff","error":"#ba1a1a","primary-container":"#2563eb","on-tertiary":"#ffffff","inverse-surface":"#33302d","on-background":"#13241c","surface-variant":"#ede5e1","on-tertiary-fixed":"#241a00","on-primary":"#ffffff","on-error":"#ffffff","error-container":"#ffdad6","surface-tint":"#0053db","on-surface":"#13241c","outline-variant":"#c3c6d7","on-secondary-fixed-variant":"#1e3b2e","inverse-on-surface":"#f7efeb","background":"#fff8f5","on-tertiary-container":"#4e3d00","on-secondary":"#ffffff","tertiary-fixed-dim":"#e9c349","surface-container-low":"#faf3ee","on-primary-fixed-variant":"#003ea8","on-error-container":"#93000a","on-primary-fixed":"#00174b","on-tertiary-fixed-variant":"#574500","primary-fixed":"#dbe1ff","forest":"#133020"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem","2xl":"1rem","3xl":"1.5rem","4xl":"2rem",full:"9999px"},spacing:{"space-md":"1rem","space-sm":"0.5rem","space-lg":"1.5rem","margin-mobile":"1rem","space-xl":"2.5rem","space-xs":"0.25rem",margin:"2rem","gutter-lg":"2rem",gutter:"1.5rem","gutter-sm":"1rem"},fontFamily:{"body-sm":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-lg-mobile":["Playfair Display"],"label-ui":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"headline-md":["Playfair Display"],"cad-dimension":["JetBrains Mono"],"headline-lg":["Playfair Display"],"body-lg":["Plus Jakarta Sans"],"cad-spec-micro":["JetBrains Mono"],"display-hero-mobile":["Playfair Display"],"display-hero":["Playfair Display"]},fontSize:{"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"body-md":["14px",{lineHeight:"22px",fontWeight:"400"}],"headline-lg-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"500"}],"label-ui":["13px",{lineHeight:"16px",letterSpacing:"0.01em",fontWeight:"600"}],"headline-sm":["18px",{lineHeight:"26px",fontWeight:"600"}],"headline-md":["24px",{lineHeight:"32px",fontWeight:"500"}],"cad-dimension":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"500"}],"headline-lg":["36px",{lineHeight:"44px",letterSpacing:"-0.015em",fontWeight:"500"}],"body-lg":["16px",{lineHeight:"26px",fontWeight:"400"}],"cad-spec-micro":["10px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"400"}],"display-hero-mobile":["32px",{lineHeight:"40px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-hero":["48px",{lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"600"}]}}}}</script></head><body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary/10 selection:text-primary relative min-h-screen overflow-x-hidden dot-pattern">
+<!-- Subtle Atmospheric Mesh Glow Background -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+<div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[760px] h-[480px] bg-gradient-to-br from-emerald-100/40 via-blue-100/30 to-amber-100/20 rounded-full blur-3xl opacity-70"></div>
+<div class="absolute top-[40%] -right-48 w-[500px] h-[500px] bg-emerald-50/50 rounded-full blur-3xl opacity-60"></div>
+</div>
+<!-- Header / Navigation Bar -->
+<header class="fixed top-0 inset-x-0 z-50 pointer-events-none">
+<div class="h-20 max-w-7xl mx-auto px-margin flex items-center justify-between">
+<div class="pointer-events-auto flex items-center gap-space-md">
+<a class="flex items-center gap-space-xs px-4 py-2 rounded-full bg-surface-container-lowest/85 backdrop-blur-xl border border-stone-200/60 shadow-[0_2px_12px_rgba(19,48,32,0.04)] hover:shadow-md transition-all" data-path="theo-doi-don-hang" href="#">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+<span class="font-headline-sm text-[16px] tracking-tight text-forest font-semibold">WrapFit</span>
+<span class="font-cad-spec-micro text-cad-spec-micro px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant uppercase font-medium">CAD Studio</span>
+</a>
+</div>
+<nav class="pointer-events-auto hidden md:flex items-center p-1.5 rounded-full bg-surface-container-lowest/85 backdrop-blur-xl border border-stone-200/60 shadow-[0_2px_12px_rgba(19,48,32,0.04)] gap-1">
+<a class="font-label-ui text-label-ui px-4 py-1.5 rounded-full text-on-surface-variant hover:text-forest hover:bg-stone-100/70 transition-all" data-path="theo-doi-don-hang" href="#">Theo Dõi Đơn Hàng</a>
+<a class="font-label-ui text-label-ui px-4 py-1.5 rounded-full text-on-surface-variant hover:text-forest hover:bg-stone-100/70 transition-all" data-path="ho-tro-ky-thuat" href="#">Hỗ Trợ Kỹ Thuật</a>
+<a class="font-label-ui text-label-ui px-4 py-1.5 rounded-full bg-forest text-white shadow-sm transition-all" data-path="doi-tac-and-team" href="#">Đối Tác &amp; Team</a>
+<a class="font-label-ui text-label-ui px-4 py-1.5 rounded-full text-on-surface-variant hover:text-forest hover:bg-stone-100/70 transition-all" data-path="3d-workspace" href="#">3D Workspace</a>
+</nav>
+<div class="pointer-events-auto flex items-center gap-space-sm pl-3 pr-1.5 py-1.5 rounded-full bg-surface-container-lowest/85 backdrop-blur-xl border border-stone-200/60 shadow-[0_2px_12px_rgba(19,48,32,0.04)]">
+<div class="flex items-center gap-1.5 px-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="font-cad-dimension text-cad-dimension text-forest font-medium">Trực Tuyến</span>
+</div>
+<img alt="Bé Gói Avatar" class="w-8 h-8 rounded-full object-contain p-0.5 bg-stone-50 border border-stone-200/60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLaTUZzs_h29YJ4jAXfivMRSVUhWwqciMoJBu6RXs4mmO3rMdjWgZH1WiOlcy7gl5njTU_ysR03plhRNWjGGUlWkNutAQBoESakk5Id5MZEmr9JLQU-x4BNnBlxjOMupfZEoH0gGub6aovlT1-JOKvx8q3YbhV3ZuvF9jld-bMbZOZe7gNtiMh0b2JK88UmddnZUUFPFeQjeHCBvykLahv1MCXaF1R50DGk6PEjuo3Z3uLe10Ciqy0QmlryZ2KOub9Nxs">
+</div>
+</div>
+</header>
+<main class="w-full pt-28 pb-32">
+<div class="max-w-5xl mx-auto px-margin">
+<!-- Hero Title & Project Identity -->
+<div class="text-center max-w-2xl mx-auto space-y-3 mb-10"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-lowest/90 border border-stone-200/60 backdrop-blur-sm shadow-sm font-cad-spec-micro text-cad-spec-micro uppercase tracking-wider text-forest font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span class="">Bản Vẽ CAD WF-8842-VN</span>
+<span class="text-stone-300">•</span>
+<span class="">ISO 12647-2</span>
+</div>
+<h1 class="font-headline-lg text-3xl md:text-4xl text-forest tracking-tight font-medium">
+Hộp Quà Maison Royale
+</h1>
+<div class="flex items-center justify-center gap-3 pt-1 text-[12px] text-stone-500 font-cad-dimension">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 4 Trực Tuyến</span>
+<span class="text-stone-300">•</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-emerald-700">verified_user</span> 256-bit ECDSA</span>
+<span class="text-stone-300">•</span>
+<span class="text-stone-600 font-medium">v3.4 (Khóa)</span>
+</div></div>
+<!-- Mascot AI Assurance Banner -->
+<div class="mb-8 rounded-3xl p-5 md:p-6 bg-gradient-to-r from-emerald-50/70 via-stone-50/60 to-blue-50/60 border border-stone-200/50 backdrop-blur-md shadow-[0_4px_20px_rgba(19,48,32,0.03)] flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 rounded-2xl bg-white p-2 border border-stone-200/40 shadow-sm shrink-0 flex items-center justify-center">
+<img alt="Bé Gói Mascot" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB935sF6beyW8igfSfarIHOMvWiP1IQsTgkkg45tn3OqyihS8rQGQz03ncN5DwNb2ZOq0eYio8G8w8fJq6IJwOXCP3QiR0tdvMptSLduMuq6Rjpqmnj9TwK3hnm5h7TzTYF1joqPDn8nYDcrB14vgrcab3WSBjMmCVw5roKt6pxNqfR8l7gBNIYQCizUDcqGV5dC0DOWltadzdmnorElPStkiC5zCVpn2HI7dJ7CeaYutNTvLvnpv6-atxCLDiL4_btw4g">
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-[16px] text-forest font-semibold">Bé Gói CAD Assistant</span>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-medium font-cad-dimension">Kiểm Định An Toàn</span>
+</div>
+<p class="font-body-sm text-stone-600 mt-0.5">
+            Dieline đã khóa chống sai số 0.42mm Caliper. Xưởng in Đông Bắc CNC đang tải trực ti���p dao bế không qua trung gian.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="px-3.5 py-1.5 rounded-full bg-white/90 border border-stone-200/60 text-forest text-xs font-cad-dimension font-medium flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+<span>Dieline 100% Calibrated</span>
+</div>
+</div>
+</div>
+<!-- Segmented Clean Tab Navigation (Apple Minimal Style) -->
+<div class="flex justify-center mb-8">
+<div class="p-1 rounded-2xl bg-stone-200/40 backdrop-blur-md border border-stone-200/50 inline-flex flex-wrap gap-1 max-w-full justify-center">
+<button class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-label-ui font-medium transition-all text-forest bg-white shadow-sm" data-tab="tab-team" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span>Thành Viên &amp; Xưởng In</span>
+</span>
+</button>
+<button class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-label-ui font-medium transition-all text-stone-600 hover:text-forest hover:bg-white/50" data-tab="tab-lock" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+<span>Khóa Sản Xuất &amp; Chữ Ký Số</span>
+</span>
+</button>
+<button class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-label-ui font-medium transition-all text-stone-600 hover:text-forest hover:bg-white/50" data-tab="tab-audit" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>Nhật Ký Phiên Bản</span>
+</span>
+</button>
+<button class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-label-ui font-medium transition-all text-stone-600 hover:text-forest hover:bg-white/50" data-tab="tab-specs" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>Thông Số Kỹ Thuật</span>
+</span>
+</button>
+</div>
+</div>
+<!-- TAB PANELS CONTAINER -->
+<div class="rounded-3xl bg-surface-container-lowest/80 backdrop-blur-md border-stone-200/50 p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.02)] min-h-[420px]">
+<!-- TAB 1: THÀNH VIÊN & XƯỞNG IN -->
+<section class="tab-content active" id="tab-team"><div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 gap-3">
+<div>
+<h2 class="font-headline-sm text-lg text-forest font-semibold">Danh Sách Phân Quyền</h2>
+<p class="font-body-sm text-xs text-stone-500">Chạm vào từng vị trí để phóng to kiểm tra quyền hạn &amp; chữ ký số.</p>
+</div>
+<button class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-forest text-white hover:bg-emerald-950 text-xs font-label-ui font-medium shadow-sm transition-all self-start sm:self-auto" type="button">
+<span class="material-symbols-outlined text-[17px]">person_add</span>
+<span class="">+ Mời Thành Viên / Thêm Xưởng In</span>
+</button>
+</div>
+<div class="space-y-3 mt-3" id="memberCardsList">
+<!-- Member 1 -->
+<div class="member-card cursor-pointer p-4 rounded-2xl bg-stone-50/60 hover:bg-stone-50 transition-all duration-300 shadow-sm" onclick="toggleMember(this)">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3.5">
+<div class="relative shrink-0">
+<img alt="Lê Hoàng Nam" class="w-11 h-11 rounded-full object-cover ring-2 ring-stone-100 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3RS5FJt23PBqBV-GQG1WJlN4XFu-kj9I1KOKEHck97GqT5WVMbPmYOXQNlKihtuqFudfW2IXokgZJnthQYDWeJgNitqXjmYHrL2Q_HTvK_PkvHgWBeiHczWnU1e4X8mMrujgI6X0sAoVy9C2nIYOsjgx9JxQVYjqxplkVAtlnhKy3LqwGCKxLONkxjqgBWU-tH_JK1uzVxj6sRNHTntUza-FpjpRkXGeT_Ekh7YAwCKO5ZJEYUJJr2g">
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-sm font-semibold text-forest">Lê Hoàng Nam</span>
+<span class="px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-cad-spec-micro text-[10px] uppercase font-medium">Chủ Sở Hữu</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-cad-dimension flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">lock_open</span> Root Access
+</span>
+<span class="expand-icon material-symbols-outlined text-stone-400 text-[20px] transition-transform duration-300">keyboard_arrow_down</span>
+</div>
+</div>
+<!-- Zoom-in Details Panel (Hidden by default) -->
+<div class="member-detail hidden pt-3 mt-3 border-t border-stone-200/40 text-xs font-body-sm text-stone-600">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Nhiệm vụ &amp; Quyền hạn</span>
+<span class="font-medium text-forest">Brand Director • Toàn quyền quản trị, duyệt ngân sách &amp; phê chuẩn lệnh sản xuất</span>
+</div>
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Xác thực ECDSA &amp; Khóa bảo mật</span>
+<span class="font-cad-dimension text-emerald-700">0x71fa...89b3 • Quyền Root vĩnh viễn</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Member 2 -->
+<div class="member-card cursor-pointer p-4 rounded-2xl bg-stone-50/60 hover:bg-stone-50 transition-all duration-300 shadow-sm" onclick="toggleMember(this)">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3.5">
+<div class="relative shrink-0">
+<img alt="Studio Minh &amp; Co" class="w-11 h-11 rounded-full object-cover ring-2 ring-stone-100 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHIWhdVhPNZXoUdOHWvFZ7hdSk2QidcOiXw1V-wwFbaW6AIrL2y9dI3MpuVzuCpyEc075ptd86EMgsQj7qfMYQLyTprrGLoES2tcSd9up3zp3bm5e_StehRh82WRaZjcql6xrPmfT6pi8br7ZaNQIiDif3XZO0TAxPJ_nfwr0eI3kxvkDGTg7i1-oh9tgZsPSysiinF0lBRN9yI6bQL-W2cZnizT5PhUJBXPwqmBkH_ZJWHX8aRymx1A">
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-sm font-semibold text-forest">Studio Minh &amp; Co.</span>
+<span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 font-cad-spec-micro text-[10px] uppercase font-medium">Thiết Kế</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 text-xs font-cad-dimension flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">edit_note</span> Quyền Ghi Artwork
+</span>
+<span class="expand-icon material-symbols-outlined text-stone-400 text-[20px] transition-transform duration-300">keyboard_arrow_down</span>
+</div>
+</div>
+<div class="member-detail hidden pt-3 mt-3 border-t border-stone-200/40 text-xs font-body-sm text-stone-600">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Nhiệm vụ &amp; Quyền hạn</span>
+<span class="font-medium text-forest">Lead Packaging Artist • Xem 3D mô phỏng, cập nhật vector rập &amp; tọa độ ép nhũ</span>
+</div>
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Xác thực ECDSA &amp; Khóa bảo mật</span>
+<span class="font-cad-dimension text-blue-800">0x48bc...1234 • Quyền Ghi (Write-access)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Partner 1 -->
+<div class="member-card cursor-pointer p-4 rounded-2xl bg-stone-50/60 hover:bg-stone-50 transition-all duration-300 shadow-sm" onclick="toggleMember(this)">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3.5">
+<div class="w-11 h-11 rounded-full bg-stone-100 flex items-center justify-center text-forest shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-sm font-semibold text-forest">Xưởng In Đông Bắc CNC</span>
+<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-cad-spec-micro text-[10px] uppercase font-medium">Đối Tác In Ấn</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-cad-dimension flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">download_done</span> Xuất CNC 1:1
+</span>
+<span class="expand-icon material-symbols-outlined text-stone-400 text-[20px] transition-transform duration-300">keyboard_arrow_down</span>
+</div>
+</div>
+<div class="member-detail hidden pt-3 mt-3 border-t border-stone-200/40 text-xs font-body-sm text-stone-600">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Nhiệm vụ &amp; Quyền hạn</span>
+<span class="font-medium text-forest">Trích xuất dao bế DXF 1:1, Caliper gân &amp; Kiểm định dưỡng phôi máy cắt tự động</span>
+</div>
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Trạng thái kết nối máy cắt</span>
+<span class="font-cad-dimension text-emerald-700">Graphtec FC9000 • Trực tuyến realtime</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Partner 2 -->
+<div class="member-card cursor-pointer p-4 rounded-2xl bg-stone-50/60 hover:bg-stone-50 transition-all duration-300 shadow-sm" onclick="toggleMember(this)">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3.5">
+<div class="w-11 h-11 rounded-full bg-stone-100 flex items-center justify-center text-stone-700 shadow-sm shrink-0 font-cad-dimension text-xs font-semibold">
+AN
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-sm font-semibold text-forest">An Nguyễn</span>
+<span class="px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 font-cad-spec-micro text-[10px] uppercase font-medium">Kỹ Sư Trưởng</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 text-xs font-cad-dimension flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">draw</span> Ký Duyệt Dao
+</span>
+<span class="expand-icon material-symbols-outlined text-stone-400 text-[20px] transition-transform duration-300">keyboard_arrow_down</span>
+</div>
+</div>
+<div class="member-detail hidden pt-3 mt-3 border-t border-stone-200/40 text-xs font-body-sm text-stone-600">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Nhiệm vụ &amp; Quyền hạn</span>
+<span class="font-medium text-forest">Giám sát kỹ thuật rập &amp; Ký duyệt chứng thư số ECDSA chống sai lệch</span>
+</div>
+<div>
+<span class="font-cad-spec-micro text-[10px] uppercase text-stone-400 block">Chữ ký số xác nhận</span>
+<span class="font-cad-dimension text-stone-700">SHA-256 ECDSA: 0x9b42...88f1c4e9 (Đã ký)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Info within Tab -->
+<div class="mt-5 pt-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-400 font-cad-spec-micro">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">vpn_key</span> Mã hóa End-to-End theo phiên làm việc</span>
+<span class="">Tự động thu hồi quyền sau 30 ngày không hoạt động</span>
+</div></section>
+<!-- TAB 2: KHÓA SẢN XUẤT & CHỮ KÝ SỐ -->
+<section class="tab-content" id="tab-lock">
+<div class="space-y-6">
+<!-- Production Lock Apple-Style Toggle Card -->
+<div class="p-6 rounded-2xl bg-stone-50/70 border border-stone-200/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="space-y-1 max-w-lg">
+<div class="flex items-center gap-1.5 text-xs font-cad-spec-micro uppercase tracking-wider text-rose-700 font-semibold">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span>Khóa Bản Vẽ Sản Xuất (Production Lock)</span>
+</div>
+<h3 class="font-headline-sm text-base text-forest font-semibold">Đóng Băng Tệp Xuất Phủ UV &amp; Dao Cắt</h3>
+<p class="font-body-sm text-xs text-stone-500">
+                Khi kích hoạt, hình học rập CAD trên file gốc bị khóa cứng. Xưởng in tự động nhận định danh hash SHA-256 an toàn và ngăn ngừa rủi ro sai lệch kích thước khi bế.
+              </p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer select-none self-start sm:self-center shrink-0">
+<input checked="" class="sr-only peer" id="productionLockSwitch" type="checkbox">
+<div class="w-14 h-8 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-forest shadow-inner"></div>
+</label>
+</div>
+<!-- Digital Signature & Security Credentials -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-5 rounded-2xl bg-stone-50/60 border border-stone-200/40">
+<div class="flex items-center justify-between mb-3">
+<span class="font-cad-spec-micro text-cad-spec-micro uppercase text-stone-500 font-medium">Chứng Thư Số Bản Vẽ</span>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-cad-dimension font-semibold">VERIFIED</span>
+</div>
+<div class="space-y-1.5">
+<div class="font-cad-dimension text-xs font-medium text-forest truncate">ECDSA: 0x9b42...88f1c4e9</div>
+<p class="font-body-sm text-xs text-stone-500">Đã ký số bởi Kỹ Sư Trưởng An Nguyễn vào lúc 10:45 AM hôm nay.</p>
+</div>
+</div>
+<!-- CNC Machine Realtime Status -->
+<div class="p-5 rounded-2xl bg-stone-50/60 border border-stone-200/40">
+<div class="flex items-center justify-between mb-3">
+<span class="font-cad-spec-micro text-cad-spec-micro uppercase text-stone-500 font-medium">Trạng Thái Máy Cắt CNC</span>
+<span class="flex items-center gap-1 text-[11px] font-cad-dimension text-emerald-700 font-medium">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Trực Tuyến
+                </span>
+</div>
+<div class="space-y-1.5">
+<div class="font-body-md text-xs font-semibold text-forest">Graphtec FC9000-140 (Trạm Đông Bắc)</div>
+<p class="font-body-sm text-xs text-stone-500">Độ trễ tín hiệu: 12ms • Lệnh đọc dao cắt sẵn sàng</p>
+</div>
+</div>
+</div>
+<!-- Fast Token Actions -->
+<div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+<button class="px-4 py-2 rounded-full bg-stone-100 hover:bg-stone-200/70 text-forest text-xs font-label-ui font-medium transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">key</span>
+<span>Tạo Token API Xưởng In Mới</span>
+</button>
+<button class="px-4 py-2 rounded-full bg-forest text-white hover:bg-emerald-950 text-xs font-label-ui font-medium transition-all shadow-sm flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Xác Nhận Ký Số Toàn Dự Án</span>
+</button>
+</div>
+</div>
+</section>
+<!-- TAB 3: NHẬT KÝ PHIÊN BẢN (AUDIT TRAIL) -->
+<section class="tab-content" id="tab-audit">
+<div class="flex items-center justify-between pb-6 border-b border-stone-100">
+<div>
+<h2 class="font-headline-sm text-lg text-forest font-semibold">Lịch Sử Kiểm Định &amp; Hiệu Chỉnh</h2>
+<p class="font-body-sm text-xs text-stone-500">Audit trail thời gian thực (Giờ Hà Nội GMT+7).</p>
+</div>
+<button class="text-xs font-cad-dimension text-forest hover:text-emerald-700 flex items-center gap-1 font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">difference</span>
+<span>So Sánh Khác Biệt Giữa 2 Bản Vẽ</span>
+</button>
+</div>
+<div class="relative pl-6 space-y-6 mt-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-200">
+<!-- Version 3.4 Active -->
+<div class="relative group">
+<span class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-forest ring-4 ring-white"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-cad-dimension text-xs font-semibold text-forest">v3.4 (Hiện Tại)</span>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-cad-spec-micro text-[10px] font-medium">Bảo Vệ Khóa</span>
+</div>
+<span class="font-cad-spec-micro text-xs text-stone-400">10:45 AM</span>
+</div>
+<h4 class="font-body-md text-sm font-medium text-forest">
+                Chốt khuôn bế và bù caliper 0.42mm
+              </h4>
+<p class="font-body-sm text-xs text-stone-500">
+                Kỹ sư An Nguyễn đã kiểm định dao cắt • Khóa an toàn toàn phần cho đối tác Đông Bắc CNC trích xuất laser.
+              </p>
+</div>
+</div>
+<!-- Version 3.3 -->
+<div class="relative group">
+<span class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-stone-300 ring-4 ring-white group-hover:bg-forest transition-colors"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-cad-dimension text-xs font-medium text-forest">v3.3</span>
+<span class="font-cad-spec-micro text-xs text-stone-400">Hôm qua • 16:20</span>
+</div>
+<h4 class="font-body-md text-sm font-medium text-forest">
+                Đổi màu mực Pantone 871C Hot Foil
+              </h4>
+<p class="font-body-sm text-xs text-stone-500">
+                Điều chỉnh tọa độ ép nhũ vàng 22k nắp hộp âm dương và logo dập nổi • Minh &amp; Co. tải lên.
+              </p>
+</div>
+</div>
+<!-- Version 3.2 -->
+<div class="relative group">
+<span class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-stone-300 ring-4 ring-white group-hover:bg-forest transition-colors"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-cad-dimension text-xs font-medium text-forest">v3.2</span>
+<span class="font-cad-spec-micro text-xs text-stone-400">18 Th10 • 09:12</span>
+</div>
+<h4 class="font-body-md text-sm font-medium text-forest">
+                Tạo rập hộp âm dương nguyên bản
+              </h4>
+<p class="font-body-sm text-xs text-stone-500">
+                Khởi tạo tọa độ vector sơ cấp và thiết lập thông số độ mở nắp 120° chống kẹt góc.
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- TAB 4: THÔNG SỐ BẢN VẼ KỸ THUẬT -->
+<section class="tab-content" id="tab-specs">
+<div class="flex items-center justify-between pb-6 border-b border-stone-100">
+<div>
+<h2 class="font-headline-sm text-lg text-forest font-semibold">Thông Số Dieline Kiểm Định</h2>
+<p class="font-body-sm text-xs text-stone-500">Tuân thủ tiêu chuẩn kỹ thuật đóng gói ISO 216 / GB Quốc Tế.</p>
+</div>
+<span class="font-cad-dimension text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Caliper Checked</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+<div class="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/40">
+<span class="font-cad-spec-micro text-[11px] uppercase text-stone-500 block">Độ Dày Giấy (Caliper)</span>
+<span class="font-cad-dimension text-xl font-semibold text-forest mt-1.5 block">0.42 mm</span>
+<span class="font-body-sm text-[11px] text-emerald-700 mt-1 block">C350 Duplex Bồi</span>
+</div>
+<div class="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/40">
+<span class="font-cad-spec-micro text-[11px] uppercase text-stone-500 block">Bù Gân Cấn (Crease)</span>
+<span class="font-cad-dimension text-xl font-semibold text-forest mt-1.5 block">+1.25 mm</span>
+<span class="font-body-sm text-[11px] text-stone-500 mt-1 block">Dao rãnh đôi 2pt</span>
+</div>
+<div class="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/40">
+<span class="font-cad-spec-micro text-[11px] uppercase text-stone-500 block">Tràn Lề (Bleed Min)</span>
+<span class="font-cad-dimension text-xl font-semibold text-forest mt-1.5 block">3.00 mm</span>
+<span class="font-body-sm text-[11px] text-emerald-700 mt-1 block">Đạt chuẩn ISO</span>
+</div>
+<div class="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/40">
+<span class="font-cad-spec-micro text-[11px] uppercase text-stone-500 block">Vùng Ép Kim Nóng</span>
+<span class="font-cad-dimension text-xl font-semibold text-amber-800 mt-1.5 block">Pantone 871C</span>
+<span class="font-body-sm text-[11px] text-stone-500 mt-1 block">Hot Foil 22k Gold</span>
+</div>
+</div>
+<div class="mt-6 p-4 rounded-2xl bg-stone-50/40 border border-stone-200/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2 text-xs text-stone-600">
+<span class="material-symbols-outlined text-[18px] text-forest">layers</span>
+<span>Tầng cấu trúc: Nắp hộp âm dương 3 mảnh, khay mút EVA bọc nhung chống sốc 15mm.</span>
+</div>
+<button class="text-xs font-cad-dimension text-forest hover:text-emerald-700 font-medium underline shrink-0" type="button">
+            Tải Bảng Spec PDF Chi Tiết
+          </button>
+</div>
+</section>
+</div>
+<!-- Quick Floating Action Bar for Team Administration -->
+<div class="mt-8 p-4 rounded-3xl bg-surface-container-lowest/80 backdrop-blur-md border-stone-200/50 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-emerald-50 text-forest flex items-center justify-center border border-emerald-100 shrink-0">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</div>
+<div>
+<span class="font-body-md text-xs font-semibold text-forest block">WrapFit Enterprise Gateway</span>
+<span class="font-body-sm text-[11px] text-stone-500">Mọi chỉnh sửa phân quyền sẽ tự động lưu và áp dụng cho các trạm vệ tinh CNC.</span>
+</div>
+</div>
+<div class="flex items-center gap-2 w-full md:w-auto justify-end">
+<button class="px-3.5 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200/70 text-forest text-xs font-label-ui font-medium transition-colors" type="button">
+          Xuất Lịch Sử Audit
+        </button>
+<button class="px-5 py-1.5 rounded-full bg-forest text-white hover:bg-emerald-950 text-xs font-label-ui font-medium shadow-sm transition-all active:scale-95 flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">save</span>
+<span>Lưu Thay Đổi</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Bottom Action Dock (Consistent with Screen 15 & Screen 2) -->
+<aside class="fixed bottom-6 inset-x-0 z-40 pointer-events-none flex justify-center">
+<div class="pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-2xl border border-stone-200/60 shadow-[0_12px_32px_-6px_rgba(19,48,32,0.1)]">
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-stone-700 hover:text-forest hover:bg-stone-100/70 transition-colors text-xs font-cad-dimension" type="button">
+<span class="material-symbols-outlined text-[17px]">straighten</span>
+<span>Dieline 2D</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-stone-700 hover:text-forest hover:bg-stone-100/70 transition-colors text-xs font-cad-dimension" type="button">
+<span class="material-symbols-outlined text-[17px]">view_in_ar</span>
+<span>Fold 3D</span>
+</button>
+<div class="w-px h-4 bg-stone-200 mx-0.5"></div>
+<button class="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-forest text-white hover:bg-emerald-950 transition-all text-xs font-label-ui font-medium shadow-sm active:scale-95" type="button">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+<span>Xuất Quyền Truy Cập</span>
+</button>
+</div>
+</aside>
+<!-- Footer -->
+<footer class="w-full bg-transparent py-10 mt-12 border-t border-stone-200/40">
+<div class="max-w-7xl mx-auto px-margin flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-sm font-semibold text-forest">WrapFit</span>
+<span class="text-stone-300">•</span>
+<span class="font-cad-spec-micro uppercase">CALIBRATED PRECISION PACKAGING</span>
+</div>
+<div class="font-body-sm text-center md:text-right">
+      © 2025 WrapFit Architecture Studio. All millimeter calibrations verified.
+    </div>
+</div>
+</footer>
+<script>
+  (function() {
+    // Tab switching vanilla JS
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        
+        tabButtons.forEach(b => {
+          b.classList.remove('bg-white', 'text-forest', 'shadow-sm');
+          b.classList.add('text-stone-600');
+        });
+        btn.classList.add('bg-white', 'text-forest', 'shadow-sm');
+        btn.classList.remove('text-stone-600');
+
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+          if (content.id === targetTab) {
+            content.classList.add('active');
+          }
+        });
+      });
+    });
+
+    // Production lock toggle safety confirmation
+    const lockSwitch = document.getElementById('productionLockSwitch');
+    if (lockSwitch) {
+      lockSwitch.addEventListener('change', function(e) {
+        if (!e.target.checked) {
+          const confirmUnlock = confirm('Cảnh báo an toàn: Bạn có chắc chắn muốn mở khóa bản vẽ sản xuất? Xưởng in Đông Bắc CNC có thể đang đọc dao bế v3.4.');
+          if (!confirmUnlock) {
+            e.target.checked = true;
+          }
+        }
+      });
+    }
+  })();
+</script>
+
+
+<script>
+function toggleMember(card) {
+  const allCards = document.querySelectorAll('.member-card');
+  const isAlreadyActive = card.classList.contains('ring-2');
+  
+  allCards.forEach(c => {
+    c.classList.remove('ring-2', 'ring-forest/20', 'bg-white', 'scale-[1.015]', 'shadow-md');
+    c.classList.add('bg-stone-50/60');
+    const detail = c.querySelector('.member-detail');
+    if (detail) detail.classList.add('hidden');
+    const icon = c.querySelector('.expand-icon');
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  });
+
+  if (!isAlreadyActive) {
+    card.classList.remove('bg-stone-50/60');
+    card.classList.add('ring-2', 'ring-forest/20', 'bg-white', 'scale-[1.015]', 'shadow-md');
+    const detail = card.querySelector('.member-detail');
+    if (detail) detail.classList.remove('hidden');
+    const icon = card.querySelector('.expand-icon');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
+}
+</script></body></html>

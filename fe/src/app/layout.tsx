@@ -1,9 +1,11 @@
 import React from "react";
-import "../styles/globals.css";
+import { fontVariables } from "@/assets/fonts";
+import { MainLayout } from "@/layouts/main";
+import "@/assets/styles/globals.css";
 
 export const metadata = {
   title: "WrapFit — Packaging Personalization & Intelligence Platform",
-  description: "Make Every Present, Present. Designing the box around the gift with 100% physical feasibility.",
+  description: "Make Every Present, Present. Thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất.",
 };
 
 export default function RootLayout({
@@ -12,9 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
-      <body className="antialiased min-h-screen bg-stone-50 text-stone-900 selection:bg-amber-200 selection:text-amber-900">
-        {children}
+    <html lang="vi" className={fontVariables}>
+      <body className="antialiased min-h-screen bg-paper-ivory text-ink-primary font-sans selection:bg-brand-gold/30 selection:text-brand-forest">
+        <MainLayout>{children}</MainLayout>
       </body>
     </html>
   );

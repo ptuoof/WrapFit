@@ -1,0 +1,276 @@
+services:
+  # ===================================================
+  # 1. PostgreSQL Database Service
+  # ===================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: wrapfit-postgres
+    restart: unless-stopped
+    mem_limit: 512m
+    mem_reservation: 128m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-wrapfit}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-wrapfit}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 2. Redis: BullMQ queues (print exports)
+  # ===================================================
+  redis:
+    image: redis:7-alpine
+    container_name: wrapfit-redis
+    restart: unless-stopped
+    # BullMQ needs keys never to be evicted; AOF keeps queued jobs across restarts.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 2b. Object storage for local development (S3-compatible, SeaweedFS)
+  #    Production uses Cloudflare R2: set the STORAGE_* variables in .env instead.
+  #    Credentials are in docker/seaweedfs/s3.json (dev only).
+  # ===================================================
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    container_name: wrapfit-storage
+    restart: unless-stopped
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=64
+    ports:
+      - "${STORAGE_PORT:-8333}:8333"
+    volumes:
+      - storage_data:/data
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9333/cluster/status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - wrapfit-network
+
+  # Creates the buckets once SeaweedFS is up (each skipped when it already exists), then exits:
+  # `wrapfit` is readable by anyone (docker/seaweedfs/s3.json), `wrapfit-private` (print exports) is not.
+  storage-init:
+    image: chrislusf/seaweedfs:4.48
+    container_name: wrapfit-storage-init
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        for b in wrapfit wrapfit-private; do
+        echo 's3.bucket.list' | weed shell -master=seaweedfs:9333 | grep -qE "^[[:space:]]*$$b[[:space:]]"
+        && echo "bucket $$b already exists"
+        || (echo "s3.bucket.create -name $$b" | weed shell -master=seaweedfs:9333);
+        done
+    restart: "no"
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 2c. Mailpit: catches every email of local development (verify email, reset password)
+  #    SMTP on 1025 for the worker, web inbox on http://localhost:8025. Nothing is delivered to real mailboxes.
+  # ===================================================
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: wrapfit-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 3. WrapFit Backend REST API (NestJS 11 + Prisma)
+  # ===================================================
+  backend:
+    build:
+      context: .
+      dockerfile: be/Dockerfile
+    container_name: wrapfit-backend
+    restart: unless-stopped
+    mem_limit: 512m
+    mem_reservation: 128m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-wrapfit}?schema=public
+      # Required: the API refuses to start if these are missing or shorter than 32 characters (see .env.example)
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Auth cookies are `Secure` in production; browsers still accept them on http://localhost
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      # Optional: "Sign in with Google" (both empty = disabled)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:8080/api/auth/google/callback}
+      # Optional: creates an admin account on start (never with a default password in production)
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # Object storage: defaults to the local SeaweedFS above; set these to Cloudflare R2 in production
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
+      STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-wrapfit}
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:-wrapfit-private}
+      STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:-wrapfit-dev-access}
+      STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
+      STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+      # Optional: AI pattern generator (empty key = procedural patterns only)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 3b. Export worker: same image as the backend, runs the BullMQ processors only (no HTTP port)
+  # ===================================================
+  worker:
+    build:
+      context: .
+      dockerfile: be/Dockerfile
+    container_name: wrapfit-worker
+    restart: unless-stopped
+    command: ["worker"]
+    mem_limit: 512m
+    # The image's HTTP health check does not apply (no HTTP port): the worker touches a heartbeat file every 15 s
+    # (src/export/worker-heartbeat.ts); older than a minute = stuck or dead.
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(Date.now() - require('fs').statSync('/tmp/wrapfit-worker-heartbeat').mtimeMs < 60000 ? 0 : 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-wrapfit}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
+      REDIS_URL: redis://redis:6379
+      EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
+      # Email (verify email, reset password): Mailpit above by default; set to the provider's SMTP in production
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-WrapFit <no-reply@wrapfit.local>}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
+      STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-wrapfit}
+      STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:-wrapfit-private}
+      STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:-wrapfit-dev-access}
+      STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
+      STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+    depends_on:
+      # The backend container applies the migrations before the worker starts.
+      backend:
+        condition: service_healthy
+    networks:
+      - wrapfit-network
+
+  # ===================================================
+  # 4. WrapFit Frontend Studio (Next.js 14 Standalone Mode)
+  # ===================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: fe/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-WrapFit Studio}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    container_name: wrapfit-frontend
+    restart: unless-stopped
+    mem_limit: 1024m
+    mem_reservation: 256m
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 256M
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - wrapfit-network
+
+volumes:
+  postgres_data:
+    name: wrapfit_postgres_data
+  storage_data:
+    name: wrapfit_storage_data
+  redis_data:
+    name: wrapfit_redis_data
+
+networks:
+  wrapfit-network:
+    name: wrapfit-network
+    driver: bridge

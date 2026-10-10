@@ -1,0 +1,435 @@
+<!DOCTYPE html><html lang="vi" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="web_standard" name="shell-type">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { display: none; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .subtle-shadow {
+      box-shadow: 0 10px 40px -10px rgba(78, 52, 46, 0.06), 0 1px 3px 0 rgba(78, 52, 46, 0.03);
+    }
+    .hover-lift {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hover-lift:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px -12px rgba(0, 74, 198, 0.12);
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#fff8f5",
+            "surface": "#fff8f5",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#faf2ee",
+            "surface-container": "#f4ece8",
+            "surface-container-high": "#eee7e3",
+            "surface-container-highest": "#e9e1dd",
+            "on-surface": "#1e1b19",
+            "on-surface-variant": "#5f6170",
+            "primary": "#004ac6",
+            "primary-container": "#2563eb",
+            "on-primary": "#ffffff",
+            "secondary": "#486458",
+            "secondary-container": "#e2f2ea",
+            "on-secondary-container": "#244437",
+            "tertiary": "#735c00",
+            "outline-variant": "#e7dfda"
+          },
+          fontFamily: {
+            "headline-lg": ["Playfair Display", "serif"],
+            "headline-md": ["Playfair Display", "serif"],
+            "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-md": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "label-ui": ["Plus Jakarta Sans", "sans-serif"],
+            "cad-spec-micro": ["JetBrains Mono", "monospace"],
+            "cad-dimension": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-white pb-36">
+<!-- Floating Header / Pill Navigation -->
+<header class="fixed top-0 left-0 w-full z-40 px-4 sm:px-8 pt-4">
+<div class="max-w-7xl mx-auto h-16 bg-white/80 backdrop-blur-xl rounded-full px-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)] flex items-center justify-between">
+<!-- Logo -->
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center text-white font-bold font-headline-sm shadow-md shadow-primary/20 text-base">
+          W
+        </div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-md text-xl tracking-tight font-semibold text-on-surface">WrapFit</span>
+<span class="hidden sm:inline-block text-[11px] font-cad-spec-micro text-on-surface-variant/70 uppercase tracking-widest bg-surface-container-low px-2 py-0.5 rounded-full">v4.2 CAD</span>
+</div>
+</div>
+<!-- Stepper Pills -->
+<nav class="hidden lg:flex items-center gap-1 bg-surface-container-low/70 p-1 rounded-full text-xs font-label-ui">
+<span class="px-4 py-1.5 rounded-full bg-primary-container text-white font-semibold shadow-sm flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> 1. Chọn Gói Cước</span>
+<span class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+          2. Phương Thức
+        </span>
+<span class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+          3. Bảo Mật
+        </span>
+<span class="px-4 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+          4. Cấp Phép
+        </span>
+</nav>
+<!-- Trust Badges & User -->
+<div class="flex items-center gap-3">
+<div class="hidden sm:flex items-center gap-1.5 bg-secondary-container/80 text-on-secondary-container px-3 py-1 rounded-full text-xs font-medium">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+<span class="font-cad-dimension tracking-wider">SSL 256-BIT</span>
+</div>
+<div class="flex items-center gap-2 pl-2">
+<img alt="Packy Studio Avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm" src="https://lh3.googleusercontent.com/aida/AEtjO1X6oJ4ACXAVlPDN9o1BlL3Y2QdLN2edWtzKaZxLzcPEaBpd36fVEJ4oADSHwrVyezM8dSyUQa56UPitqwftKOxBtBwVoibUFbC592IIKHk8ByOCNN31Ft4QUzPJqke7G0ZD4AxfAaySWaYA3Gdr4RUsjxH1P7FKOscixxSkqSY2vqhNgy8FxiihqeNaXDD67PlLgrxEggJz-AjYgpB2uINOcteLAPp8d5Iup5ZztwpLxkhAoVZrpxic5IcwVUfy5GOAAGngitQpBQs">
+<div class="hidden xl:block text-left text-xs leading-tight">
+<p class="font-semibold text-on-surface">Packy Studio</p>
+<p class="text-[10px] text-on-surface-variant font-cad-spec-micro">Chế Bản Chuyên Sâu</p>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Hero & Visual Workspace -->
+<main class="w-full pt-28 px-4 sm:px-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<!-- Hero Header (Zero clutter, elegant Playfair Display) -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-2">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 text-primary font-cad-dimension text-xs mb-3 font-medium"><span class="material-symbols-outlined text-[14px]">token</span> BƯỚC 01 / 04 • CẤU HÌNH GÓI CƯỚC CÁ NHÂN</div>
+<h1 class="font-headline-lg text-3xl sm:text-4xl lg:text-5xl text-on-surface tracking-tight font-normal">Chọn gói cước sáng tạo cá nhân</h1>
+<p class="text-on-surface-variant font-body-md mt-2 max-w-xl text-base">Mở khóa toàn bộ kho thuật toán bế hộp CAD, bù dung sai giấy tự động và xuất file dieline 1:1 chuẩn xác không tì vết.</p>
+</div>
+<!-- Period Toggle Pill -->
+<div class="flex items-center self-start md:self-end bg-surface-container-high/60 p-1.5 rounded-full shadow-inner">
+<button class="px-5 py-2 rounded-full font-label-ui text-xs font-semibold bg-white text-primary shadow-sm transition-all duration-200" id="toggle-monthly" onclick="switchBilling(false)">
+            Hàng Tháng
+          </button>
+<button class="px-5 py-2 rounded-full font-label-ui text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all duration-200 flex items-center gap-1.5" id="toggle-yearly" onclick="switchBilling(true)">
+            Hàng Năm
+            <span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-cad-dimension text-[10px] font-bold">
+              -20%
+            </span>
+</button>
+</div>
+</div>
+<!-- Visual Core: 2 Large Columns -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT COLUMN: 2 Visual Plan Cards + Companion Mascot (Col 7) -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+<!-- Card 1: Basic Studio -->
+<div class="group relative cursor-pointer rounded-3xl p-6 hover:bg-white subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300 shadow-primary/5 ring-2 ring-primary-container shadow-xl bg-white" id="card-basic" onclick="selectPlan('basic')"><div class=""><div class="flex items-center justify-between"><div class="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform"><span class="material-symbols-outlined text-[26px]">square_foot</span></div><div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-white transition-colors" id="check-basic"><span class="material-symbols-outlined text-[16px] hidden">check</span></div></div><div class="mt-5"><span class="text-xs uppercase font-cad-dimension tracking-wider text-on-surface-variant font-medium">Cá Nhân Khởi Đầu</span><h3 class="text-xl font-headline-md font-semibold text-on-surface mt-0.5">Basic Studio</h3></div><div class="flex items-baseline gap-1 my-4"><span class="text-4xl lg:text-5xl font-headline-lg font-bold text-on-surface tracking-tight" id="price-basic">$10</span><span class="text-xs font-body-sm text-on-surface-variant">/ tháng</span></div><div class="flex flex-col gap-2.5 pt-2"><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-container-low/70 text-xs font-medium text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">folder_special</span><span class="">Mở khóa 120+ mẫu khuôn cơ bản</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-container-low/70 text-xs font-medium text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">view_in_ar</span><span class="">Xuất CAD 2D/DXF 1:1 chuẩn xác</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-container-low/70 text-xs font-medium text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">cloud_done</span><span class="">20GB Dieline Cloud Storage</span></div></div></div><div class="mt-6 pt-4 border-t border-surface-container/60 text-center"><span class="text-[11px] font-cad-dimension text-on-surface-variant tracking-wide uppercase">Dành Cho Freelancer Tập Đóng Gói</span></div></div>
+<!-- Card 2: Business Pro (Khuyên Dùng / Highly Visual) -->
+<div class="relative cursor-pointer rounded-3xl p-6 subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300 bg-white/70" id="card-pro" onclick="selectPlan('pro')"><div class="absolute -top-3 right-6 bg-gradient-to-r from-primary to-primary-container text-white px-3.5 py-0.5 rounded-full text-[11px] font-label-ui font-semibold shadow-md flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">stars</span> KHUYÊN DÙNG</div><div class=""><div class="flex items-center justify-between"><div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary-container"><span class="material-symbols-outlined text-[26px]">precision_manufacturing</span></div><div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm" id="check-pro"><span class="material-symbols-outlined text-[16px]">check</span></div></div><div class="mt-5"><span class="text-xs uppercase font-cad-dimension tracking-wider text-primary font-semibold">Nhà Thiết Kế Bao Bì Độc Lập</span><h3 class="text-xl font-headline-md font-semibold text-on-surface mt-0.5">Solo Pro Pass</h3></div><div class="flex items-baseline gap-1 my-4"><span class="text-4xl lg:text-5xl font-headline-lg font-bold text-primary tracking-tight" id="price-pro">$20</span><span class="text-xs font-body-sm text-on-surface-variant">/ tháng</span></div><div class="flex flex-col gap-2.5 pt-2"><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/5 text-xs font-semibold text-primary"><span class="material-symbols-outlined text-primary-container text-[18px]">bolt</span><span class="">Tự động bù co giãn nếp gấp (Caliper)</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/5 text-xs font-semibold text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">verified</span><span class="">Kiểm định nén lực FitCheck™ 100%</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/5 text-xs font-semibold text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">view_in_ar</span><span class="">3D Render gập nếp theo thời gian thực</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/5 text-xs font-semibold text-on-surface"><span class="material-symbols-outlined text-primary text-[18px]">auto_awesome</span><span class="">Mở khóa toàn bộ 1.250+ khuôn dieline</span></div><div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/5 text-xs font-semibold text-on-surface"><span class="material-symbols-outlined text-secondary text-[18px]">support_agent</span><span class="">100GB Cloud Vault &amp; Kỹ thuật 24/7</span></div></div></div><div class="mt-6 pt-4 border-t border-primary/10 text-center"><span class="text-[11px] font-cad-dimension text-primary font-semibold tracking-wide uppercase">Tiêu Chuẩn Bao Bì Chuyên Nghiệp</span></div></div>
+</div>
+<!-- Mascot Companion Box (Bé Gói AI WrapFit) -->
+<div class="rounded-3xl p-5 bg-white/70 backdrop-blur subtle-shadow flex items-center gap-4 hover-lift">
+<div class="relative w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-tr from-amber-50 to-orange-100/80 p-2 flex items-center justify-center shadow-inner">
+<img alt="WrapFit Mascot" class="w-full h-full object-contain filter drop-shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCq_ycWsJVQ87CWgkszcyNwLfO3OjQwbCF3wPm_DZ_91DPcN93gKDVtPulVbadqd9IFpderrTcWw96PapTRZnabdIXgAQn8bPkh0HNw2mdJfsHYwE339Wvi5ecT3mU3-RyLY7NKl-qizq4zdO0u4CAQfxsNg5rockhzn9uwfid_cIivbbjSwQ8xNX-nH3wFaAEMSj9tcT5zh065_GmfW8BWtk3jUz0ttW9dUwm9RWN43K1Ci-kIatiPkg">
+<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-0.5">
+<span class="font-headline-sm text-sm font-bold text-on-surface">Bé Gói AI Trợ Lý</span>
+<span class="text-[10px] font-cad-spec-micro uppercase tracking-wider bg-secondary-container px-2 py-0.5 rounded-full text-on-secondary-container font-semibold">Tự Động Bù Co Giãn</span>
+</div>
+<p class="text-xs text-on-surface-variant font-body-sm leading-relaxed" id="mascot-advice">
+                “Với <span class="font-semibold text-primary">Business Pro</span>, hệ thống bù 0.25mm rãnh cấn tự động giúp loại bỏ hoàn toàn lỗi gãy sóng giấy carton sóng E/F khi lên khuôn dao bế!”
+              </p>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Visual Seat Counter & Quick Dropzone (Col 5) -->
+<div class="lg:col-span-5 flex flex-col gap-6"><div class="rounded-3xl p-7 bg-white subtle-shadow flex flex-col justify-between transition-all duration-300" id="detail-card-panel"><div class="flex flex-col gap-5"><div class="flex items-center justify-between pb-2 border-b border-surface-container"><div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-cad-dimension text-xs font-semibold" id="detail-badge"><span class="material-symbols-outlined text-[15px]">verified</span> Gói Cá Nhân Cao Cấp - Pro Pass</div><div class="w-10 h-10 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary" id="detail-icon"><span class="material-symbols-outlined text-[20px]">workspace_premium</span></div></div><div class="p-5 rounded-2xl bg-surface-container-low/60 flex flex-col gap-3"><div class="flex items-baseline justify-between"><span class="font-label-ui text-xs text-on-surface-variant font-medium">Gói dịch vụ đang chọn:</span><span class="font-cad-dimension text-xs font-bold text-on-surface uppercase" id="detail-plan-name">Solo Pro Pass</span></div><div class="flex items-baseline justify-between"><span class="font-label-ui text-xs text-on-surface-variant font-medium">Quyền sở hữu bản vẽ:</span><span class="font-cad-dimension text-xs font-semibold text-secondary" id="detail-commercial">Thương mại vĩnh viễn</span></div><div class="flex items-baseline justify-between"><span class="font-label-ui text-xs text-on-surface-variant font-medium">Kho lưu trữ bảo mật:</span><span class="font-cad-dimension text-xs font-semibold text-primary" id="cloud-storage-val">100 GB Cloud Vault</span></div></div><div class="space-y-2.5 pt-1" id="detail-perks-list"><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">Mở khóa 1.250+ Mẫu khuôn CAD &amp; Dieline cao cấp toàn diện</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">Tự động bù co giãn nếp gấp và đo Caliper giấy chính xác</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">Mô phỏng 3D Origami gập mở thời gian thực &amp; PBR Shaders ép kim 22K</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">B��o cáo thẩm định an toàn bao bì FitCheck™ Pass 100%</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">Xuất không giới hạn định dạng chế bản in CNC, Laser, DWG, DXF, PDF</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">100 GB Cloud Vault bảo mật chuẩn mã hóa công nghiệp</span></div><div class="flex items-start gap-3 text-xs text-on-surface"><div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5"><span class="material-symbols-outlined text-[13px]">check</span></div><span class="">Hỗ trợ kỹ thuật ưu tiên 24/7 trực tiếp cùng Kỹ sư CAD</span></div></div></div><div class="mt-8 pt-5 border-t border-surface-container flex items-baseline justify-between"><div><span class="text-xs uppercase font-cad-dimension text-on-surface-variant tracking-wider block">Tổng Chi Phí Trọn Gói</span><span class="text-[11px] text-on-surface-variant/70 font-body-sm" id="billing-note">Thanh toán linh hoạt từng tháng, hủy bất cứ lúc nào</span></div><div class="text-right"><span class="text-3xl font-headline-lg font-bold text-primary leading-none" id="display-total-price">$20</span><span class="text-xs font-cad-dimension text-on-surface-variant block" id="display-total-sub">/ tháng</span></div></div></div></div>
+</div>
+</div>
+</main>
+<!-- Visual Floating Bottom Dock (Apple / Dribbble inspired floating dock) -->
+<aside aria-label="Điều hướng thao tác" class="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
+<div class="max-w-4xl mx-auto glass-card rounded-full p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-white/60 pointer-events-auto flex items-center justify-between gap-4">
+<!-- Left Quick Support -->
+<div class="flex items-center gap-3 pl-3">
+<a class="flex items-center gap-2 text-xs font-label-ui text-on-surface font-semibold hover:text-primary transition-colors" href="#">
+<span class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</span>
+<span class="hidden sm:inline">Hỗ trợ 24/7</span>
+</a>
+<span class="hidden sm:inline text-outline-variant text-xs">|</span>
+<div class="hidden md:flex items-center gap-1.5 text-xs text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified</span>
+<span class="">14 ngày dùng thử không rủi ro</span>
+</div>
+</div>
+<!-- Right Primary CTA -->
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block pr-1">
+<span class="text-[10px] font-cad-spec-micro uppercase text-on-surface-variant block leading-none">Tạm tính ngay</span>
+<span class="font-headline-sm font-bold text-primary text-base" id="dock-total-preview">$320/tháng</span>
+</div>
+<button class="px-7 py-3.5 rounded-full bg-primary-container text-white font-label-ui text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:brightness-105 active:scale-95 transition-all flex items-center gap-2" id="btn-submit" onclick="proceedToPayment()">
+<span class="">Tiếp Tục Phương Thức Thanh Toán</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Interactive Logic -->
+<script>
+    let currentPlan = 'pro';
+    let isYearly = false;
+    let seats = 32;
+
+    const cardBasic = document.getElementById('card-basic');
+    const cardPro = document.getElementById('card-pro');
+    const checkBasic = document.getElementById('check-basic');
+    const checkPro = document.getElementById('check-pro');
+
+    const priceBasicEl = document.getElementById('price-basic');
+    const priceProEl = document.getElementById('price-pro');
+    const seatCountEl = document.getElementById('seat-count');
+    const displaySeatRateEl = document.getElementById('display-seat-rate');
+    const displayTotalPriceEl = document.getElementById('display-total-price');
+    const dockTotalPreviewEl = document.getElementById('dock-total-preview');
+    const cloudStorageValEl = document.getElementById('cloud-storage-val');
+    const storageBarEl = document.getElementById('storage-bar');
+
+    const toggleMonthly = document.getElementById('toggle-monthly');
+    const toggleYearly = document.getElementById('toggle-yearly');
+
+    function updatePricing() {
+      const basicRate = isYearly ? 8 : 10;
+      const proRate = isYearly ? 16 : 20;
+
+      priceBasicEl.textContent = `$${basicRate}`;
+      priceProEl.textContent = `$${proRate}`;
+
+      const currentSeatRate = (currentPlan === 'pro') ? proRate : basicRate;
+      displaySeatRateEl.textContent = `$${currentSeatRate} / ghế`;
+
+      const total = seats * currentSeatRate;
+      displayTotalPriceEl.textContent = `$${total}`;
+      dockTotalPreviewEl.textContent = `$${total}/tháng`;
+
+      // Storage calculation visual
+      const storagePerSeat = (currentPlan === 'pro') ? 100 : 20;
+      const totalStorage = seats * storagePerSeat;
+      cloudStorageValEl.textContent = `${totalStorage.toLocaleString()} GB Cloud`;
+      
+      const pct = Math.min(100, Math.max(15, (seats / 70) * 100));
+      storageBarEl.style.width = `${pct}%`;
+    }
+
+    function selectPlan(plan) {
+      currentPlan = plan;
+      if (plan === 'pro') {
+        cardPro.classList.add('ring-2', 'ring-primary-container', 'shadow-xl', 'shadow-primary/5', 'bg-white');
+        cardPro.classList.remove('bg-white/70');
+        checkPro.className = 'w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm';
+        checkPro.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+
+        cardBasic.classList.remove('ring-2', 'ring-primary-container', 'shadow-xl', 'bg-white');
+        cardBasic.classList.add('bg-white/70');
+        checkBasic.className = 'w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-white';
+        checkBasic.innerHTML = '';
+      } else {
+        cardBasic.classList.add('ring-2', 'ring-primary-container', 'shadow-xl', 'shadow-primary/5', 'bg-white');
+        cardBasic.classList.remove('bg-white/70');
+        checkBasic.className = 'w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm';
+        checkBasic.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+
+        cardPro.classList.remove('ring-2', 'ring-primary-container', 'shadow-xl', 'shadow-primary/5', 'bg-white');
+        cardPro.classList.add('bg-white/70');
+        checkPro.className = 'w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-white';
+        checkPro.innerHTML = '';
+      }
+      updatePricing();
+    }
+
+    function adjustSeats(delta) {
+      const newSeats = seats + delta;
+      if (newSeats >= 1 && newSeats <= 200) {
+        seats = newSeats;
+        seatCountEl.textContent = seats;
+        updatePricing();
+      }
+    }
+
+    function switchBilling(yearly) {
+      isYearly = yearly;
+      if (yearly) {
+        toggleYearly.className = 'px-5 py-2 rounded-full font-label-ui text-xs font-semibold bg-white text-primary shadow-sm transition-all duration-200 flex items-center gap-1.5';
+        toggleMonthly.className = 'px-5 py-2 rounded-full font-label-ui text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all duration-200';
+      } else {
+        toggleMonthly.className = 'px-5 py-2 rounded-full font-label-ui text-xs font-semibold bg-white text-primary shadow-sm transition-all duration-200';
+        toggleYearly.className = 'px-5 py-2 rounded-full font-label-ui text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all duration-200 flex items-center gap-1.5';
+      }
+      updatePricing();
+    }
+
+    function proceedToPayment() {
+      const btn = document.getElementById('btn-submit');
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Chuyển sang B��ớc 2...';
+      setTimeout(() => {
+        btn.innerHTML = '<span>Tiếp Tục Phương Thức Thanh Toán</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
+        alert(`WrapFit: Đã ghi nhận gói ${currentPlan.toUpperCase()} (${seats} ghế). Tiến hành thanh toán!`);
+      }, 700);
+    }
+
+    // Init state
+    updatePricing();
+  </script>
+
+
+<script>
+  const planData = {
+    basic: {
+      name: 'Basic Studio',
+      badge: '<span class="material-symbols-outlined text-[15px]">verified</span> Gói Cá Nhân Khởi Đầu - Basic',
+      icon: 'square_foot',
+      monthlyPrice: 10,
+      yearlyPrice: 8,
+      storage: '20 GB Dieline Cloud',
+      commercial: 'Cá nhân & Portfolio',
+      mascot: '“Gói Basic Studio rất thích hợp để bắt đầu dựng mẫu nhanh các bao bì ECMA/FEFCO và xuất DXF 1:1 chuẩn xác!”',
+      perks: [
+        '120+ Mẫu khuôn hộp CAD tiêu chuẩn (FEFCO / ECMA phổ biến)',
+        'Xuất file vector CAD 2D tỉ lệ 1:1 định dạng DXF & PDF phân lớp',
+        '20 GB Cloud Storage cá nhân lưu trữ bản vẽ và asset',
+        'Kiểm tra kích thước và chu vi cơ bản',
+        'Hỗ trợ kỹ thuật qua ticket tiêu chuẩn trong 24h'
+      ]
+    },
+    pro: {
+      name: 'Solo Pro Pass',
+      badge: '<span class="material-symbols-outlined text-[15px]">verified</span> Gói Cá Nhân Cao Cấp - Pro Pass',
+      icon: 'workspace_premium',
+      monthlyPrice: 20,
+      yearlyPrice: 16,
+      storage: '100 GB Cloud Vault',
+      commercial: 'Thương mại vĩnh viễn',
+      mascot: '“Với Solo Pro Pass, hệ thống bù 0.25mm rãnh cấn tự động giúp loại bỏ hoàn toàn lỗi gãy sóng giấy carton sóng E/F khi lên khuôn dao bế!”',
+      perks: [
+        'Mở khóa 1.250+ Mẫu khuôn CAD & Dieline cao cấp toàn diện',
+        'Tự động bù co giãn nếp gấp và đo Caliper giấy chính xác',
+        'Mô phỏng 3D Origami gập mở thời gian thực & PBR Shaders ép kim 22K',
+        'Báo cáo thẩm định an toàn bao bì FitCheck™ Pass 100%',
+        'Xuất không giới hạn định dạng chế bản in CNC, Laser, DWG, DXF, PDF',
+        '100 GB Cloud Vault bảo mật chuẩn mã hóa công nghiệp',
+        'Hỗ trợ kỹ thuật ưu tiên 24/7 trực tiếp cùng Kỹ sư CAD'
+      ]
+    }
+  };
+
+  function renderPlanDetails() {
+    const data = planData[currentPlan];
+    const price = isYearly ? data.yearlyPrice : data.monthlyPrice;
+    
+    const badgeEl = document.getElementById('detail-badge');
+    const nameEl = document.getElementById('detail-plan-name');
+    const iconEl = document.getElementById('detail-icon');
+    const storageEl = document.getElementById('cloud-storage-val');
+    const commercialEl = document.getElementById('detail-commercial');
+    const perksListEl = document.getElementById('detail-perks-list');
+    const priceEl = document.getElementById('display-total-price');
+    const subEl = document.getElementById('display-total-sub');
+    const billingNoteEl = document.getElementById('billing-note');
+    const dockPreviewEl = document.getElementById('dock-total-preview');
+    const mascotEl = document.getElementById('mascot-advice');
+
+    if (badgeEl) badgeEl.innerHTML = data.badge;
+    if (nameEl) nameEl.textContent = data.name;
+    if (iconEl) iconEl.innerHTML = '<span class="material-symbols-outlined text-[20px]">' + data.icon + '</span>';
+    if (storageEl) storageEl.textContent = data.storage;
+    if (commercialEl) commercialEl.textContent = data.commercial;
+    if (priceEl) priceEl.textContent = '$' + price;
+    if (subEl) subEl.textContent = isYearly ? '/ tháng (trả hàng năm)' : '/ tháng';
+    if (dockPreviewEl) dockPreviewEl.textContent = '$' + price + (isYearly ? '/tháng*' : '/tháng');
+    if (billingNoteEl) {
+      billingNoteEl.textContent = isYearly 
+        ? 'Tiết kiệm 20% thanh toán cả năm trả trước $' + (price * 12) + '/năm'
+        : 'Thanh toán linh hoạt từng tháng, hủy bất cứ lúc nào';
+    }
+    if (mascotEl) {
+      mascotEl.innerHTML = data.mascot;
+    }
+
+    if (perksListEl) {
+      perksListEl.innerHTML = data.perks.map(perk => `
+        <div class="flex items-start gap-3 text-xs text-on-surface animate-fadeIn">
+          <div class="w-5 h-5 rounded-full bg-secondary-container/80 flex items-center justify-center text-on-secondary-container shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[13px]">check</span>
+          </div>
+          <span>${perk}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Override selectPlan & switchBilling to ensure immediate updates
+  const origSelectPlan = window.selectPlan;
+  window.selectPlan = function(plan) {
+    if (typeof origSelectPlan === 'function') {
+      try { origSelectPlan(plan); } catch(e) {}
+    }
+    currentPlan = plan;
+    const cardBasic = document.getElementById('card-basic');
+    const cardPro = document.getElementById('card-pro');
+    const checkBasic = document.getElementById('check-basic');
+    const checkPro = document.getElementById('check-pro');
+
+    if (plan === 'pro') {
+      cardPro.className = 'relative cursor-pointer rounded-3xl p-6 bg-white subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300 ring-2 ring-primary-container shadow-xl shadow-primary/5';
+      checkPro.className = 'w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm';
+      checkPro.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+
+      cardBasic.className = 'group relative cursor-pointer rounded-3xl p-6 bg-white/70 hover:bg-white subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300';
+      checkBasic.className = 'w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-white';
+      checkBasic.innerHTML = '';
+    } else {
+      cardBasic.className = 'group relative cursor-pointer rounded-3xl p-6 bg-white subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300 ring-2 ring-primary-container shadow-xl shadow-primary/5';
+      checkBasic.className = 'w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm';
+      checkBasic.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+
+      cardPro.className = 'relative cursor-pointer rounded-3xl p-6 bg-white/70 hover:bg-white subtle-shadow hover-lift flex flex-col justify-between transition-all duration-300';
+      checkPro.className = 'w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-white';
+      checkPro.innerHTML = '';
+    }
+    renderPlanDetails();
+  };
+
+  const origSwitchBilling = window.switchBilling;
+  window.switchBilling = function(yearly) {
+    if (typeof origSwitchBilling === 'function') {
+      try { origSwitchBilling(yearly); } catch(e) {}
+    }
+    isYearly = yearly;
+    renderPlanDetails();
+  };
+
+  // Initial render execution
+  renderPlanDetails();
+</script></body></html>

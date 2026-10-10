@@ -49,7 +49,7 @@ Dự án được tổ chức rõ ràng theo 3 module độc lập giúp 3 IT l�
 ```text
 WrapFit/
 ├── fe/                 # FRONTEND STUDIO (Next.js 14, Three.js, GSAP) — Phụ trách: IT 1
-├── be/                 # BACKEND SERVICES (Express, Prisma, PostgreSQL, S3) — Phụ trách: IT 3
+├── be/                 # BACKEND API (NestJS 11, Prisma, PostgreSQL) — Phụ trách: IT 3 (xem be/README.md)
 ├── shared/             # PACKAGING PHYSICS & TYPES (Parametric Math, FitCheck) — Phụ trách: IT 2
 └── .agents/            # AI AGENT SKILLS & RUNBOOKS
 ```
@@ -64,16 +64,37 @@ WrapFit/
 | **2D Canvas** | Paper.js / Fabric.js / SVG.js | Trình biên tập kéo thả đồ họa vector 2D |
 | **3D Rendering** | Three.js / React Three Fiber | Render khối hộp và texture thời gian thực |
 | **Motion & UX** | GSAP (Timeline, ScrollTrigger, Flip) | Diễn hoạt gập nắp hộp & Landing Page |
-| **Backend & Data**| Node.js / FastAPI, PostgreSQL, Supabase/S3 | Quản lý dự án, tài khoản & Cloud Storage |
+| **Backend & Data**| NestJS 11, Prisma, PostgreSQL, Redis + BullMQ (process worker), S3 / Cloudflare R2 | REST API dự án, tài khoản, Cloud Storage; worker xuất file in & gửi email. Mã nguồn theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) (`be/README.md`; kiến trúc: `docs/07` Mục 1, `docs/08`) |
 | **AI Integration** | Model Context Protocol (MCP), LLM APIs | Gợi ý Theme hoa văn & Hỗ trợ FitCheck |
 
 ---
 
 ## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy (Getting Started)
 
+### Cách 1: Khởi chạy toàn bộ hệ thống bằng Docker (Khuyên dùng) 🐳
+Chỉ với 1 lệnh duy nhất tại thư mục gốc, Docker sẽ tự động dựng và khởi chạy 3 dịch vụ: PostgreSQL 16, Backend API và Frontend Studio:
+
+```bash
+# Đứng tại thư mục gốc WrapFit
+cp .env.example .env   # BẮT BUỘC điền JWT_ACCESS_SECRET và JWT_REFRESH_SECRET (>= 32 ký tự)
+docker compose up --build
+```
+
+- **Frontend Studio**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8080/api](http://localhost:8080/api)
+- **API Docs (Swagger)**: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+- **API Health Check**: [http://localhost:8080/api/health](http://localhost:8080/api/health)
+- **PostgreSQL**: `localhost:5432` (user: `postgres`, password: `password`, db: `wrapfit`)
+
+*(Để dừng toàn bộ containers, nhấn `Ctrl + C` hoặc chạy `docker compose down`)*.
+
+---
+
+### Cách 2: Khởi chạy thủ công qua Node.js (Local Development)
+
 ### Yêu cầu tiên quyết:
 - **Node.js**: Phiên bản `>= 20.x`
-- **npm** hoặc **pnpm / yarn**
+- **npm** (v10+)
 
 ```bash
 # 1. Clone repository
@@ -83,14 +104,19 @@ cd WrapFit
 # 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 3. Cấu hình biến môi trường
-cp .env.example .env.local
+# 3. Chạy PostgreSQL + lưu trữ file (SeaweedFS) và chuẩn bị database cho backend
+docker compose up -d postgres seaweedfs storage-init
+cp be/.env.example be/.env          # đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
+npm --workspace=be run db:generate
+npm --workspace=be run db:migrate
+npm --workspace=be run db:seed
 
-# 4. Khởi chạy môi trường phát triển
-npm run dev
+# 4. Biên dịch shared library & chạy đồng thời FE + BE
+npm run build:shared
+npm run dev:be & npm run dev:fe
 ```
 
-Mở trình duyệt tại [http://localhost:3000](http://localhost:3000) để trải nghiệm ứng dụng.
+Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md).
 
 ---
 
