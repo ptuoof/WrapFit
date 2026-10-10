@@ -2,24 +2,33 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { DashboardHeaderNav } from '@/components/layout';
+import { MainHeader } from '@/components/layout/MainHeader';
+import { MainFooter } from '@/components/layout/MainFooter';
 
 export default function DashboardOrdersPage() {
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] p-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
-      <header className="flex items-center justify-between pb-6 mb-8 border-b border-[#e8ded0]/60">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="w-10 h-10 rounded-full bg-white border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-[#f7f2ef] shadow-xs transition-all">
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-          </Link>
-          <div>
-            <h1 className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">Lịch Sử Đơn Hàng &amp; Hóa Đơn Điện Tử VAT</h1>
-            <p className="text-xs text-[#717971] font-['JetBrains_Mono']">INTERACTIVE BENTO FOCUS &bull; CQT COMPLIANT</p>
+    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] font-['Plus_Jakarta_Sans'] select-none flex flex-col justify-between">
+      <MainHeader />
+      <div className="pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex-1">
+      <div className="w-full max-w-[1720px] mx-auto">
+        <header className="flex flex-col gap-5 pb-6 mb-8 border-b border-[#e8ded0]/60">
+        <DashboardHeaderNav />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="w-10 h-10 rounded-full bg-white border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-[#f7f2ef] shadow-xs transition-all">
+              <span className="material-symbols-outlined text-lg">arrow_back</span>
+            </Link>
+            <div>
+              <h1 className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">Lịch Sử Đơn Hàng &amp; Hóa Đơn Điện Tử VAT</h1>
+              <p className="text-xs text-[#717971] font-['JetBrains_Mono']">INTERACTIVE BENTO FOCUS &bull; CQT COMPLIANT</p>
+            </div>
           </div>
-        </div>
 
-        <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">
-          TỔNG CHI TIÊU: 48.250.000 VNĐ
-        </span>
+          <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">
+            TỔNG CHI TIÊU: 48.250.000 VNĐ
+          </span>
+        </div>
       </header>
 
       {/* Split Bento Layout */}
@@ -93,6 +102,8 @@ export default function DashboardOrdersPage() {
           </div>
         </div>
       </main>
+      </div></div>
+      <MainFooter />
     </div>
   );
 }

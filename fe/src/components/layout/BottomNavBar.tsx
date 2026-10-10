@@ -20,8 +20,9 @@ export const BottomNavBar: React.FC = () => {
     triggerSquishyClick(e.currentTarget);
   };
 
-  // Stitch screens ship their own docks and bottom bars.
-  if (STITCH_ROUTES.includes(pathname)) return null;
+  // Hide only on fullscreen interactive 3D studio where canvas gestures take priority
+  const isFullscreenStudio = pathname === "/editor" || (pathname.startsWith("/editor/") && !pathname.includes("step-") && !pathname.includes("export") && !pathname.includes("inspect") && !pathname.includes("materials"));
+  if (isFullscreenStudio) return null;
 
   const isHome = pathname === "/";
   const isDashboard = pathname.startsWith("/dashboard");
@@ -48,7 +49,7 @@ export const BottomNavBar: React.FC = () => {
 
       {/* 2. Projects Dashboard */}
       <Link
-        href="/dashboard"
+        href="/dashboard/projects"
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isDashboard
@@ -62,7 +63,7 @@ export const BottomNavBar: React.FC = () => {
 
       {/* 3. 2D/3D Studio */}
       <Link
-        href="/editor/demo"
+        href="/editor/step-1"
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isStudio

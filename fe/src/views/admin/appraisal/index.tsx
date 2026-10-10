@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { AdminSidebarNav } from '@/components/layout';
 import Link from 'next/link';
 
 export default function Page() {
@@ -30,48 +31,7 @@ export default function Page() {
               <span className="font-['JetBrains_Mono'] text-xs text-[#486458] font-semibold">100%</span>
             </div>
           </div>
-          <nav className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-270px)] pr-1">
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin">
-              <span className="material-symbols-outlined text-xl">dashboard</span>
-              <span>Command Center</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/media">
-              <span className="material-symbols-outlined text-xl">perm_media</span>
-              <span>Đa Phương Tiện &amp; Hub</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/dieline-vault">
-              <span className="material-symbols-outlined text-xl">architecture</span>
-              <span>Dieline Vault CAD</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/revenue">
-              <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
-              <span>Doanh Thu MRR &amp; VAT</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/security">
-              <span className="material-symbols-outlined text-xl">verified_user</span>
-              <span>Bảo Mật Zero-Trust</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/gpu-cluster">
-              <span className="material-symbols-outlined text-xl">memory</span>
-              <span>Cụm GPU Render</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/print-shops">
-              <span className="material-symbols-outlined text-xl">precision_manufacturing</span>
-              <span>Quản Lý Xưởng In</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "bg-[#122e20] text-white shadow-sm font-semibold"} href="/admin/appraisal">
-              <span className="material-symbols-outlined text-xl">fact_check</span>
-              <span>Thẩm Định Ký Gửi</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/ledger">
-              <span className="material-symbols-outlined text-xl">receipt_long</span>
-              <span>Sổ Cái Giao Dịch</span>
-            </Link>
-            <Link className={"flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm " + "text-[#525a54] hover:bg-white hover:text-[#1b1c18]"} href="/admin/system-config">
-              <span className="material-symbols-outlined text-xl">tune</span>
-              <span>Cấu Hình Hệ Thống</span>
-            </Link>
-          </nav>
+          <AdminSidebarNav />
         </div>
 
         <div className="pt-4 border-t border-[#e8ded0]/60 flex items-center gap-3 px-3">

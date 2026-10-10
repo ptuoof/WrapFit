@@ -137,7 +137,7 @@ export default function VirtualUnboxingPage() {
       <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
       {/* Top Header */}
-      <header className="w-full max-w-4xl flex items-center justify-between z-20 pt-2">
+      <header className="w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between z-20 pt-2">
         <Link
           href="/"
           className="flex items-center gap-2.5 text-brand-gold hover:text-white transition"
@@ -166,7 +166,7 @@ export default function VirtualUnboxingPage() {
       </header>
 
       {/* Center 3D Stage & Floating Presentation */}
-      <main className="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-6 z-10 space-y-6">
+      <main className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center my-4 sm:my-6 z-10 space-y-6">
         {/* Recipient Ribbon Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-xs font-semibold animate-pulse">
@@ -185,7 +185,7 @@ export default function VirtualUnboxingPage() {
         </div>
 
         {/* 3D Box Model Stage */}
-        <div className="relative w-full max-w-lg h-[360px] sm:h-[420px] flex items-center justify-center">
+        <div className="relative w-full max-w-2xl h-[360px] sm:h-[460px] lg:h-[500px] flex items-center justify-center">
           <InteractiveFoldingBox3D
             dimensions={
               data?.project?.dimensions || { length: 120, width: 80, height: 60, paperThickness: 0.38 }
@@ -277,7 +277,7 @@ export default function VirtualUnboxingPage() {
           Khám Phá WrapFit
         </Link>
         <Link
-          href="/editor/new"
+          href="/editor/step-1"
           className="w-full sm:w-auto px-6 py-2.5 rounded-squircle bg-vibrant-cobalt hover:bg-vibrant-cobalt-dark text-white text-xs font-bold transition shadow-cobalt-glow flex items-center justify-center gap-1.5"
         >
           <span>Tự Tay Thiết Kế Hộp Quà</span>

@@ -92,11 +92,12 @@ export default defineStitchBehavior((scope) => {
   }
   function proceedToPayment() {
     const btn = document.getElementById('btn-submit');
-    btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Chuyển sang Bước 2...';
+    if (btn) {
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> Chuyển sang Bước 2...';
+    }
     setTimeout(() => {
-      btn.innerHTML = '<span>Tiếp Tục Phương Thức Thanh Toán</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
-      alert(`WrapFit: Đã ghi nhận gói ${currentPlan.toUpperCase()} (${seats} ghế). Tiến hành thanh toán!`);
-    }, 700);
+      window.location.href = '/checkout/step-2';
+    }, 600);
   }
 
   // Init state
