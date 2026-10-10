@@ -10,6 +10,8 @@ const EXTENSIONS = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.
 
 const decodeEntities = (url) => url.replace(/&amp;/g, '&');
 
+const sha1 = (data) => crypto.createHash('sha1').update(data).digest('hex');
+
 function readIndex() {
   return fs.existsSync(ASSET_INDEX_FILE) ? JSON.parse(fs.readFileSync(ASSET_INDEX_FILE, 'utf8')) : {};
 }
@@ -28,6 +30,12 @@ export async function vendorRemoteImages() {
 
   fs.mkdirSync(PUBLIC_IMAGE_DIR, { recursive: true });
   const missing = [...urls].filter((url) => !index[url] || !fs.existsSync(path.join(PUBLIC_IMAGE_DIR, index[url])));
+  // Stitch often serves the same picture under several URLs: identical bytes share one file.
+  const byContent = new Map();
+  for (const name of new Set(Object.values(index))) {
+    const file = path.join(PUBLIC_IMAGE_DIR, name);
+    if (fs.existsSync(file)) byContent.set(sha1(fs.readFileSync(file)), name);
+  }
   const failed = [];
   for (const url of missing) {
     const response = await fetch(url);
@@ -37,8 +45,14 @@ export async function vendorRemoteImages() {
       continue;
     }
     const type = (response.headers.get('content-type') ?? '').split(';')[0];
-    const name = crypto.createHash('sha1').update(url).digest('hex').slice(0, 16) + (EXTENSIONS[type] ?? '.bin');
-    fs.writeFileSync(path.join(PUBLIC_IMAGE_DIR, name), Buffer.from(await response.arrayBuffer()));
+    const data = Buffer.from(await response.arrayBuffer());
+    const digest = sha1(data);
+    let name = byContent.get(digest);
+    if (!name) {
+      name = digest.slice(0, 16) + (EXTENSIONS[type] ?? '.bin');
+      fs.writeFileSync(path.join(PUBLIC_IMAGE_DIR, name), data);
+      byContent.set(digest, name);
+    }
     index[url] = name;
   }
 
