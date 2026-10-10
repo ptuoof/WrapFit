@@ -1,12 +1,14 @@
 # 12 — Kế hoạch nối Frontend ↔ Backend
 
-> Ngày lập: 2026-10-10 · Nhánh: `feat/studio-editor-and-mascot-copilot` · Trạng thái: **chờ duyệt**
+> Ngày lập: 2026-10-10 · Nhánh gốc: `feat/studio-editor-and-mascot-copilot` · Trạng thái: **đã duyệt 2026-10-10**,
+> thực hiện theo từng phiên ở [§9](#9-chia-phiên-làm-việc-và-bàn-giao)
 > Contract API: [`06_FE_INTEGRATION_GUIDE.md`](06_FE_INTEGRATION_GUIDE.md) (cách dùng), Swagger `http://localhost:8080/api/docs`
 > (nguồn sự thật), [`03_API_DESIGN.md`](03_API_DESIGN.md). Kiến trúc Stitch: [`11_STITCH_PARITY_AUDIT.md`](11_STITCH_PARITY_AUDIT.md).
 
 Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-quyết-định-đã-chốt) · [3. Bản đồ màn hình](#3-bản-đồ-màn-hình--api) ·
 [4. Các phase](#4-các-phase) · [5. Sở hữu file](#5-ma-trận-sở-hữu-file) · [6. Điều phối subagent](#6-điều-phối-subagent) ·
-[7. Kiểm thử](#7-kịch-bản-kiểm-thử-end-to-end) · [8. Rủi ro, câu hỏi mở](#8-rủi-ro-và-câu-hỏi-mở)
+[7. Kiểm thử](#7-kịch-bản-kiểm-thử-end-to-end) · [8. Rủi ro, câu hỏi mở](#8-rủi-ro-và-câu-hỏi-mở) ·
+[9. Phiên làm việc](#9-chia-phiên-làm-việc-và-bàn-giao)
 
 ---
 
@@ -67,7 +69,9 @@ Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-q
 | D3 | **`@tanstack/react-query`** cho mọi lệnh đọc / ghi API | Cache, invalidate sau mutation, trạng thái loading / error thống nhất |
 | D4 | **Proxy cùng domain**: trình duyệt luôn gọi `/api/...` (local qua rewrite của Next, production qua Caddy). Code server (SSR, `generateMetadata`) gọi `BACKEND_INTERNAL_URL` | Cookie same-origin, không phụ thuộc CORS, giống production |
 | D5 | **Không còn dữ liệu giả khi API lỗi**. Lỗi hiện thông báo (kèm `requestId`). Riêng `/editor/demo` chạy offline hoàn toàn, không gọi API | Theo `06` §13: dữ liệu giả che lỗi API |
-| D6 | **Màn không có backend giữ nguyên tĩnh**, không nối trong kế hoạch này: `/pricing`, `/checkout/*`, `/dashboard/orders`, `/dashboard/materials`, `/dashboard/specs`, `/notifications`, `/team`, `/support`, `/auth/2fa`, `/editor/inspect/fefco`, `/editor/materials/backdrop`, mọi `/admin/*` trừ `/admin/accounts` | Backend chưa có module tương ứng (thanh toán, đơn hàng, thông báo, 2FA…) |
+| D6 | **Màn không có backend giữ nguyên tĩnh**, không nối, không gắn nhãn, không ẩn link: `/pricing`, `/checkout/*`, `/dashboard/orders`, `/dashboard/materials`, `/dashboard/specs`, `/notifications`, `/team`, `/support`, `/auth/2fa`, `/editor/inspect/fefco`, `/editor/materials/backdrop`, mọi `/admin/*` trừ `/admin/accounts` | Backend chưa có module tương ứng (thanh toán, đơn hàng, thông báo, 2FA…); giữ nguyên để test UI/UX |
+| D7 | **Xác minh email không bắt buộc nhập mật khẩu**: `/verify-email` xác minh xong → nút tới `/auth/login` | Bản hiện tại của backend (`06` §3.4); không cần sửa BE |
+| D8 | **Làm theo từng phiên** (§9): mỗi phiên tự đủ, kết thúc bằng typecheck + commit + ghi nhật ký bàn giao, phiên sau đọc nhật ký để làm tiếp | Phòng hết hạn mức trong một lần chạy |
 
 ## 3. Bản đồ màn hình ↔ API
 
@@ -232,12 +236,8 @@ Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện):
 
 ## 6. Điều phối subagent
 
-```
-Đợt 1  Phase 0 ───────────────────────────── (agent chính, tuần tự)
-Đợt 2  A ─┐  B ─┐  C(3a) ─┐  D ─┐  E ─┐       (5 subagent song song, cùng working tree)
-Đợt 3                C(3b) ┘                 (sau 3a, vì cùng file studio)
-Đợt 4  Phase 6 ───────────────────────────── (agent chính)
-```
+Thứ tự phụ thuộc: Phase 0 → (1, 2, 3a, 4, 5 độc lập với nhau) → 3b (sau 3a) → 6. Để vừa hạn mức mỗi lần chạy, các
+phase được xếp thành 8 phiên, mỗi phiên tối đa 2 subagent song song (§9).
 
 - **Cùng working tree, file tách biệt** (§5): không dùng git worktree vì mỗi worktree phải `npm install` lại monorepo.
 - Quy tắc cho mọi subagent: không cài package, không chạy `stitch:sync`, không commit; chỉ chạy `npx tsc --noEmit -p fe`
@@ -246,7 +246,7 @@ Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện):
 - Prompt mỗi agent gồm: mục phase tương ứng ở §4, ma trận §5, các mục `06` liên quan, skill cần đọc
   (`wrapfit-design-system`, `ai-packaging-copilot`, `fitcheck-validator`, `r3f-stage-orchestration`,
   `insforge-backend-flow` tuỳ phase), và DoD.
-- Commit theo phase sau khi agent chính review (Conventional Commits, ví dụ `feat(fe-auth): …`).
+- Commit cuối mỗi phiên sau khi agent chính review (Conventional Commits, ví dụ `feat(fe-auth): …`), không push.
 
 ## 7. Kịch bản kiểm thử end-to-end
 
@@ -274,9 +274,9 @@ Môi trường: `docker compose up -d postgres redis seaweedfs storage-init mail
 | # | Vấn đề | Đề xuất |
 |---|---|---|
 | R1 | Màn `wired` không còn so pixel tự động với Stitch | Giữ class gốc khi viết lại; `stitch:parity --include-wired` khi cần so tay (khác ở dữ liệu là bình thường) |
-| R2 | Màn không có backend (D6) vẫn có nút bấm "như thật" (thanh toán, đơn hàng, 2FA) | **Cần bạn quyết**: giữ nguyên, hay gắn nhãn "Sắp ra mắt" / ẩn link khỏi menu |
+| R2 | Màn không có backend (D6) vẫn có nút bấm "như thật" (thanh toán, đơn hàng, 2FA) | **Đã chốt**: giữ nguyên để test UI/UX (D6) |
 | R3 | `/editor/step-1..4`, `/editor/export`, `/editor` chuyển hướng: mất bản mockup để tham khảo | Giữ file (chỉ chuyển hướng), không xoá; nguồn Stitch vẫn ở `fe/stitch/source` |
-| R4 | `06` §3.4 đề xuất trang xác minh email hỏi mật khẩu rồi đăng nhập luôn | **Cần BE** nếu muốn bắt buộc; kế hoạch này làm bản không bắt buộc (xác minh xong → trang đăng nhập) |
+| R4 | `06` §3.4 đề xuất trang xác minh email hỏi mật khẩu rồi đăng nhập luôn | **Đã chốt**: làm bản hiện tại, xác minh xong → trang đăng nhập (D7) |
 | R5 | Hai màu brand (Stitch Cobalt `#004ac6`, app Forest `#122e20`) | Ngoài phạm vi; component mới dùng token theo skill `wrapfit-design-system` |
 | R6 | Thumbnail từ canvas 2D, không phải ảnh 3D | Đủ cho Dashboard MVP; ảnh 3D (`toDataURL` WebGL) làm sau |
 | R7 | Đi qua proxy Next ở local, backend thấy mọi request cùng IP → giới hạn 10 lần đăng nhập / phút dùng chung | Local chấp nhận được; bật `TRUST_PROXY=true` nếu vướng. Production qua Caddy không bị |
@@ -297,3 +297,52 @@ Môi trường: `docker compose up -d postgres redis seaweedfs storage-init mail
 
 Chạy song song đợt 2: tổng thời gian thực ≈ 1 (Phase 0) + 1,5 (đợt 2, phase dài nhất) + 1 (3b) + 1 (Phase 6) ≈
 **4,5 ngày làm việc** (so với ~9 ngày nếu làm tuần tự).
+
+## 9. Chia phiên làm việc và bàn giao
+
+Mỗi phiên là một lần chạy Claude Code độc lập (có thể là cuộc trò chuyện mới, không nhớ phiên trước). Mọi trạng thái
+cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
+
+### 9.1. Danh sách phiên
+
+| Phiên | Nội dung | Subagent | Điều kiện bắt đầu | Kết thúc khi |
+|---|---|---|---|---|
+| **S1** | Phase 0: 0.1 generator `wired`, 0.2 đổi status 6 màn, 0.10 env / proxy / Docker. Tạo nhánh `feat/fe-be-integration` từ nhánh gốc | Không | Plan đã duyệt | `stitch:sync` không đổi file generated nào ngoài `screens.json`; `next build` pass; trang qua proxy `/api/health` trả `ok` |
+| **S2** | Phase 0: 0.4 HTTP client, 0.5 kiểu dữ liệu, 0.6 module API, 0.7 `queryKeys` + `useMe`. Sửa tối thiểu `views/editor/studio`, `views/unbox` cho khớp kiểu mới (chưa đổi hành vi) | Không | S1 xong | `tsc` sạch; gọi được mọi module từ console dev với backend thật |
+| **S3** | Phase 0: 0.3 React Query + `AppProviders`, 0.8 auth (`AuthProvider`, `RequireAuth`, `safeRedirect`), 0.9 toast / `ErrorState` / `error.tsx` | Không | S2 xong | DoD Phase 0 (§4) |
+| **S4** | Phase 1 (auth, header) + Phase 5 (admin accounts) | A, E song song | S3 xong | DoD Phase 1 và Phase 5 |
+| **S5** | Phase 2 (dashboard, dự án, Brand Kit, hồ sơ, cài đặt) + Phase 4 (thư viện mẫu, `/p/[slug]`, `/unbox/[slug]`) | B, D song song | S3 xong (không cần S4) | DoD Phase 2 và Phase 4 |
+| **S6** | Phase 3a (`/editor/new`, mở / lưu / xung đột, upload, thumbnail, chuyển hướng) | C | S3 xong | DoD 3a |
+| **S7** | Phase 3b (mốc phiên bản, xuất file, chia sẻ, QR, hoa văn AI) | C (hoặc 2 agent: xuất file + mốc / chia sẻ + QR + AI, mỗi tính năng một file component) | S6 xong | DoD Phase 3 |
+| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7 xong | 15 bước §7 đạt, có ảnh bằng chứng |
+
+S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Một phiên quá lớn so với hạn mức còn lại thì tách
+theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
+
+### 9.2. Quy trình mỗi phiên
+
+**Mở phiên** (dán vào cuộc trò chuyện mới):
+
+```text
+Tiếp tục kế hoạch nối FE-BE: làm phiên S<n> theo docs/12_FE_BE_INTEGRATION_PLAN.md §9.
+```
+
+1. Đọc §9.3 (nhật ký), mục phase tương ứng ở §4, ma trận §5; `git status`, `git log --oneline -10` trên nhánh
+   `feat/fe-be-integration`.
+2. Kiểm tra điều kiện bắt đầu (§9.1). Phiên trước dở dang → làm nốt phần dở trước.
+3. Chạy backend nếu phiên cần (§7, phần môi trường).
+
+**Trong phiên**: giao việc cho subagent theo §6; agent chính review diff của từng agent, chạy `npx tsc --noEmit -p fe`,
+kiểm tra nhanh trên trình duyệt các màn vừa nối.
+
+**Đóng phiên** (kể cả khi chưa xong hết):
+
+1. `tsc` sạch, hoặc ghi rõ lỗi còn lại vào nhật ký.
+2. Commit những phần đã chạy được (không push); phần dở dang để ở working tree **không** commit và ghi vào nhật ký.
+3. Thêm một dòng vào §9.3: phiên, ngày, commit, đã xong, còn dở, giả định / quyết định mới, việc đầu tiên của phiên sau.
+
+### 9.3. Nhật ký bàn giao
+
+| Phiên | Ngày | Commit | Đã xong | Còn dở / ghi chú cho phiên sau |
+|---|---|---|---|---|
+| Plan | 2026-10-10 | — | Plan duyệt; chốt D1–D8 | Bắt đầu S1 |
